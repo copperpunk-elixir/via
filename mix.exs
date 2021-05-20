@@ -22,7 +22,7 @@ defmodule Via.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      mod: {Via.Application, []},
+      # mod: {, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -46,15 +46,14 @@ defmodule Via.MixProject do
       {:nerves_system_rpi3, "~> 1.13", runtime: false, targets: :rpi3},
       {:nerves_system_rpi3a, "~> 1.13", runtime: false, targets: :rpi3a},
       {:nerves_system_rpi4, "~> 1.13", runtime: false, targets: :rpi4},
-      #Scenic dependencies
+      # Scenic dependencies
       {:scenic, "~> 0.10.3"},
       {:scenic_driver_glfw, "~> 0.10.1", targets: :host},
       {:scenic_sensor, "~> 0.7"},
-
-
+      {:circuits_uart, "~> 1.4.2"},
       {:vintage_net, "~> 0.9.2", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.9.1", targets: @all_targets},
-      {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
+      {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets}
     ]
   end
 
