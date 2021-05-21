@@ -6,12 +6,19 @@ defmodule Common.Application do
     {:ok, self()}
   end
 
+  @spec start_test(binary(), binary()) :: atom()
+  def start_test(model_type \\ "Cessna", node_type \\ "sim") do
+    prepare_environment()
+    Boss.System.start_universal_modules(model_type, node_type)
+    {model_type, node_type}
+  end
+
   @spec prepare_environment() :: atom()
   def prepare_environment() do
     define_atoms()
-    if Common.Utils.is_target?() do
+    # if Common.Utils.is_target?() do
       RingLogger.attach()
-    end
+    # end
   end
 
   @spec define_atoms() :: atom()

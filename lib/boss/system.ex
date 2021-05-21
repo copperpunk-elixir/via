@@ -8,9 +8,9 @@ defmodule Boss.System do
     start_link()
     DynamicSupervisor.start_child(__MODULE__,%{id: Boss.Operator.Supervisor, start: {Boss.Operator, :start_link,[model_type, node_type]}})
     Process.sleep(200)
-    start_module(Comms, model_type, node_type)
+    start_module(Comms)
     Process.sleep(200)
-    start_module(MessageSorter, model_type, node_type)
+    start_module(MessageSorter, model_type)
     Process.sleep(200)
   end
 
@@ -33,7 +33,7 @@ defmodule Boss.System do
   end
 
   @spec start_module(atom(), binary(), binary()) :: atom()
-  def start_module(module, model_type, node_type) do
+  def start_module(module, model_type \\ "", node_type \\ "") do
     Logger.info("Boss Starting Module: #{module}")
     config = Boss.Utils.get_config(module, model_type, node_type)
     DynamicSupervisor.start_child(

@@ -23,7 +23,6 @@ defmodule Comms.Operator do
 
   def handle_cast({:begin, config}, _state) do
     state = %{
-      refresh_groups_timer: nil,
       groups: %{},
       name: Keyword.fetch!(config, :name) #purely for dianostics
     }
@@ -35,7 +34,7 @@ defmodule Comms.Operator do
   def handle_cast({:join_group, group, process_id}, state) do
     # We will be added to our own record of the group during the
     # :refresh_groups cycle
-    # Logger.warn("#{inspect(state.name)} is joining group: #{inspect(group)}")
+    Logger.warn("#{inspect(state.name)} is joining group: #{inspect(group)}")
     :pg2.create(group)
     if !is_in_group?(group, process_id) do
       :pg2.join(group, process_id)
@@ -55,9 +54,10 @@ defmodule Comms.Operator do
 
   @impl GenServer
   def handle_cast({:send_msg_to_group, message, group, sender, global_or_local}, state) do
-    # Logger.debug("send_msg. group: #{inspect(group)}")
+    Logger.debug("send_msg. group: #{inspect(group)}")
     group_members = get_group_members(state.groups, group, global_or_local)
-    # Logger.debug("Group members: #{inspect(group_members)}")
+    Logger.debug("op pid: #{inspect(self())}")
+    Logger.debug("Group members: #{inspect(group_members)}")
     send_msg_to_group_members(message, group_members, sender)
     {:noreply, state}
   end
@@ -108,7 +108,7 @@ defmodule Comms.Operator do
   defp send_msg_to_group_members(message, group_members, sender) do
     Enum.each(group_members, fn dest ->
       if dest != sender do
-        # Logger.debug("Send #{inspect(message)} to #{inspect(dest)}")
+        Logger.debug("Send #{inspect(message)} to #{inspect(dest)}")
         GenServer.cast(dest, message)
       end
     end)
