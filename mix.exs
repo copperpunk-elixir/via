@@ -53,7 +53,8 @@ defmodule Via.MixProject do
       {:circuits_uart, "~> 1.4.2"},
       {:vintage_net, "~> 0.9.2", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.9.1", targets: @all_targets},
-      {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets}
+      {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
+      {:matrex, "~> 0.6.8"}
     ]
   end
 
