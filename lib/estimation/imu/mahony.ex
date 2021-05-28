@@ -12,9 +12,9 @@ defmodule Estimation.Imu.Mahony do
             integral_fbx: 0,
             integral_fby: 0,
             integral_fbz: 0,
-            roll: 0,
-            pitch: 0,
-            yaw: 0
+            roll_rad: 0,
+            pitch_rad: 0,
+            yaw_rad: 0
 
   @spec new(float(), float()) :: struct()
   def new(two_kp, two_ki) do
@@ -24,6 +24,7 @@ defmodule Estimation.Imu.Mahony do
   @spec update(struct(), list()) :: struct()
   def update(imu, dt_accel_gyro) do
     [dt, ax, ay, az, gx, gy, gz] = dt_accel_gyro
+
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
         # Auxiliary variables to avoid repeated arithmetic
@@ -34,7 +35,7 @@ defmodule Estimation.Imu.Mahony do
         # Only use the accel to correct if the magnitude is less than the threshold
         # (which means the inverse is greater than the threshold)
         if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
-          Logger.debug("good accel mag: #{accel_mag}")
+          # Logger.debug("good accel mag: #{accel_mag}")
           ax = ax / accel_mag
           ay = ay / accel_mag
           az = az / accel_mag
@@ -92,16 +93,16 @@ defmodule Estimation.Imu.Mahony do
     q3 = q3 + (qa * gz + qb * gy - qc * gx)
 
     # Normalise quaternion
-    q_mag = :math.sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
-    q0 = q0 / q_mag
-    q1 = q1 / q_mag
-    q2 = q2 / q_mag
-    q3 = q3 / q_mag
+    q_mag_inv = 1 / :math.sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
+    q0 = q0 * q_mag_inv
+    q1 = q1 * q_mag_inv
+    q2 = q2 * q_mag_inv
+    q3 = q3 * q_mag_inv
 
-
-    roll = :math.atan2(2.0*(imu.q0*imu.q1 + imu.q2 * imu.q3), (1.0 - 2.0*(imu.q1*imu.q1 + imu.q2 * imu.q2)))
-    pitch = :math.asin(2.0 * (imu.q0*imu.q2 - imu.q3 * imu.q1))
-    yaw = :math.atan2(2.0*(imu.q0*imu.q3 + imu.q1 * imu.q2), (1.0 - 2.0*(imu.q2*imu.q2 + imu.q3 * imu.q3)))
+    roll_rad = :math.atan2(2.0 * (q0 * q1 + q2 * q3), 1.0 - 2.0 * (q1 * q1 + q2 * q2))
+    pitch_rad = :math.asin(2.0 * (q0 * q2 - q3 * q1))
+    yaw_rad = :math.atan2(2.0 * (q0 * q3 + q1 * q2), 1.0 - 2.0 * (q2 * q2 + q3 * q3))
+    # IO.puts("rpy: #{Common.Utils.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
 
     %{
       imu
@@ -112,9 +113,9 @@ defmodule Estimation.Imu.Mahony do
         integral_fbx: integral_fbx,
         integral_fby: integral_fby,
         integral_fbz: integral_fbz,
-        roll: roll,
-        pitch: pitch,
-        yaw: yaw
+        roll_rad: roll_rad,
+        pitch_rad: pitch_rad,
+        yaw_rad: yaw_rad
     }
   end
 end

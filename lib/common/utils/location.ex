@@ -6,11 +6,11 @@ defmodule Common.Utils.Location do
 
   @spec dx_dy_between_points(struct(), struct()) :: tuple()
   def dx_dy_between_points(wp1, wp2) do
-    lat1 = wp1.latitude
-    lat2 = wp2.latitude
+    lat1 = wp1.latitude_rad
+    lat2 = wp2.latitude_rad
     dpsi = :math.log(:math.tan(@pi_4 + lat2/2)/ :math.tan(@pi_4 + lat1/2))
     dlat = lat2 - lat1
-    dlon = wp2.longitude - wp1.longitude
+    dlon = wp2.longitude_rad - wp1.longitude_rad
     q =
     if (abs(dpsi) > 0.0000001) do
       dlat/dpsi
@@ -27,8 +27,8 @@ defmodule Common.Utils.Location do
 
   @spec lla_from_point(struct(), float(), float()) :: struct()
   def lla_from_point(origin, dx, dy) do
-    lat1 = origin.latitude
-    lon1 = origin.longitude
+    lat1 = origin.latitude_rad
+    lon1 = origin.longitude_rad
     dlat = dx/@earth_radius_m
     lat2 = lat1 + dlat
     dpsi = :math.log(:math.tan(@pi_4 + lat2/2)/ :math.tan(@pi_4 + lat1/2))
@@ -41,7 +41,7 @@ defmodule Common.Utils.Location do
     dlon = (dy/@earth_radius_m) / q
     lon2 = lon1 + dlon
     # {lat2, lon2}
-    Common.Utils.LatLonAlt.new(lat2, lon2, origin.altitude)
+    Common.Utils.LatLonAlt.new(lat2, lon2, origin.altitude_m)
   end
 
   @spec lla_from_point(struct(), tuple()) :: struct()

@@ -1,26 +1,24 @@
 defmodule SevenStateEkf do
-  use GenServer
   require Logger
   require Common.Constants, as: CC
 
-  @num_states 7
   @expected_imu_dt 0.005
-  def start_link(config) do
-    {:ok, pid} = Common.Utils.start_link_redundant(GenServer, __MODULE__, config)
-    GenServer.cast(__MODULE__, {:begin, config})
-    {:ok, pid}
+
+  defstruct ekf_state: nil,
+            ekf_cov: nil,
+            r_gps: nil,
+            r_heading: nil,
+            q_ekf: nil,
+            imu: nil,
+            origin: nil
+
+  def new() do
+    config = Configuration.Module.Estimation.get_config("", "")[:seven_state_ekf]
+    new(config)
   end
 
-  @impl GenServer
-  def init(_) do
-    {:ok, %{}}
-  end
-
-  @impl GenServer
-  def handle_cast({:begin, config}, _state) do
-    Logger.debug("Begin #{__MODULE__}: #{inspect(config)}")
-
-    state = %{
+  def new(config) do
+    %SevenStateEkf{
       ekf_state: Keyword.fetch!(config, :init_state),
       ekf_cov: generate_ekf_cov(config),
       r_gps: generate_r_gps(config),
@@ -32,8 +30,6 @@ defmodule SevenStateEkf do
           Keyword.fetch!(config, :two_ki)
         )
     }
-
-    {:noreply, state}
   end
 
   @spec update_imu(struct(), list()) :: struct()
@@ -41,14 +37,19 @@ defmodule SevenStateEkf do
     Estimation.Imu.Mahony.update(imu, dt_accel_gyro)
   end
 
-  @spec predict_state(map(), list(), float()) :: map()
-  def predict_state(state, [ax, ay, az], dt) do
-    imu = state.imu
+  @spec predict(struct(), list()) :: struct
+  def predict(state, dt_accel_gyro) do
+    imu = Estimation.Imu.Mahony.update(state.imu, dt_accel_gyro)
+    [dt, ax, ay, az, _gx, _gy, _gz] = dt_accel_gyro
+    # Acceleration due to gravity is measured in the negative-Z direction
 
+
+    # Predict State
     {rbg_prime, ax_inertial, ay_inertial, az_inertial} =
-      get_rbg_prime_accel_inertial(imu.roll, imu.pitch, imu.yaw, ax, ay, az)
+      get_rbg_prime_accel_inertial(imu.roll_rad, imu.pitch_rad, imu.yaw_rad, ax, ay, az)
 
     ekf_state_prev = state.ekf_state
+
     ekf_state =
       Matrex.new([
         [ekf_state_prev[1] + ekf_state_prev[4] * dt],
@@ -56,9 +57,123 @@ defmodule SevenStateEkf do
         [ekf_state_prev[3] + ekf_state_prev[6] * dt],
         [ekf_state_prev[4] + ax_inertial * dt],
         [ekf_state_prev[5] + ay_inertial * dt],
-        [ekf_state_prev[6] + (az_inertial - CC.gravity()) * dt],
-        imu.yaw
+        [ekf_state_prev[6] + (CC.gravity() - az_inertial) * dt],
+        [imu.yaw_rad]
       ])
+
+    # IO.puts("new state: #{inspect(ekf_state)}")
+
+    accel = Matrex.new([[ax], [ay], [az]])
+    g_prime_sub = Matrex.dot(rbg_prime, accel)
+    # Update Covariance Matrix
+    g_prime =
+      Matrex.eye(7)
+      |> Matrex.set(1, 4, dt)
+      |> Matrex.set(2, 5, dt)
+      |> Matrex.set(3, 6, dt)
+      |> Matrex.set(4, 7, g_prime_sub[1])
+      |> Matrex.set(5, 7, g_prime_sub[2])
+      |> Matrex.set(6, 7, g_prime_sub[3])
+
+    ekf_cov =
+      Matrex.dot(g_prime, state.ekf_cov)
+      |> Matrex.dot_and_add(Matrex.transpose(g_prime), state.q_ekf)
+
+    # IO.puts("state: #{inspect(ekf_state)}")
+    # IO.puts("new cov: #{inspect(ekf_cov)}")
+    %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
+  end
+
+  @spec update_from_gps(struct(), map(), map()) :: struct()
+  def update_from_gps(state, position_rrm, velocity_mps) do
+    origin = if is_nil(state.origin), do: position_rrm, else: state.origin
+
+    {dx, dy} = Common.Utils.Location.dx_dy_between_points(origin, position_rrm)
+
+    dz = position_rrm.altitude_m - origin.altitude_m
+
+    z =
+      Matrex.new([
+        [dx],
+        [dy],
+        [dz],
+        [velocity_mps.north],
+        [velocity_mps.east],
+        [velocity_mps.down]
+      ])
+
+    # IO.puts("dz: #{inspect(dz)}")
+    # IO.puts("z: #{inspect(z)}")
+
+    h_prime =
+      Matrex.zeros(6, 7)
+      |> Matrex.set(1, 1, 1.0)
+      |> Matrex.set(2, 2, 1.0)
+      |> Matrex.set(3, 3, 1.0)
+      |> Matrex.set(4, 4, 1.0)
+      |> Matrex.set(5, 5, 1.0)
+      |> Matrex.set(6, 6, 1.0)
+
+    z_from_x = Matrex.submatrix(state.ekf_state, 1..6, 1..1)
+
+    # Update
+    ekf_cov = state.ekf_cov
+    h_prime_transpose = Matrex.transpose(h_prime)
+
+    mat_to_invert =
+      Matrex.dot(h_prime, ekf_cov)
+      |> Matrex.dot(h_prime_transpose)
+      |> Matrex.add(state.r_gps)
+
+    inv_mat = Estimation.Imu.Utils.Matrix.inv_66(mat_to_invert)
+
+    k =
+      Matrex.dot(ekf_cov, h_prime_transpose)
+      |> Matrex.dot(inv_mat)
+
+    delta_z = Matrex.subtract(z, z_from_x)
+    k_add = Matrex.dot(k, delta_z)
+    ekf_state = Matrex.add(state.ekf_state, k_add)
+
+    eye_m_kh =
+      Matrex.dot(k, h_prime)
+      |> Matrex.subtract_inverse(Matrex.eye(7))
+
+    ekf_cov = Matrex.dot(eye_m_kh, ekf_cov)
+    %{state | ekf_state: ekf_state, ekf_cov: ekf_cov, origin: origin}
+  end
+
+  @spec update_from_heading(struct(), float()) :: struct()
+  def update_from_heading(state, heading) do
+    delta_z = Common.Utils.Motion.constrain_angle_to_compass(heading - state.ekf_state[7])
+
+    ekf_cov = state.ekf_cov
+    r_heading = state.r_heading
+    mat_div = ekf_cov[7][7] + r_heading[1]
+    inv_mat = if mat_div != 0, do: 1 / mat_div, else: 0
+
+    k =
+      Matrex.submatrix(ekf_cov, 1..7, 7..7)
+      |> Matrex.multiply(inv_mat)
+
+    k_add = Matrex.multiply(k, delta_z)
+
+    ekf_state = Matrex.add(state.ekf_state, k_add)
+
+    eye_m_kh =
+      Enum.reduce(1..7, Matrex.eye(7), fn index, acc ->
+        if index < 7 do
+          Matrex.set(acc, index, 7, k[index])
+        else
+          Matrex.set(acc, index, 7, 1 - k[index])
+        end
+      end)
+
+    ekf_cov = Matrex.dot(eye_m_kh, ekf_cov)
+
+    delta_yaw = k_add[7]
+    imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
+    %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
   end
 
   @spec get_rbg_prime_accel_inertial(float(), float(), float(), float(), float(), float()) ::
@@ -95,14 +210,17 @@ defmodule SevenStateEkf do
         az * (cospsi * sinphi - cosphi * sinpsi * sintheta) + ax * costheta * sinpsi
 
     accel_inertial_z = az * cosphi * costheta - ax * sintheta + ay * costheta * sinphi
+
     {rbg_prime, accel_inertial_x, accel_inertial_y, accel_inertial_z}
   end
 
   @spec generate_ekf_cov(list()) :: struct()
   def generate_ekf_cov(config) do
     init_std_devs = Keyword.fetch!(config, :init_std_devs)
-    init_std_devs_t = Matrex.transpose(init_std_devs)
-    Matrex.dot(init_std_devs_t, init_std_devs)
+
+    Enum.reduce(1..7, Matrex.zeros(7), fn index, acc ->
+      Matrex.set(acc, index, index, init_std_devs[index] * init_std_devs[index])
+    end)
   end
 
   @spec generate_r_gps(list()) :: struct()
@@ -119,13 +237,13 @@ defmodule SevenStateEkf do
 
   @spec generate_r_heading(list()) :: struct()
   def generate_r_heading(config) do
-    Matrex.new(config[:gpsyaw_std])
+    Matrex.new([[config[:gpsyaw_std]]])
     |> Matrex.square()
   end
 
   @spec generate_q(list()) :: struct()
   def generate_q(config) do
-    Matrex.zeros(@num_states)
+    Matrex.zeros(7)
     |> Matrex.set(1, 1, config[:qpos_xy_std])
     |> Matrex.set(2, 2, config[:qpos_xy_std])
     |> Matrex.set(3, 3, config[:qpos_z_std])
@@ -136,4 +254,28 @@ defmodule SevenStateEkf do
     |> Matrex.square()
     |> Matrex.multiply(@expected_imu_dt)
   end
+
+  @spec position_rrm(struct()) :: struct()
+  def position_rrm(state) do
+    ekf_state = state.ekf_state
+    Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+    |> Map.put(:altitude_m, ekf_state[3])
+  end
+
+  @spec velocity_mps(struct()) :: map()
+  def velocity_mps(state) do
+    ekf_state = state.ekf_state
+    %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
+  end
+
+  @spec position_rrm_velocity_mps(struct()) :: tuple()
+  def position_rrm_velocity_mps(state) do
+    ekf_state = state.ekf_state
+    position_rrm = Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+    |> Map.put(:altitude_m, ekf_state[3])
+
+    velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
+    {position_rrm, velocity_mps}
+  end
+
 end

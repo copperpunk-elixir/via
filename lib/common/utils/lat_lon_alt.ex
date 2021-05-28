@@ -1,14 +1,14 @@
 defmodule Common.Utils.LatLonAlt do
   require Logger
-  @enforce_keys [:latitude, :longitude, :altitude]
-  defstruct [:latitude, :longitude, :altitude]
+  @enforce_keys [:latitude_rad, :longitude_rad, :altitude_m]
+  defstruct [:latitude_rad, :longitude_rad, :altitude_m]
 
   @spec new(float(), float(), float()) :: struct()
   def new(lat, lon, alt) do
     %Common.Utils.LatLonAlt{
-      latitude: lat,
-      longitude: lon,
-      altitude: alt
+      latitude_rad: lat,
+      longitude_rad: lon,
+      altitude_m: alt
     }
   end
 
@@ -29,9 +29,9 @@ defmodule Common.Utils.LatLonAlt do
 
   @spec to_string(struct()) :: binary()
   def to_string(lla) do
-    lat_str = Common.Utils.eftb(Common.Utils.Math.rad2deg(lla.latitude), 5)
-    lon_str = Common.Utils.eftb(Common.Utils.Math.rad2deg(lla.longitude), 5)
-    alt_str = Common.Utils.eftb(lla.altitude, 1)
+    lat_str = Common.Utils.eftb(Common.Utils.Math.rad2deg(lla.latitude_rad), 5)
+    lon_str = Common.Utils.eftb(Common.Utils.Math.rad2deg(lla.longitude_rad), 5)
+    alt_str = Common.Utils.eftb(lla.altitude_m, 1)
     "lat/lon/alt: #{lat_str}/#{lon_str}/#{alt_str}"
   end
 end
