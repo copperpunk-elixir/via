@@ -42,9 +42,9 @@ defmodule Ubx.Utils.Test do
     apply(__MODULE__, message_type, values)
   end
 
-  def accel_gyro_val(dt, ax, ay, az, gx, gy, gz) do
-    {class, id} = Ubx.MessageDefs.accel_gyro_val_class_id()
-    bytes = Ubx.MessageDefs.accel_gyro_val_bytes()
+  def dt_accel_gyro_val(dt, ax, ay, az, gx, gy, gz) do
+    {class, id} = Ubx.MessageDefs.dt_accel_gyro_val_class_id()
+    bytes = Ubx.MessageDefs.dt_accel_gyro_val_bytes()
     values = [dt, ax, ay, az, gx, gy, gz]
     Ubx.Utils.construct_message(class, id, bytes, values)
   end

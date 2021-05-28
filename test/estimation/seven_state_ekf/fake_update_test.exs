@@ -1,4 +1,4 @@
-defmodule UpdateSevenStateTest do
+defmodule Estimation.SevenStateEkf.FakeSevenStateUpdateTest do
   use ExUnit.Case
   require Logger
 

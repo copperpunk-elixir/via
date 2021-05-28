@@ -186,6 +186,17 @@ defmodule Common.Utils.Math do
     # Logger.debug("[#{a},#{b},#{c},#{d}]")
   end
 
+ def twos_comp_8(x) do
+    <<si::signed-integer-8>> = <<x::unsigned-integer-8>>
+  si
+  end
+
+ def twos_comp_8_bin(x) do
+    <<si::signed-integer-8>> = x
+  si
+  end
+
+
   def twos_comp_16(x) do
     <<si::signed-integer-16>> = <<x::unsigned-integer-16>>
   si
@@ -218,12 +229,16 @@ defmodule Common.Utils.Math do
 
   def twos_comp(x, bits) do
     case bits do
+      8 -> twos_comp_8(x)
       16 -> twos_comp_16(x)
       32 -> twos_comp_32(x)
       64 -> twos_comp_64(x)
     end
   end
 
+  def int8_little_bin(x) do
+    <<x::little-signed-integer-8>>
+  end
   def int16_little_bin(x) do
     <<x::little-signed-integer-16>>
   end
@@ -234,10 +249,6 @@ defmodule Common.Utils.Math do
 
   def int64_little_bin(x) do
     <<x::little-signed-integer-64>>
-  end
-
-  def int8_little_bin(x) do
-    <<x::little-signed-integer-8>>
   end
 
   def int_little_bin(x, bits) do

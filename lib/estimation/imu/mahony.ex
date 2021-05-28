@@ -36,9 +36,10 @@ defmodule Estimation.Imu.Mahony do
         # (which means the inverse is greater than the threshold)
         if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
           # Logger.debug("good accel mag: #{accel_mag}")
-          ax = ax / accel_mag
-          ay = ay / accel_mag
-          az = az / accel_mag
+          # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
+          ax = -ax / accel_mag
+          ay = -ay / accel_mag
+          az = -az/ accel_mag
 
           # Estimated direction of gravity and vector perpendicular to magnetic flux
 

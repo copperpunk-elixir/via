@@ -162,8 +162,8 @@ defmodule Ubx.Interpreter do
       msg_class = ubx.msg_class
       msg_id = ubx.msg_id
       payload = payload(ubx)
-      Logger.debug("Rx'd msg: #{msg_class}/#{msg_id}")
-      Logger.debug("payload: #{inspect(Ubx.Interpreter.payload(ubx))}")
+      # Logger.debug("Rx'd msg: #{msg_class}/#{msg_id}")
+      # Logger.debug("payload: #{inspect(Ubx.Interpreter.payload(ubx))}")
       apply(process_fn, [msg_class, msg_id, payload] ++ fn_args)
 
       clear(ubx)

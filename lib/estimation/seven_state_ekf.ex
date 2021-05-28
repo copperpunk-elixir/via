@@ -1,4 +1,4 @@
-defmodule SevenStateEkf do
+defmodule Estimation.SevenStateEkf do
   require Logger
   require Common.Constants, as: CC
 
@@ -18,7 +18,7 @@ defmodule SevenStateEkf do
   end
 
   def new(config) do
-    %SevenStateEkf{
+    %Estimation.SevenStateEkf{
       ekf_state: Keyword.fetch!(config, :init_state),
       ekf_cov: generate_ekf_cov(config),
       r_gps: generate_r_gps(config),
@@ -43,7 +43,6 @@ defmodule SevenStateEkf do
     [dt, ax, ay, az, _gx, _gy, _gz] = dt_accel_gyro
     # Acceleration due to gravity is measured in the negative-Z direction
 
-
     # Predict State
     {rbg_prime, ax_inertial, ay_inertial, az_inertial} =
       get_rbg_prime_accel_inertial(imu.roll_rad, imu.pitch_rad, imu.yaw_rad, ax, ay, az)
@@ -57,7 +56,7 @@ defmodule SevenStateEkf do
         [ekf_state_prev[3] + ekf_state_prev[6] * dt],
         [ekf_state_prev[4] + ax_inertial * dt],
         [ekf_state_prev[5] + ay_inertial * dt],
-        [ekf_state_prev[6] + (CC.gravity() - az_inertial) * dt],
+        [ekf_state_prev[6] + (az_inertial + CC.gravity()) * dt],
         [imu.yaw_rad]
       ])
 
@@ -84,13 +83,25 @@ defmodule SevenStateEkf do
     %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
   end
 
+  # ----------------- PLEASE READ ---------------
+  # GPS uses a geodetic coordinate system, with Latitude/Longitude/Altitude,
+  # where Altitude is more positive as one moves away from the earth's surface.
+  # Our EKF coordinate frame is NED, where the Z value is more negative as we move
+  # away from the earth's surface.
+  # Everything inside the EKF will be in NED coordinates
+  # When we send a position to the outside, we convert to LLA
   @spec update_from_gps(struct(), map(), map()) :: struct()
   def update_from_gps(state, position_rrm, velocity_mps) do
-    origin = if is_nil(state.origin), do: position_rrm, else: state.origin
+    origin =
+      if is_nil(state.origin) do
+        position_rrm |> Map.put(:altitude_m, -position_rrm.altitude_m)
+      else
+        state.origin
+      end
 
     {dx, dy} = Common.Utils.Location.dx_dy_between_points(origin, position_rrm)
 
-    dz = position_rrm.altitude_m - origin.altitude_m
+    dz = -position_rrm.altitude_m - origin.altitude_m
 
     z =
       Matrex.new([
@@ -258,6 +269,7 @@ defmodule SevenStateEkf do
   @spec position_rrm(struct()) :: struct()
   def position_rrm(state) do
     ekf_state = state.ekf_state
+
     Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
     |> Map.put(:altitude_m, ekf_state[3])
   end
@@ -271,11 +283,12 @@ defmodule SevenStateEkf do
   @spec position_rrm_velocity_mps(struct()) :: tuple()
   def position_rrm_velocity_mps(state) do
     ekf_state = state.ekf_state
-    position_rrm = Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
-    |> Map.put(:altitude_m, ekf_state[3])
+
+    position_rrm =
+      Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+      |> Map.put(:altitude_m, -ekf_state[3])
 
     velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
     {position_rrm, velocity_mps}
   end
-
 end

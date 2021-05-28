@@ -36,6 +36,7 @@ defmodule Configuration.Module.Peripherals.Uart do
     # Logger.debug("device/meta: #{device}/#{metadata}")
     case device do
       "Companion" -> {Companion, get_companion_config(uart_port)}
+      "Gps" -> {Gps, get_gps_config(uart_port)}
       "Dsm" -> {Command.Rx, get_dsm_rx_config(uart_port)}
       "FrskyRx" -> {Command.Rx, get_frsky_rx_config(uart_port)}
       "TerarangerEvo" -> {Estimation.TerarangerEvo, get_teraranger_evo_config(uart_port)}
@@ -53,6 +54,15 @@ defmodule Configuration.Module.Peripherals.Uart do
       port_options: [speed: 115_200],
     ]
   end
+
+  @spec get_gps_config(binary(), binary()) :: list()
+  def get_gps_config(uart_port, usb_name \\ "Pico") do
+    [
+      uart_port: get_port_name_gpio_or_usb(uart_port, usb_name),
+      port_options: [speed: 115_200],
+    ]
+  end
+
 
   @spec get_dsm_rx_config(binary()) :: list()
   def get_dsm_rx_config(uart_port) do

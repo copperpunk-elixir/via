@@ -2,6 +2,10 @@ defmodule Peripherals.Uart.Companion.Operator do
   use GenServer
   require Logger
   require Ubx.MessageDefs
+  require Common.Constants, as: CC
+
+  @accel_counts_to_mpss CC.gravity() / 8192
+  @gyro_counts_to_rps CC.deg2rad() / 16.4
 
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do
@@ -34,7 +38,7 @@ defmodule Peripherals.Uart.Companion.Operator do
 
     state = %{
       uart_ref: uart_ref,
-      ubx: Ubx.Interpreter.new()
+      ubx: Ubx.Interpreter.new(),
     }
 
     uart_port = Keyword.fetch!(config, :uart_port)
@@ -58,7 +62,7 @@ defmodule Peripherals.Uart.Companion.Operator do
 
   @impl GenServer
   def handle_info({:circuits_uart, _port, data}, state) do
-    Logger.debug("rx'd data: #{inspect(data)}")
+    # Logger.debug("rx'd data: #{inspect(data)}")
 
     ubx =
       Ubx.Interpreter.process_data(state.ubx, :binary.bin_to_list(data), &process_data_fn/3, [])
@@ -72,10 +76,26 @@ defmodule Peripherals.Uart.Companion.Operator do
       0x11 ->
         case msg_id do
           0x00 ->
-            values =
-              Ubx.Utils.deconstruct_message(Ubx.MessageDefs.accel_gyro_val_bytes(), payload)
-            Comms.Operator.send_local_msg_to_group(__MODULE__, {:accel_gyro_val, values}, self())
-            Logger.debug("accel/gyro values: #{inspect(values)}")
+            [dt, ax, ay, az, gx, gy, gz] =
+              Ubx.Utils.deconstruct_message(Ubx.MessageDefs.dt_accel_gyro_val_bytes(), payload)
+
+            # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
+            values = [
+              dt * 1.0e-6,
+              ax * @accel_counts_to_mpss,
+              ay * @accel_counts_to_mpss,
+              az * @accel_counts_to_mpss,
+              gx * @gyro_counts_to_rps,
+              gy * @gyro_counts_to_rps,
+              gz * @gyro_counts_to_rps
+            ]
+
+            Comms.Operator.send_local_msg_to_group(
+              __MODULE__,
+              {:dt_accel_gyro_val, values},
+              self()
+            )
+
 
           _other ->
             Logger.warn("Bad message id: #{msg_id}")
