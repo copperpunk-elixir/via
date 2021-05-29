@@ -8,6 +8,7 @@ defmodule Estimation.SevenStateEkf.MahonyImuTest do
   end
 
   test "Open Serial Port" do
+    # Expects Logger statements from Estimator
     config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "Pico")
     Peripherals.Uart.Companion.Operator.start_link(config)
     Process.sleep(200)
@@ -16,6 +17,4 @@ defmodule Estimation.SevenStateEkf.MahonyImuTest do
     Process.sleep(30000)
 
   end
-
-
 end

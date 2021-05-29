@@ -8,6 +8,7 @@ defmodule Peripherals.Uart.Gps.ParseNavpvtRelposnedTest do
   end
 
   test "Open Serial Port" do
+    # Expects comments from Gps operator
     config = Configuration.Module.Peripherals.Uart.get_gps_config("usb", "u-blox")
     Peripherals.Uart.Gps.Operator.start_link(config)
     Process.sleep(20000)

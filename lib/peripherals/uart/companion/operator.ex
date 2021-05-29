@@ -2,16 +2,10 @@ defmodule Peripherals.Uart.Companion.Operator do
   use GenServer
   require Logger
   require Ubx.MessageDefs
-  require Common.Constants, as: CC
-
-  @accel_counts_to_mpss CC.gravity() / 8192
-  @gyro_counts_to_rps CC.deg2rad() / 16.4
 
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do
     Logger.debug("Start Uart.Companion.Operator")
-    # Logger.debug("config: #{inspect(config)}")
-    # Logger.info("new config: #{inspect(config)}")
     {:ok, process_id} = Common.Utils.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
@@ -39,6 +33,8 @@ defmodule Peripherals.Uart.Companion.Operator do
     state = %{
       uart_ref: uart_ref,
       ubx: Ubx.Interpreter.new(),
+      accel_counts_to_mpss: Keyword.fetch!(config, :accel_counts_to_mpss),
+      gyro_counts_to_rps: Keyword.fetch!(config, :gyro_counts_to_rps)
     }
 
     uart_port = Keyword.fetch!(config, :uart_port)
@@ -63,15 +59,17 @@ defmodule Peripherals.Uart.Companion.Operator do
   @impl GenServer
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
-
     ubx =
-      Ubx.Interpreter.process_data(state.ubx, :binary.bin_to_list(data), &process_data_fn/3, [])
+      Ubx.Interpreter.process_data(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
+        state.accel_counts_to_mpss,
+        state.gyro_counts_to_rps
+      ])
 
     {:noreply, %{state | ubx: ubx}}
   end
 
-  @spec process_data_fn(integer(), integer(), list()) :: atom()
-  def process_data_fn(msg_class, msg_id, payload) do
+  @spec process_data_fn(integer(), integer(), list(), float(), float()) :: atom()
+  def process_data_fn(msg_class, msg_id, payload, accel_counts_to_mpss, gyro_counts_to_rps) do
     case msg_class do
       0x11 ->
         case msg_id do
@@ -82,20 +80,20 @@ defmodule Peripherals.Uart.Companion.Operator do
             # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
             values = [
               dt * 1.0e-6,
-              ax * @accel_counts_to_mpss,
-              ay * @accel_counts_to_mpss,
-              az * @accel_counts_to_mpss,
-              gx * @gyro_counts_to_rps,
-              gy * @gyro_counts_to_rps,
-              gz * @gyro_counts_to_rps
+              ax * accel_counts_to_mpss,
+              ay * accel_counts_to_mpss,
+              az * accel_counts_to_mpss,
+              gx * gyro_counts_to_rps,
+              gy * gyro_counts_to_rps,
+              gz * gyro_counts_to_rps
             ]
 
+            # Logger.debug("dt/accel/gyro values: #{Common.Utils.eftb_list(values, 3)}")
             Comms.Operator.send_local_msg_to_group(
               __MODULE__,
               {:dt_accel_gyro_val, values},
               self()
             )
-
 
           _other ->
             Logger.warn("Bad message id: #{msg_id}")
@@ -110,4 +108,5 @@ defmodule Peripherals.Uart.Companion.Operator do
   def send_message(message) do
     GenServer.cast(__MODULE__, {:send_message, message})
   end
+
 end

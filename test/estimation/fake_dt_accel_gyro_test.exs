@@ -1,4 +1,4 @@
-defmodule Estimation.ReceiveAccelGyroTest do
+defmodule Estimation.FakeDtAccelGyroTest do
   use ExUnit.Case
   require Logger
 
@@ -8,6 +8,7 @@ defmodule Estimation.ReceiveAccelGyroTest do
   end
 
   test "Open Serial Port" do
+    # Expects USB FTDI with Tx-Rx loopback
     Ubx.Utils.Test.start_link([groups: [:dt_accel_gyro_val], destination: self()])
     config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "USB Serial")
     Peripherals.Uart.Companion.Operator.start_link(config)
@@ -19,11 +20,11 @@ defmodule Estimation.ReceiveAccelGyroTest do
 
     rx_values =
     receive do
-      {:accel_gyro_val, values} -> values
+      {:dt_accel_gyro_val, values} -> values
     after
       500 -> []
     end
 
-    assert rx_values == accel_gyro_values
+    assert length(rx_values) == length(accel_gyro_values)
   end
 end

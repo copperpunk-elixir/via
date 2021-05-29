@@ -1,6 +1,6 @@
 defmodule Configuration.Module.Peripherals.Uart do
   require Logger
-  require Common.Constants
+  require Common.Constants, as: CC
 
   @spec get_config(binary(), binary()) :: list()
   def get_config(_model_type, node_type) do
@@ -9,7 +9,8 @@ defmodule Configuration.Module.Peripherals.Uart do
     # Logger.warn("uart node type: #{node_type}")
     peripherals = Common.Utils.Configuration.get_uart_peripherals(node_type)
     Logger.debug("peripherals: #{inspect(peripherals)}")
-    Enum.reduce(peripherals, [], fn (peripheral, acc) ->
+
+    Enum.reduce(peripherals, [], fn peripheral, acc ->
       # peripheral_string = Atom.to_string(name)
       [device, port] = String.split(peripheral, "_")
       {module_key, module_config} = get_module_key_and_config(device, port)
@@ -25,14 +26,16 @@ defmodule Configuration.Module.Peripherals.Uart do
         "usb" -> "usb"
         # "0" -> "ttyS0"
         "0" -> "ttyAMA0"
-        port_num -> "ttyAMA#{String.to_integer(port_num)-2}"
+        port_num -> "ttyAMA#{String.to_integer(port_num) - 2}"
       end
+
     [device, metadata] =
       case String.split(device, "-") do
         [dev] -> [dev, ""]
         [dev, meta] -> [dev, meta]
         _other -> raise "Device name improper format"
       end
+
     # Logger.debug("device/meta: #{device}/#{metadata}")
     case device do
       "Companion" -> {Companion, get_companion_config(uart_port)}
@@ -52,17 +55,21 @@ defmodule Configuration.Module.Peripherals.Uart do
     [
       uart_port: get_port_name_gpio_or_usb(uart_port, usb_name),
       port_options: [speed: 115_200],
+      accel_counts_to_mpss: CC.gravity() / 8192,
+      gyro_counts_to_rps: CC.deg2rad() / 16.4
     ]
   end
 
   @spec get_gps_config(binary(), binary()) :: list()
-  def get_gps_config(uart_port, usb_name \\ "Pico") do
+  def get_gps_config(uart_port, usb_name \\ "u-blox") do
     [
       uart_port: get_port_name_gpio_or_usb(uart_port, usb_name),
       port_options: [speed: 115_200],
+      gps_expected_antenna_distance_mm: 18225,
+      gps_antenna_distance_error_threshold_mm: 200,
+
     ]
   end
-
 
   @spec get_dsm_rx_config(binary()) :: list()
   def get_dsm_rx_config(uart_port) do
@@ -70,7 +77,7 @@ defmodule Configuration.Module.Peripherals.Uart do
       uart_port: get_port_name_gpio_or_usb(uart_port, "CP2104"),
       rx_module: :Dsm,
       port_options: [
-        speed: 115_200,
+        speed: 115_200
       ]
     ]
   end
@@ -81,9 +88,9 @@ defmodule Configuration.Module.Peripherals.Uart do
       uart_port: get_port_name_gpio_or_usb(uart_port, "CP2104"),
       rx_module: :Frsky,
       port_options: [
-        speed: 100000,
+        speed: 100_000,
         stop_bits: 2,
-        parity: :even,
+        parity: :even
       ]
     ]
   end
@@ -105,7 +112,7 @@ defmodule Configuration.Module.Peripherals.Uart do
       port_options: [speed: 57_600],
       fast_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
       medium_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:medium),
-      slow_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:slow),
+      slow_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:slow)
     ]
   end
 
@@ -113,13 +120,15 @@ defmodule Configuration.Module.Peripherals.Uart do
   def get_pwm_reader_config(uart_port) do
     [
       uart_port: get_port_name_gpio_or_usb(uart_port, "Feather M0"),
-      port_options: [speed: 115_200],
+      port_options: [speed: 115_200]
     ]
   end
 
   @spec get_generic_config(binary(), binary()) :: list()
   def get_generic_config(uart_port, device_capability) do
-    sorter_classification = Configuration.Generic.generic_peripheral_classification(device_capability)
+    sorter_classification =
+      Configuration.Generic.generic_peripheral_classification(device_capability)
+
     [
       uart_port: get_port_name_gpio_or_usb(uart_port, "USB Serial"),
       port_options: [speed: 115_200],
@@ -131,5 +140,4 @@ defmodule Configuration.Module.Peripherals.Uart do
   def get_port_name_gpio_or_usb(uart_port, usb_device_name) do
     if uart_port == "usb", do: usb_device_name, else: uart_port
   end
-
 end

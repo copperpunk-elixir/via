@@ -3,11 +3,11 @@ defmodule Imu.Utils do
   def rotate_yaw_rad(imu, delta_yaw_rad) do
     yaw = imu.yaw_rad + delta_yaw_rad
     %{imu | yaw_rad: yaw}
-    |> reset_quat()
+    |> reset_quat_to_attitude()
   end
 
-  @spec reset_quat(struct()) :: struct()
-  def reset_quat(imu) do
+  @spec reset_quat_to_attitude(struct()) :: struct()
+  def reset_quat_to_attitude(imu) do
     cr = :math.cos(imu.roll_rad * 0.5)
     sr = :math.sin(imu.roll_rad * 0.5)
     cp = :math.cos(imu.pitch_rad * 0.5)

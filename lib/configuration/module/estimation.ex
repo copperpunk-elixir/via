@@ -9,8 +9,6 @@ defmodule Configuration.Module.Estimation do
         accel_gyro_rate_expected_interval_ms: 5,
         gps_expected_interval_ms: 200,
         range_expected_interval_ms: 100,
-      gps_expected_antenna_distance_mm: 18225,
-      gps_antenna_distance_error_threshold_mm: 200,
 
         ekf_type: SevenStateEkf,
         ekf_config: [
@@ -28,8 +26,8 @@ defmodule Configuration.Module.Estimation do
           gpsyaw_std: 0.02,
 
           # Mahony
-          two_kp: 1.0,
-          two_ki: 0
+          imu_kp: 1.0,
+          imu_ki: 0
         ]
       ]
     ]

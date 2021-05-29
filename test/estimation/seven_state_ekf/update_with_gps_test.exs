@@ -8,6 +8,7 @@ defmodule Peripherals.Estimation.SevenStateEkf.UpdateWithGpsTest do
   end
 
   test "Open Serial Port" do
+    # Expects Logger statements from Estimator
     config = Configuration.Module.Estimation.get_config("", "")[:estimator]
     Estimation.Estimator.start_link(config)
 

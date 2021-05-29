@@ -10,10 +10,11 @@ defmodule Estimation.SevenStateEkf do
             r_heading: nil,
             q_ekf: nil,
             imu: nil,
-            origin: nil
+            origin: nil,
+            heading_established: false
 
   def new() do
-    config = Configuration.Module.Estimation.get_config("", "")[:seven_state_ekf]
+    config = Configuration.Module.Estimation.get_config("", "")[:estimator][:ekf_config]
     new(config)
   end
 
@@ -26,15 +27,10 @@ defmodule Estimation.SevenStateEkf do
       q_ekf: generate_q(config),
       imu:
         Estimation.Imu.Mahony.new(
-          Keyword.fetch!(config, :two_kp),
-          Keyword.fetch!(config, :two_ki)
+          Keyword.fetch!(config, :imu_kp),
+          Keyword.fetch!(config, :imu_ki)
         )
     }
-  end
-
-  @spec update_imu(struct(), list()) :: struct()
-  def update_imu(imu, dt_accel_gyro) do
-    Estimation.Imu.Mahony.update(imu, dt_accel_gyro)
   end
 
   @spec predict(struct(), list()) :: struct
@@ -155,36 +151,42 @@ defmodule Estimation.SevenStateEkf do
   end
 
   @spec update_from_heading(struct(), float()) :: struct()
-  def update_from_heading(state, heading) do
-    delta_z = Common.Utils.Motion.constrain_angle_to_compass(heading - state.ekf_state[7])
+  def update_from_heading(state, heading_rad) do
+    if state.heading_established do
+      delta_z = Common.Utils.Motion.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
 
-    ekf_cov = state.ekf_cov
-    r_heading = state.r_heading
-    mat_div = ekf_cov[7][7] + r_heading[1]
-    inv_mat = if mat_div != 0, do: 1 / mat_div, else: 0
+      ekf_cov = state.ekf_cov
+      r_heading = state.r_heading
+      mat_div = ekf_cov[7][7] + r_heading[1]
+      inv_mat = if mat_div != 0, do: 1 / mat_div, else: 0
 
-    k =
-      Matrex.submatrix(ekf_cov, 1..7, 7..7)
-      |> Matrex.multiply(inv_mat)
+      k =
+        Matrex.submatrix(ekf_cov, 1..7, 7..7)
+        |> Matrex.multiply(inv_mat)
 
-    k_add = Matrex.multiply(k, delta_z)
+      k_add = Matrex.multiply(k, delta_z)
 
-    ekf_state = Matrex.add(state.ekf_state, k_add)
+      ekf_state = Matrex.add(state.ekf_state, k_add)
 
-    eye_m_kh =
-      Enum.reduce(1..7, Matrex.eye(7), fn index, acc ->
-        if index < 7 do
-          Matrex.set(acc, index, 7, k[index])
-        else
-          Matrex.set(acc, index, 7, 1 - k[index])
-        end
-      end)
+      eye_m_kh =
+        Enum.reduce(1..7, Matrex.eye(7), fn index, acc ->
+          if index < 7 do
+            Matrex.set(acc, index, 7, k[index])
+          else
+            Matrex.set(acc, index, 7, 1 - k[index])
+          end
+        end)
 
-    ekf_cov = Matrex.dot(eye_m_kh, ekf_cov)
+      ekf_cov = Matrex.dot(eye_m_kh, ekf_cov)
 
-    delta_yaw = k_add[7]
-    imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
-    %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
+      delta_yaw = k_add[7]
+      imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
+      %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
+    else
+      Logger.debug("Established heading at #{Common.Utils.eftb_deg(heading_rad, 2)}")
+      ekf_state = state.ekf_state |> Matrex.set(7, 1, heading_rad)
+      %{state | ekf_state: ekf_state, heading_established: true}
+    end
   end
 
   @spec get_rbg_prime_accel_inertial(float(), float(), float(), float(), float(), float()) ::

@@ -155,7 +155,7 @@ defmodule Ubx.Interpreter do
   end
 
   @spec process_data(struct(), list(), fun(), list()) :: struct()
-  def process_data(ubx, data, process_fn, fn_args) do
+  def process_data(ubx, data, process_fn, additional_fn_args) do
     {ubx, remaining_data} = parse_data(ubx, data)
 
     if ubx.payload_ready do
@@ -164,10 +164,10 @@ defmodule Ubx.Interpreter do
       payload = payload(ubx)
       # Logger.debug("Rx'd msg: #{msg_class}/#{msg_id}")
       # Logger.debug("payload: #{inspect(Ubx.Interpreter.payload(ubx))}")
-      apply(process_fn, [msg_class, msg_id, payload] ++ fn_args)
+      apply(process_fn, [msg_class, msg_id, payload] ++ additional_fn_args)
 
       clear(ubx)
-      |> process_data(remaining_data, process_fn, fn_args)
+      |> process_data(remaining_data, process_fn, additional_fn_args)
     else
       ubx
     end

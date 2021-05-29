@@ -8,6 +8,7 @@ defmodule Peripherals.Uart.Companion.ReceiveAccelGyroTest do
   end
 
   test "Open Serial Port" do
+    # Expects Logger statements from Companion operator process_data_fn
     config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "Pico")
     Peripherals.Uart.Companion.Operator.start_link(config)
     Process.sleep(30000)

@@ -7,8 +7,8 @@ defmodule Estimation.Imu.Mahony do
             q1: 0.0,
             q2: 0.0,
             q3: 0.0,
-            two_kp: 0,
-            two_ki: 0,
+            kp: 0,
+            ki: 0,
             integral_fbx: 0,
             integral_fby: 0,
             integral_fbz: 0,
@@ -17,8 +17,8 @@ defmodule Estimation.Imu.Mahony do
             yaw_rad: 0
 
   @spec new(float(), float()) :: struct()
-  def new(two_kp, two_ki) do
-    %Estimation.Imu.Mahony{two_kp: two_kp, two_ki: two_ki}
+  def new(kp, ki) do
+    %Estimation.Imu.Mahony{kp: kp, ki: ki}
   end
 
   @spec update(struct(), list()) :: struct()
@@ -27,20 +27,13 @@ defmodule Estimation.Imu.Mahony do
 
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
-        # Auxiliary variables to avoid repeated arithmetic
-        # Compute DCM since we've got this multiplication stuff going
-
         # Normalise accelerometer measurement
-        accel_mag = :math.sqrt(ax * ax + ay * ay + az * az)
-        # Only use the accel to correct if the magnitude is less than the threshold
-        # (which means the inverse is greater than the threshold)
-        if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
-          # Logger.debug("good accel mag: #{accel_mag}")
-          # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
-          ax = -ax / accel_mag
-          ay = -ay / accel_mag
-          az = -az/ accel_mag
+        {ax_norm, ay_norm, az_norm, kp, ki, accel_mag_in_range} =
+          normalized_accel_and_in_range(ax, ay, az, imu.kp, imu.ki)
 
+        # Only use the accel to correct if the accel values are within range
+        if accel_mag_in_range do
+          # Logger.debug("good accel mag: #{accel_mag}")
           # Estimated direction of gravity and vector perpendicular to magnetic flux
 
           halfvx = imu.q1 * imu.q3 - imu.q0 * imu.q2
@@ -48,29 +41,26 @@ defmodule Estimation.Imu.Mahony do
           halfvz = imu.q0 * imu.q0 - 0.5 + imu.q3 * imu.q3
 
           # Error is sum of cross product between estimated and measured direction of gravity
-          halfex = ay * halfvz - az * halfvy
-          halfey = az * halfvx - ax * halfvz
-          halfez = ax * halfvy - ay * halfvx
+          halfex = ay_norm * halfvz - az_norm * halfvy
+          halfey = az_norm * halfvx - ax_norm * halfvz
+          halfez = ax_norm * halfvy - ay_norm * halfvx
 
           # Compute and apply integral feedback if enabled
-          two_ki = imu.two_ki
-
           {integral_fbx, integral_fby, integral_fbz} =
-            if two_ki > 0 do
+            if ki > 0 do
               # integral error scaled by Ki
-              integral_fbx = imu.integral_fbx + two_ki * halfex * dt
-              integral_fby = imu.integral_fby + two_ki * halfey * dt
-              integral_fbz = imu.integral_fbz + two_ki * halfez * dt
+              integral_fbx = imu.integral_fbx + ki * halfex * dt
+              integral_fby = imu.integral_fby + ki * halfey * dt
+              integral_fbz = imu.integral_fbz + ki * halfez * dt
               {integral_fbx, integral_fby, integral_fbz}
             else
               {0, 0, 0}
             end
 
           # Apply proportional feedback
-          two_kp = imu.two_kp
-          gx = gx + two_kp * halfex + integral_fbx
-          gy = gy + two_kp * halfey + integral_fby
-          gz = gz + two_kp * halfez + integral_fbz
+          gx = gx + kp * halfex + integral_fbx
+          gy = gy + kp * halfey + integral_fby
+          gz = gz + kp * halfez + integral_fbz
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
           {gx, gy, gz, imu.integral_fbx, imu.integral_fby, imu.integral_fbz}
@@ -118,5 +108,22 @@ defmodule Estimation.Imu.Mahony do
         pitch_rad: pitch_rad,
         yaw_rad: yaw_rad
     }
+  end
+
+  @spec normalized_accel_and_in_range(float(), float(), float(), float(), float()) :: tuple()
+  def normalized_accel_and_in_range(ax, ay, az, kp, ki) do
+    # We will eventually have logic to select kp and ki based on the acceleration values
+    # i.e., if accel is primarily due to gravity (mag ~= 1.0g), we can have a larger gain
+    accel_mag = :math.sqrt(ax * ax + ay * ay + az * az)
+
+    if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
+      # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
+      ax = -ax / accel_mag
+      ay = -ay / accel_mag
+      az = -az / accel_mag
+      {ax, ay, az, kp, ki, true}
+    else
+      {0, 0, 0, 0,0,false}
+    end
   end
 end
