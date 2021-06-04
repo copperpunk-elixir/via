@@ -1,29 +1,14 @@
 defmodule Peripherals.Uart.Utils do
   require Logger
-  @spec open_interface_connection(atom(), any(), integer(), integer()) :: any()
-  def open_interface_connection(interface_module, interface, connection_count, connection_count_max) do
-    case apply(interface_module, :open_port, [interface]) do
-      nil ->
-        if (connection_count < connection_count_max) do
-          Logger.debug("#{interface_module} is unavailable. Retrying in 1 second.")
-          Process.sleep(1000)
-          open_interface_connection(interface_module, interface, connection_count+1, connection_count_max)
-        else
-          raise "#{interface_module} is unavailable"
-        end
-      interface -> interface
-    end
-  end
-
-  @spec open_interface_connection_infinite(any(), binary(), list(), integer) :: atom()
-  def open_interface_connection_infinite(interface_ref, device_description, options, num_tries \\ 1) do
+  @spec open_connection_with_uart_ref(any(), binary(), list(), integer) :: atom()
+  def open_connection_with_uart_ref(uart_ref, device_description, options, num_tries \\ 1) do
     port = Peripherals.Uart.Utils.get_uart_devices_containing_string(device_description)
     Logger.debug("Opening #{device_description}. Attempt #{num_tries}")
-    case Circuits.UART.open(interface_ref,port, options) do
+    case Circuits.UART.open(uart_ref,port, options) do
       {:error, error} ->
         Logger.error("Error opening UART #{device_description}: #{inspect(error)}. Retrying in 1s")
         Process.sleep(1000)
-        open_interface_connection_infinite(interface_ref, device_description, options, num_tries + 1)
+        open_connection_with_uart_ref(uart_ref, device_description, options, num_tries + 1)
       _success ->
         Logger.debug("#{device_description} opened UART")
     end
@@ -48,7 +33,11 @@ defmodule Peripherals.Uart.Utils do
           acc
         end
       end)
-      if length(matching_ports) == 0, do: nil, else: Enum.min(matching_ports)
+      case length(matching_ports) do
+        0 -> raise "no devices matching the description"
+        1 -> Enum.at(matching_ports, 0)
+        num_matches -> raise "There are #{num_matches} matching devices"
+      end
     end
   end
 end
