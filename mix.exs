@@ -54,7 +54,20 @@ defmodule Via.MixProject do
       {:vintage_net, "~> 0.9.2", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.9.1", targets: @all_targets},
       {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
-      {:matrex, "~> 0.6.8"}
+      {:matrex, "~> 0.6.8"},
+      # COPPERPUNK packages
+      {:ubx_interpreter,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
+      {:utils_math,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_math"},
+      {:utils_format,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_format"},
+      {:utils_enum,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_enum"},
+      {:utils_process,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_process"},
+      {:utils_uart,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_uart"}
     ]
   end
 

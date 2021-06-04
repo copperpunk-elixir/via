@@ -5,7 +5,7 @@ defmodule Comms.Operator do
   def start_link(config) do
     name = Keyword.fetch!(config, :name)
     Logger.debug("Start Comms.Operator: #{inspect(name)}")
-    {:ok, pid} = Common.Utils.start_link_singular(GenServer, __MODULE__, nil, via_tuple(name))
+    {:ok, pid} = UtilsProcess.start_link_singular(GenServer, __MODULE__, nil, via_tuple(name))
     GenServer.cast(via_tuple(name), {:begin, config})
     {:ok, pid}
   end
@@ -26,7 +26,7 @@ defmodule Comms.Operator do
       groups: %{},
       name: Keyword.fetch!(config, :name) #purely for dianostics
     }
-    Common.Utils.start_loop(self(), Keyword.fetch!(config, :refresh_groups_loop_interval_ms), :refresh_groups)
+    UtilsProcess.start_loop(self(), Keyword.fetch!(config, :refresh_groups_loop_interval_ms), :refresh_groups)
     {:noreply, state}
   end
 

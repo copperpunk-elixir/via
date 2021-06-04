@@ -1,13 +1,12 @@
-defmodule Peripherals.Uart.Gps.Operator do
+defmodule Peripherals.Uart.Gps do
   use GenServer
   use Bitwise
   require Logger
   require Ubx.MessageDefs
-  require Common.Constants, as: CC
 
   def start_link(config) do
-    Logger.debug("Start Uart.Gps.Operator")
-    {:ok, process_id} = Common.Utils.start_link_redundant(GenServer, __MODULE__, nil)
+    Logger.debug("Start Uart.Gps")
+    {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
   end
@@ -27,26 +26,24 @@ defmodule Peripherals.Uart.Gps.Operator do
   @impl GenServer
   def handle_cast({:begin, config}, _state) do
     Comms.System.start_operator(__MODULE__)
-    {:ok, uart_ref} = Circuits.UART.start_link()
+
+    uart_port = Keyword.fetch!(config, :uart_port)
+    port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
+
+    uart_ref = UtilsUart.open_connection_and_return_uart_ref(
+      uart_port,
+      port_options
+    )
 
     state = %{
       uart_ref: uart_ref,
-      ubx: Ubx.Interpreter.new(),
+      ubx: UbxInterpreter.new(),
       expected_antenna_distance_m: Keyword.get(config, :expected_antenna_distance_m, 0),
       antenna_distance_error_threshold_m:
         Keyword.get(config, :antenna_distance_error_threshold_m, -1)
     }
 
-    uart_port = Keyword.fetch!(config, :uart_port)
-    port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
-
-    Peripherals.Uart.Utils.open_interface_connection_infinite(
-      state.uart_ref,
-      uart_port,
-      port_options
-    )
-
-    Logger.debug("Uart.Gps.Operator #{uart_port} setup complete!")
+    Logger.debug("Uart.Gps #{uart_port} setup complete!")
     {:noreply, state}
   end
 
@@ -54,7 +51,7 @@ defmodule Peripherals.Uart.Gps.Operator do
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
     ubx =
-      Ubx.Interpreter.process_data(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
+      UbxInterpreter.check_for_new_messages_and_process(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
         state.expected_antenna_distance_m,
         state.antenna_distance_error_threshold_m
       ])
@@ -110,7 +107,7 @@ defmodule Peripherals.Uart.Gps.Operator do
               v_north_mmps,
               v_east_mmps,
               v_down_mmps
-            ] = Ubx.Utils.deconstruct_message(Ubx.MessageDefs.nav_pvt_bytes(), payload)
+            ] = UbxInterpreter.deconstruct_message(Ubx.MessageDefs.nav_pvt_bytes(), payload)
 
             position_rrm =
               Common.Utils.LatLonAlt.new_deg(
@@ -159,7 +156,7 @@ defmodule Peripherals.Uart.Gps.Operator do
               _,
               _,
               flags
-            ] = Ubx.Utils.deconstruct_message(Ubx.MessageDefs.nav_relposned_bytes(), payload)
+            ] = UbxInterpreter.deconstruct_message(Ubx.MessageDefs.nav_relposned_bytes(), payload)
 
             rel_distance_m = rel_pos_length_cm * 0.01 + rel_pos_length_mm_e1 * 1.0e-4
             # Logger.debug("RELPOSNED itwo: #{itow_ms}")
@@ -168,7 +165,7 @@ defmodule Peripherals.Uart.Gps.Operator do
             if (flags &&& 261) == 261 and
                  abs(rel_distance_m - expected_antenna_distance_m) <
                    antenna_distance_error_threshold_m do
-              rel_heading_rad = (rel_pos_heading_deg_e5 * 1.0e-5) |> Common.Utils.Math.deg2rad()
+              rel_heading_rad = (rel_pos_heading_deg_e5 * 1.0e-5) |> UtilsMath.deg2rad()
 
               Comms.Operator.send_local_msg_to_group(
                 __MODULE__,

@@ -1,12 +1,12 @@
-defmodule Peripherals.Uart.Companion.Operator do
+defmodule Peripherals.Uart.Companion do
   use GenServer
   require Logger
   require Ubx.MessageDefs
 
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do
-    Logger.debug("Start Uart.Companion.Operator")
-    {:ok, process_id} = Common.Utils.start_link_redundant(GenServer, __MODULE__, nil)
+    Logger.debug("Start Uart.Companion")
+    {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
   end
@@ -28,23 +28,21 @@ defmodule Peripherals.Uart.Companion.Operator do
     # Logger.warn("Companion config begin: #{inspect(config)}")
     Comms.System.start_operator(__MODULE__)
     Comms.Operator.join_group(__MODULE__, :gps_time, self())
-    {:ok, uart_ref} = Circuits.UART.start_link()
-
-    state = %{
-      uart_ref: uart_ref,
-      ubx: Ubx.Interpreter.new(),
-      accel_counts_to_mpss: Keyword.fetch!(config, :accel_counts_to_mpss),
-      gyro_counts_to_rps: Keyword.fetch!(config, :gyro_counts_to_rps)
-    }
 
     uart_port = Keyword.fetch!(config, :uart_port)
     port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
 
-    Peripherals.Uart.Utils.open_interface_connection_infinite(
-      state.uart_ref,
+    uart_ref = UtilsUart.open_connection_and_return_uart_ref(
       uart_port,
       port_options
     )
+
+    state = %{
+      uart_ref: uart_ref,
+      ubx: UbxInterpreter.new(),
+      accel_counts_to_mpss: Keyword.fetch!(config, :accel_counts_to_mpss),
+      gyro_counts_to_rps: Keyword.fetch!(config, :gyro_counts_to_rps)
+    }
 
     Logger.debug("Uart.Companion.Operator #{uart_port} setup complete!")
     {:noreply, state}
@@ -60,7 +58,7 @@ defmodule Peripherals.Uart.Companion.Operator do
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
     ubx =
-      Ubx.Interpreter.process_data(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
+      UbxInterpreter.check_for_new_messages_and_process(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
         state.accel_counts_to_mpss,
         state.gyro_counts_to_rps
       ])
@@ -75,7 +73,7 @@ defmodule Peripherals.Uart.Companion.Operator do
         case msg_id do
           0x00 ->
             [dt, ax, ay, az, gx, gy, gz] =
-              Ubx.Utils.deconstruct_message(Ubx.MessageDefs.dt_accel_gyro_val_bytes(), payload)
+              UbxInterpreter.deconstruct_message(Ubx.MessageDefs.dt_accel_gyro_val_bytes(), payload)
 
             # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
             values = [
@@ -88,7 +86,7 @@ defmodule Peripherals.Uart.Companion.Operator do
               gz * gyro_counts_to_rps
             ]
 
-            # Logger.debug("dt/accel/gyro values: #{Common.Utils.eftb_list(values, 3)}")
+            # Logger.debug("dt/accel/gyro values: #{UtilsFormat.eftb_list(values, 3)}")
             Comms.Operator.send_local_msg_to_group(
               __MODULE__,
               {:dt_accel_gyro_val, values},

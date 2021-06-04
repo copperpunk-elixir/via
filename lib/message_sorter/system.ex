@@ -4,7 +4,7 @@ defmodule MessageSorter.System do
 
   def start_link(config) do
     Logger.debug("Start MessageSorter Supervisor")
-    Common.Utils.start_link_redundant(Supervisor, __MODULE__, config, __MODULE__)
+    UtilsProcess.start_link_redundant(Supervisor, __MODULE__, config, __MODULE__)
   end
 
   @impl Supervisor

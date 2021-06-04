@@ -16,7 +16,7 @@ defmodule Boss.System do
 
   def start_link() do
     Logger.info("Start Boss Supervisor")
-    Common.Utils.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
+    UtilsProcess.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
   end
 
   @spec init(any) ::

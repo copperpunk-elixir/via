@@ -4,14 +4,13 @@ defmodule Peripherals.Uart.System do
 
   def start_link(config) do
     Logger.debug("Start Peripherals.Uart Supervisor")
-    Common.Utils.start_link_redundant(Supervisor, __MODULE__, config, __MODULE__)
+    UtilsProcess.start_link_redundant(Supervisor, __MODULE__, config, __MODULE__)
   end
 
   @impl Supervisor
   def init(config) do
     children = Enum.reduce(config, [], fn({single_module, single_config}, acc) ->
       module = Module.concat(Peripherals.Uart, single_module)
-      |> Module.concat(Operator)
       # Logger.debug("module: #{module}")
       # Logger.info("config: #{inspect(single_config)}")
       acc ++ [{module, single_config}]

@@ -4,7 +4,7 @@ defmodule Boss.Operator do
 
   def start_link(model_type, node_type) do
     Logger.debug("Start Boss.Operator")
-    {:ok, pid} = Common.Utils.start_link_singular(GenServer, __MODULE__, nil, __MODULE__)
+    {:ok, pid} = UtilsProcess.start_link_singular(GenServer, __MODULE__, nil, __MODULE__)
     GenServer.cast(__MODULE__, {:begin, model_type, node_type})
     {:ok, pid}
 

@@ -3,7 +3,7 @@ defmodule Comms.ProcessRegistry do
 
   def start_link do
     Logger.debug("Start ProcessRegistry")
-    Common.Utils.start_link_redundant(Registry, Registry, [keys: :unique, name: __MODULE__])
+    UtilsProcess.start_link_redundant(Registry, Registry, [keys: :unique, name: __MODULE__])
   end
 
   def terminate(reason, state) do

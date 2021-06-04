@@ -8,7 +8,7 @@ defmodule Common.DiscreteLooper.AddSubsTest do
     {:ok, [model_type: model_type, node_type: node_type]}
 
     registry = MessageSorterRegistry
-    Common.Utils.start_link_redundant(Registry, Registry, [keys: :duplicate, name: registry])
+    UtilsProcess.start_link_redundant(Registry, Registry, [keys: :duplicate, name: registry])
     {:ok, [registry: registry]}
   end
 

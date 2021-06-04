@@ -1,4 +1,4 @@
-defmodule Peripherals.Uart.Estimation.TerarangerEvo.Operator do
+defmodule Peripherals.Uart.Estimation.TerarangerEvo do
   use Bitwise
   use GenServer
   require Logger
@@ -31,8 +31,8 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo.Operator do
   0xfa, 0xfd, 0xf4, 0xf3}
 
   def start_link(config) do
-    Logger.debug("Start Uart.Estimation.TerarangerEvo.Operator")
-    {:ok, pid} = Common.Utils.start_link_redundant(GenServer,__MODULE__, nil, __MODULE__)
+    Logger.debug("Start Uart.Estimation.TerarangerEvo")
+    {:ok, pid} = UtilsProcess.start_link_redundant(GenServer,__MODULE__, nil, __MODULE__)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, pid}
   end
@@ -52,7 +52,11 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo.Operator do
   def handle_cast({:begin, config} , _state) do
     Comms.System.start_operator(__MODULE__)
 
-    {:ok, uart_ref} = Circuits.UART.start_link()
+    uart_port = Keyword.fetch!(config, :uart_port)
+    port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
+
+    uart_ref = UtilsUart.open_connection_and_return_uart_ref(uart_port, port_options)
+
     state = %{
       uart_ref: uart_ref,
       range: nil,
@@ -61,11 +65,7 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo.Operator do
       new_range_data_to_publish: false
     }
 
-    uart_port = Keyword.fetch!(config, :uart_port)
-    port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
-
-    Peripherals.Uart.Utils.open_interface_connection_infinite(state.uart_ref, uart_port, port_options)
-    Logger.debug("Uart.Estimation.TerarangerEvo.Operator setup complete!")
+    Logger.debug("Uart.Estimation.TerarangerEvo setup complete!")
     {:noreply, state}
   end
 

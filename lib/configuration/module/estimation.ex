@@ -10,8 +10,8 @@ defmodule Configuration.Module.Estimation do
         gps_expected_interval_ms: 200,
         range_expected_interval_ms: 100,
 
-        ekf_type: SevenStateEkf,
-        ekf_config: [
+        kf_type: Ekf.SevenState,
+        kf_config: [
           init_state: Matrex.zeros(7, 1),
           init_std_devs: Matrex.new([[0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05]]),
           qpos_xy_std: 0.1,

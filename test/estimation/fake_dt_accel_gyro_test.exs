@@ -1,6 +1,7 @@
 defmodule Estimation.FakeDtAccelGyroTest do
   use ExUnit.Case
   require Logger
+  require Ubx.MessageDefs
 
   setup do
     {model_type, node_type} = Common.Application.start_test()
@@ -8,23 +9,17 @@ defmodule Estimation.FakeDtAccelGyroTest do
   end
 
   test "Open Serial Port" do
-    # Expects USB FTDI with Tx-Rx loopback
-    Ubx.Utils.Test.start_link([groups: [:dt_accel_gyro_val], destination: self()])
-    config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "USB Serial")
-    Peripherals.Uart.Companion.Operator.start_link(config)
-    Process.sleep(200)
-    Logger.warn("test pid: #{inspect(self())}")
-    accel_gyro_values = [5000,1,2,3,4,5,6]
-    msg = Ubx.Utils.Test.build_message(:dt_accel_gyro_val, accel_gyro_values)
-    Peripherals.Uart.Companion.Operator.send_message(msg)
+    accel_gyro_values = [5000, 1, 2, 3, 4, 5, 6]
+    {msg_class, msg_id} = Ubx.MessageDefs.dt_accel_gyro_val_class_id()
+    byte_types = Ubx.MessageDefs.dt_accel_gyro_val_bytes()
+    msg = UbxInterpreter.construct_message(msg_class, msg_id, byte_types, accel_gyro_values)
+
+    ubx = UbxInterpreter.new()
+    {_ubx, rx_payload} = UbxInterpreter.check_for_new_message(ubx, :binary.bin_to_list(msg))
 
     rx_values =
-    receive do
-      {:dt_accel_gyro_val, values} -> values
-    after
-      500 -> []
-    end
+      UbxInterpreter.deconstruct_message(Ubx.MessageDefs.dt_accel_gyro_val_bytes(), rx_payload)
 
-    assert length(rx_values) == length(accel_gyro_values)
+    assert rx_values == accel_gyro_values
   end
 end

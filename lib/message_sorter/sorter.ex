@@ -9,7 +9,7 @@ defmodule MessageSorter.Sorter do
 
   def start_link(config) do
     Logger.debug("Start MessageSorter: #{inspect(config[:name])}")
-    {:ok, pid} = Common.Utils.start_link_redundant(GenServer, __MODULE__, nil, via_tuple(config[:name]))
+    {:ok, pid} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil, via_tuple(config[:name]))
     GenServer.cast(via_tuple(config[:name]), {:begin, config})
     {:ok, pid}
   end
@@ -39,8 +39,8 @@ defmodule MessageSorter.Sorter do
       case Keyword.get(config, :publish_value_interval_ms) do
         nil -> nil
         interval_ms ->
-          Common.Utils.start_loop(self(), interval_ms, {:publish_loop, :value})
-          Common.Utils.start_loop(self(), 1000, {:update_subscriber_loop, :value})
+          UtilsProcess.start_loop(self(), interval_ms, {:publish_loop, :value})
+          UtilsProcess.start_loop(self(), 1000, {:update_subscriber_loop, :value})
           Common.DiscreteLooper.new({name, :value}, interval_ms)
       end
 
@@ -48,8 +48,8 @@ defmodule MessageSorter.Sorter do
       case Keyword.get(config, :publish_messages_interval_ms) do
         nil -> nil
         interval_ms ->
-          Common.Utils.start_loop(self(), interval_ms, {:publish_loop, :messages})
-          Common.Utils.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
+          UtilsProcess.start_loop(self(), interval_ms, {:publish_loop, :messages})
+          UtilsProcess.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
           Common.DiscreteLooper.new({name, :messages}, interval_ms)
       end
 

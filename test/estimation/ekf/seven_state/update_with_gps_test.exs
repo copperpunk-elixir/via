@@ -1,4 +1,4 @@
-defmodule Peripherals.Estimation.SevenStateEkf.EkfWithHardware do
+defmodule Peripherals.Estimation.SevenStateEkf.UpdateWithGpsTest do
   use ExUnit.Case
   require Logger
 
@@ -8,16 +8,12 @@ defmodule Peripherals.Estimation.SevenStateEkf.EkfWithHardware do
   end
 
   test "Open Serial Port" do
+    # Expects Logger statements from Estimator
     config = Configuration.Module.Estimation.get_config("", "")[:estimator]
     Estimation.Estimator.start_link(config)
-    Process.sleep(200)
-
-    config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "Pico")
-    Peripherals.Uart.Companion.Operator.start_link(config)
-    Process.sleep(200)
 
     config = Configuration.Module.Peripherals.Uart.get_gps_config("usb", "u-blox")
-    Peripherals.Uart.Gps.Operator.start_link(config)
-    Process.sleep(20000)
+    Peripherals.Uart.Gps.start_link(config)
+    Process.sleep(2000)
   end
 end

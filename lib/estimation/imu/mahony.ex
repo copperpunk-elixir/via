@@ -93,7 +93,7 @@ defmodule Estimation.Imu.Mahony do
     roll_rad = :math.atan2(2.0 * (q0 * q1 + q2 * q3), 1.0 - 2.0 * (q1 * q1 + q2 * q2))
     pitch_rad = :math.asin(2.0 * (q0 * q2 - q3 * q1))
     yaw_rad = :math.atan2(2.0 * (q0 * q3 + q1 * q2), 1.0 - 2.0 * (q2 * q2 + q3 * q3))
-    # IO.puts("rpy: #{Common.Utils.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
+    # IO.puts("rpy: #{UtilsFormat.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
 
     %{
       imu

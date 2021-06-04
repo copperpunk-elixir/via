@@ -3,9 +3,9 @@ defmodule Common.Utils.Motion do
   require Common.Constants
 
   # Convert North/East velocity to Speed/Course
-  @spec get_speed_course_for_velocity(number(), number(), number(), number()) :: float()
+  @spec get_speed_course_for_velocity(number(), number(), number(), number()) :: tuple()
   def get_speed_course_for_velocity(v_north, v_east, min_speed_for_course, yaw) do
-    speed = Common.Utils.Math.hypot(v_north, v_east)
+    speed = UtilsMath.hypot(v_north, v_east)
     course =
     if speed >= min_speed_for_course do
       :math.atan2(v_east, v_north)
@@ -19,7 +19,7 @@ defmodule Common.Utils.Motion do
 
   @spec adjust_velocity_for_min_speed(map(), number(), number()) :: map()
     def adjust_velocity_for_min_speed(velocity, min_speed_for_course, yaw) do
-    speed = Common.Utils.Math.hypot(velocity.north, velocity.east)
+    speed = UtilsMath.hypot(velocity.north, velocity.east)
     if (speed >= min_speed_for_course) do
       velocity
     else

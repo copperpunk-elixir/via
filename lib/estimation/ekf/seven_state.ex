@@ -1,4 +1,4 @@
-defmodule Estimation.SevenStateEkf do
+defmodule Estimation.Ekf.SevenState do
   require Logger
   require Common.Constants, as: CC
 
@@ -14,12 +14,12 @@ defmodule Estimation.SevenStateEkf do
             heading_established: false
 
   def new() do
-    config = Configuration.Module.Estimation.get_config("", "")[:estimator][:ekf_config]
+    config = Configuration.Module.Estimation.get_config("", "")[:estimator][:kf_config]
     new(config)
   end
 
   def new(config) do
-    %Estimation.SevenStateEkf{
+    %Estimation.Ekf.SevenState{
       ekf_state: Keyword.fetch!(config, :init_state),
       ekf_cov: generate_ekf_cov(config),
       r_gps: generate_r_gps(config),
@@ -183,7 +183,7 @@ defmodule Estimation.SevenStateEkf do
       imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
       %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
     else
-      Logger.debug("Established heading at #{Common.Utils.eftb_deg(heading_rad, 2)}")
+      Logger.debug("Established heading at #{UtilsFormat.eftb_deg(heading_rad, 2)}")
       ekf_state = state.ekf_state |> Matrex.set(7, 1, heading_rad)
       %{state | ekf_state: ekf_state, heading_established: true}
     end
