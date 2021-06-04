@@ -14,16 +14,10 @@ defmodule MatrixInverseTest do
       ])
 
     start_time = :erlang.monotonic_time(:nanosecond)
-    a_inv = Estimation.Imu.Utils.MatrixSlow.inv_66(a)
+    a_inv = Estimation.Ekf.SevenState.inv_66(a)
     end_time = :erlang.monotonic_time(:nanosecond)
     # IO.puts(inspect(a_inv))
-    IO.puts("Orig dt: #{(end_time - start_time) * 1.0e-6}")
-
-    start_time = :erlang.monotonic_time(:nanosecond)
-    a_inv_alt = Estimation.Imu.Utils.Matrix.inv_66(a)
-    end_time = :erlang.monotonic_time(:nanosecond)
-    # IO.puts(inspect(a_inv))
-    IO.puts("Faster dt: #{(end_time - start_time) * 1.0e-6}")
+    IO.puts("dt: #{UtilsFormat.eftb((end_time - start_time) * 1.0e-6, 3)} ms")
 
     a_sol =
       Matrex.new([
@@ -38,7 +32,6 @@ defmodule MatrixInverseTest do
     Enum.each(1..6, fn i ->
       Enum.each(1..6, fn j ->
         assert_in_delta(a_inv[i][j], a_sol[i][j], 0.0001)
-        assert_in_delta(a_inv_alt[i][j], a_sol[i][j], 0.0001)
       end)
     end)
   end
