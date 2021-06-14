@@ -33,7 +33,7 @@ defmodule Configuration.Module.Peripherals.I2c do
 
   @spec get_battery_module_type_channel(binary(), binary()) :: tuple()
   def get_battery_module_type_channel(device, metadata) do
-    module = String.to_existing_atom(device)
+    module = String.to_atom(device)
     [type, channel] = String.split(metadata,"-")
     channel = String.to_integer(channel)
     {module, type, channel}

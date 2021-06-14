@@ -1,8 +1,8 @@
-defmodule Configuration.Module.Estimation do
-  @spec get_config(binary(), binary()) :: list()
-  def get_config(_model_type, _node_type) do
+defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
+  @spec config() :: list()
+  def config() do
     [
-      estimator: [
+      Estimator: [
         imu_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
         ins_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
         sca_values_slow_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:slow),

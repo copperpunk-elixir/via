@@ -1,4 +1,4 @@
-defmodule Peripherals.Uart.Companion do
+defmodule Uart.Companion do
   use GenServer
   require Logger
   require Ubx.MessageDefs
@@ -26,7 +26,7 @@ defmodule Peripherals.Uart.Companion do
   @impl GenServer
   def handle_cast({:begin, config}, _state) do
     # Logger.warn("Companion config begin: #{inspect(config)}")
-    Comms.System.start_operator(__MODULE__)
+    Comms.Supervisor.start_operator(__MODULE__)
     Comms.Operator.join_group(__MODULE__, :gps_time, self())
 
     uart_port = Keyword.fetch!(config, :uart_port)

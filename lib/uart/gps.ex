@@ -1,11 +1,11 @@
-defmodule Peripherals.Uart.Gps do
+defmodule Uart.Gps do
   use GenServer
   use Bitwise
   require Logger
   require Ubx.MessageDefs
 
   def start_link(config) do
-    Logger.debug("Start Uart.Gps")
+    Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
     {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
@@ -25,7 +25,7 @@ defmodule Peripherals.Uart.Gps do
 
   @impl GenServer
   def handle_cast({:begin, config}, _state) do
-    Comms.System.start_operator(__MODULE__)
+    Comms.Supervisor.start_operator(__MODULE__)
 
     uart_port = Keyword.fetch!(config, :uart_port)
     port_options = Keyword.fetch!(config, :port_options) ++ [active: true]

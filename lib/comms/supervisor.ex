@@ -1,4 +1,4 @@
-defmodule Comms.System do
+defmodule Comms.Supervisor do
   use DynamicSupervisor
   require Logger
   require MessageSorter.Sorter

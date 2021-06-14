@@ -42,7 +42,7 @@ defmodule Estimation.Estimator do
       # ground_altitude: 0.0
     }
 
-    Comms.System.start_operator(__MODULE__)
+    Comms.Supervisor.start_operator(__MODULE__)
     Comms.Operator.join_group(__MODULE__, :dt_accel_gyro_val, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_position_velocity, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_relheading_reldistance, self())
@@ -54,13 +54,13 @@ defmodule Estimation.Estimator do
     #  Logger.debug("vals: #{inspect(UtilsFormat.eftb_list(values,2))}")
     kf = apply(state.kf_module, :predict, [state.kf, values])
 
-    # imu = ekf.imu
-    # rpy =
-    #   Enum.map([imu.roll_rad, imu.pitch_rad, imu.yaw_rad], fn x ->
-    #     UtilsMath.rad2deg(x)
-    #   end)
-    # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
-    # Logger.debug("rpy: #{elapsed_time}: #{UtilsFormat.eftb_list(rpy, 2)}")
+    imu = kf.imu
+    rpy =
+      Enum.map([imu.roll_rad, imu.pitch_rad, imu.yaw_rad], fn x ->
+        UtilsMath.rad2deg(x)
+      end)
+    elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
+    Logger.debug("rpy: #{elapsed_time}: #{UtilsFormat.eftb_list(rpy, 2)}")
     {:noreply, %{state | kf: kf}}
   end
 

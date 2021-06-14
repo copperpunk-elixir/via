@@ -1,4 +1,4 @@
-defmodule Peripherals.Uart.Estimation.TerarangerEvo do
+defmodule Uart.TerarangerEvo do
   use Bitwise
   use GenServer
   require Logger
@@ -31,7 +31,7 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo do
   0xfa, 0xfd, 0xf4, 0xf3}
 
   def start_link(config) do
-    Logger.debug("Start Uart.Estimation.TerarangerEvo")
+    Logger.debug("Start Uart.TerarangerEvo")
     {:ok, pid} = UtilsProcess.start_link_redundant(GenServer,__MODULE__, nil, __MODULE__)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, pid}
@@ -50,7 +50,7 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo do
 
   @impl GenServer
   def handle_cast({:begin, config} , _state) do
-    Comms.System.start_operator(__MODULE__)
+    Comms.Supervisor.start_operator(__MODULE__)
 
     uart_port = Keyword.fetch!(config, :uart_port)
     port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
@@ -65,7 +65,7 @@ defmodule Peripherals.Uart.Estimation.TerarangerEvo do
       new_range_data_to_publish: false
     }
 
-    Logger.debug("Uart.Estimation.TerarangerEvo setup complete!")
+    Logger.debug("Uart.TerarangerEvo setup complete!")
     {:noreply, state}
   end
 

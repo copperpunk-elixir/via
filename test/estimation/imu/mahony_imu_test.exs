@@ -3,18 +3,18 @@ defmodule Estimation.Imu.MahonyImuTest do
   require Logger
 
   setup do
-    {model_type, node_type} = Common.Application.start_test()
-    {:ok, [model_type: model_type, node_type: node_type]}
+    full_config = Via.Application.start_test()
+    {:ok, full_config}
   end
 
-  test "Open Serial Port" do
+  test "Open Serial Port", full_config do
     # Expects Logger statements from Estimator
-    config = Configuration.Module.Peripherals.Uart.get_companion_config("usb", "Pico")
-    Peripherals.Uart.Companion.start_link(config)
+    config = full_config[:Uart][:Companion]
+    Uart.Companion.start_link(config)
     Process.sleep(200)
-    config = Configuration.Module.Estimation.get_config("","")[:estimator]
+
+    config = full_config[:Estimation][:Estimator]
     Estimation.Estimator.start_link(config)
     Process.sleep(2000)
-
   end
 end

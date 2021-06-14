@@ -24,6 +24,10 @@ defmodule Estimation.Imu.Mahony do
   @spec update(struct(), list()) :: struct()
   def update(imu, dt_accel_gyro) do
     [dt, ax, ay, az, gx, gy, gz] = dt_accel_gyro
+    q0 = imu.q0
+    q1 = imu.q1
+    q2 = imu.q2
+    q3 = imu.q3
 
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
@@ -35,10 +39,9 @@ defmodule Estimation.Imu.Mahony do
         if accel_mag_in_range do
           # Logger.debug("good accel mag: #{accel_mag}")
           # Estimated direction of gravity and vector perpendicular to magnetic flux
-
-          halfvx = imu.q1 * imu.q3 - imu.q0 * imu.q2
-          halfvy = imu.q0 * imu.q1 + imu.q2 * imu.q3
-          halfvz = imu.q0 * imu.q0 - 0.5 + imu.q3 * imu.q3
+          halfvx = q1 * q3 - q0 * q2
+          halfvy = q0 * q1 + q2 * q3
+          halfvz = q0 * q0 - 0.5 + q3 * q3
 
           # Error is sum of cross product between estimated and measured direction of gravity
           halfex = ay_norm * halfvz - az_norm * halfvy
@@ -74,13 +77,14 @@ defmodule Estimation.Imu.Mahony do
     gx = gx * 0.5 * dt
     gy = gy * 0.5 * dt
     gz = gz * 0.5 * dt
-    qa = imu.q0
-    qb = imu.q1
-    qc = imu.q2
-    q3 = imu.q3
-    q0 = imu.q0 + (-qb * gx - qc * gy - q3 * gz)
-    q1 = imu.q1 + (qa * gx + qc * gz - q3 * gy)
-    q2 = imu.q2 + (qa * gy - qb * gz + q3 * gx)
+
+    qa = q0
+    qb = q1
+    qc = q2
+
+    q0 = q0 + (-qb * gx - qc * gy - q3 * gz)
+    q1 = q1 + (qa * gx + qc * gz - q3 * gy)
+    q2 = q2 + (qa * gy - qb * gz + q3 * gx)
     q3 = q3 + (qa * gz + qb * gy - qc * gx)
 
     # Normalise quaternion
@@ -123,7 +127,7 @@ defmodule Estimation.Imu.Mahony do
       az = -az / accel_mag
       {ax, ay, az, kp, ki, true}
     else
-      {0, 0, 0, 0,0,false}
+      {0, 0, 0, 0, 0, false}
     end
   end
 end

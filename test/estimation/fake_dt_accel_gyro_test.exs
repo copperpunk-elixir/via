@@ -3,11 +3,6 @@ defmodule Estimation.FakeDtAccelGyroTest do
   require Logger
   require Ubx.MessageDefs
 
-  setup do
-    {model_type, node_type} = Common.Application.start_test()
-    {:ok, [model_type: model_type, node_type: node_type]}
-  end
-
   test "Open Serial Port" do
     accel_gyro_values = [5000, 1, 2, 3, 4, 5, 6]
     {msg_class, msg_id} = Ubx.MessageDefs.dt_accel_gyro_val_class_id()

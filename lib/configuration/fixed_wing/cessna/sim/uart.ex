@@ -1,13 +1,12 @@
-defmodule Configuration.Module.Peripherals.Uart do
+defmodule Configuration.FixedWing.Cessna.Sim.Uart do
   require Logger
   require Common.Constants, as: CC
 
-  @spec get_config(binary(), binary()) :: list()
-  def get_config(_model_type, node_type) do
-    # subdirectory = Atom.to_string(node_type)
-    [node_type, _node_metadata] = Common.Utils.Configuration.split_safely(node_type, "_")
+  @spec config() :: list()
+  def config() do
     # Logger.warn("uart node type: #{node_type}")
-    peripherals = Common.Utils.Configuration.get_uart_peripherals(node_type)
+    # peripherals = Common.Utils.Configuration.get_uart_peripherals("sim")
+    peripherals = ["Gps_u-blox", "Companion_Pico"]
     Logger.debug("peripherals: #{inspect(peripherals)}")
 
     Enum.reduce(peripherals, [], fn peripheral, acc ->
@@ -23,10 +22,11 @@ defmodule Configuration.Module.Peripherals.Uart do
     # Logger.debug("port: #{port}")
     uart_port =
       case port do
-        "usb" -> "usb"
-        # "0" -> "ttyS0"
         "0" -> "ttyAMA0"
-        port_num -> "ttyAMA#{String.to_integer(port_num) - 2}"
+        "3" -> "ttyAMA1"
+        "4" -> "ttyAMA2"
+        "5" -> "ttyAMA3"
+        _usb -> port
       end
 
     [device, metadata] =
@@ -38,43 +38,41 @@ defmodule Configuration.Module.Peripherals.Uart do
 
     # Logger.debug("device/meta: #{device}/#{metadata}")
     case device do
-      "Companion" -> {Companion, get_companion_config(uart_port)}
-      "Gps" -> {Gps, get_gps_config(uart_port)}
-      "Dsm" -> {Command.Rx, get_dsm_rx_config(uart_port)}
-      "FrskyRx" -> {Command.Rx, get_frsky_rx_config(uart_port)}
-      "TerarangerEvo" -> {Estimation.TerarangerEvo, get_teraranger_evo_config(uart_port)}
-      "Xbee" -> {Telemetry, get_telemetry_config(uart_port)}
-      "Sik" -> {Telemetry, get_telemetry_config(uart_port)}
-      "PwmReader" -> {PwmReader, get_pwm_reader_config(uart_port)}
-      "Generic" -> {Generic, get_generic_config(uart_port, metadata)}
+      "Companion" -> {:Companion, get_companion_config(uart_port)}
+      "Gps" -> {:Gps, get_gps_config(uart_port)}
+      "Dsm" -> {:CommandRx, get_dsm_rx_config(uart_port)}
+      "FrskyRx" -> {:CommandRx, get_frsky_rx_config(uart_port)}
+      "TerarangerEvo" -> {:TerarangerEvo, get_teraranger_evo_config(uart_port)}
+      "Telemetry" -> {:Telemetry, get_telemetry_config(uart_port)}
+      "PwmReader" -> {:PwmReader, get_pwm_reader_config(uart_port)}
+      "Generic" -> {:Generic, get_generic_config(uart_port, metadata)}
     end
   end
 
-  @spec get_companion_config(binary(), binary()) :: list()
-  def get_companion_config(uart_port, usb_name \\ "Pico") do
+  @spec get_companion_config(binary()) :: list()
+  def get_companion_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, usb_name),
+      uart_port: uart_port, # usually Pico
       port_options: [speed: 115_200],
       accel_counts_to_mpss: CC.gravity() / 8192,
       gyro_counts_to_rps: CC.deg2rad() / 16.4
     ]
   end
 
-  @spec get_gps_config(binary(), binary()) :: list()
-  def get_gps_config(uart_port, usb_name \\ "u-blox") do
+  @spec get_gps_config(binary()) :: list()
+  def get_gps_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, usb_name),
+      uart_port: uart_port, # usually u-blox
       port_options: [speed: 115_200],
       gps_expected_antenna_distance_mm: 18225,
-      gps_antenna_distance_error_threshold_mm: 200,
-
+      gps_antenna_distance_error_threshold_mm: 200
     ]
   end
 
   @spec get_dsm_rx_config(binary()) :: list()
   def get_dsm_rx_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "CP2104"),
+      uart_port: uart_port, # usually CP2104
       rx_module: :Dsm,
       port_options: [
         speed: 115_200
@@ -85,7 +83,7 @@ defmodule Configuration.Module.Peripherals.Uart do
   @spec get_frsky_rx_config(binary()) :: list()
   def get_frsky_rx_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "CP2104"),
+      uart_port: uart_port, # usually CP2104
       rx_module: :Frsky,
       port_options: [
         speed: 100_000,
@@ -98,7 +96,7 @@ defmodule Configuration.Module.Peripherals.Uart do
   @spec get_teraranger_evo_config(binary()) :: list()
   def get_teraranger_evo_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "FT232R"),
+      uart_port: uart_port, #expected FT232R
       port_options: [
         speed: 115_200
       ]
@@ -108,7 +106,7 @@ defmodule Configuration.Module.Peripherals.Uart do
   @spec get_telemetry_config(binary()) :: list()
   def get_telemetry_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "FT231X"),
+      uart_port: uart_port, # SiK or Xbee: FT231X
       port_options: [speed: 57_600],
       fast_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
       medium_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:medium),
@@ -119,7 +117,7 @@ defmodule Configuration.Module.Peripherals.Uart do
   @spec get_pwm_reader_config(binary()) :: list()
   def get_pwm_reader_config(uart_port) do
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "Feather M0"),
+      uart_port: uart_port,
       port_options: [speed: 115_200]
     ]
   end
@@ -130,14 +128,9 @@ defmodule Configuration.Module.Peripherals.Uart do
       Configuration.Generic.generic_peripheral_classification(device_capability)
 
     [
-      uart_port: get_port_name_gpio_or_usb(uart_port, "USB Serial"),
+      uart_port: uart_port,
       port_options: [speed: 115_200],
       sorter_classification: sorter_classification
     ]
-  end
-
-  @spec get_port_name_gpio_or_usb(binary(), binary()) :: binary()
-  def get_port_name_gpio_or_usb(uart_port, usb_device_name) do
-    if uart_port == "usb", do: usb_device_name, else: uart_port
   end
 end

@@ -13,11 +13,6 @@ defmodule Estimation.Ekf.SevenState do
             origin: nil,
             heading_established: false
 
-  def new() do
-    config = Configuration.Module.Estimation.get_config("", "")[:estimator][:kf_config]
-    new(config)
-  end
-
   def new(config) do
     %Estimation.Ekf.SevenState{
       ekf_state: Keyword.fetch!(config, :init_state),

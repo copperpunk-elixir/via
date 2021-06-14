@@ -2,6 +2,7 @@ defmodule Imu.Utils do
   @spec rotate_yaw_rad(struct(), float()) :: struct()
   def rotate_yaw_rad(imu, delta_yaw_rad) do
     yaw = imu.yaw_rad + delta_yaw_rad
+
     %{imu | yaw_rad: yaw}
     |> reset_quat_to_attitude()
   end
@@ -25,6 +26,4 @@ defmodule Imu.Utils do
     q3 = crcp * sy - sr * spcy
     %{imu | q0: q0, q1: q1, q2: q2, q3: q3}
   end
-
-
 end

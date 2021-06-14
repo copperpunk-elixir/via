@@ -3,12 +3,13 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
   require Logger
 
   setup do
-    {model_type, node_type} = Common.Application.start_test()
-    {:ok, [model_type: model_type, node_type: node_type]}
+    full_config = Via.Application.start_test()
+    {:ok, full_config}
   end
 
-  test "Run full EKF cycle" do
-    ekf = Estimation.Ekf.SevenState.new()
+  test "Run full EKF cycle", full_config do
+    ekf_config = full_config[:Estimation][:Estimator][:kf_config]
+    ekf = Estimation.Ekf.SevenState.new(ekf_config)
     position = Common.Utils.LatLonAlt.new_deg(42, -120, 123)
     velocity = %{north: 1.0, east: 0 * 2.0, down: 0 * -3.0}
 
@@ -28,7 +29,11 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
       end)
 
     IO.inspect(ekf)
-    IO.puts("position: #{Common.Utils.LatLonAlt.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}")
+
+    IO.puts(
+      "position: #{Common.Utils.LatLonAlt.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}"
+    )
+
     {position, velocity} = Estimation.Ekf.SevenState.position_rrm_velocity_mps(ekf)
     IO.puts("position: #{Common.Utils.LatLonAlt.to_string(position)}")
     IO.puts("velocity: #{UtilsFormat.eftb_map(velocity, 2)}")
