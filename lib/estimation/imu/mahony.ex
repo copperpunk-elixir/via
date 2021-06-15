@@ -21,24 +21,36 @@ defmodule Estimation.Imu.Mahony do
     %Estimation.Imu.Mahony{kp: kp, ki: ki}
   end
 
-  @spec update(struct(), list()) :: struct()
+  @spec update(struct(), map()) :: struct()
   def update(imu, dt_accel_gyro) do
-    [dt, ax, ay, az, gx, gy, gz] = dt_accel_gyro
+    dt = dt_accel_gyro.dt
+    ax = dt_accel_gyro.ax
+    ay = dt_accel_gyro.ay
+    az = dt_accel_gyro.az
+    q0 = imu.q0
+    q1 = imu.q1
+    q2 = imu.q2
+    q3 = imu.q3
 
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
         # Normalise accelerometer measurement
         {ax_norm, ay_norm, az_norm, kp, ki, accel_mag_in_range} =
-          normalized_accel_and_in_range(ax, ay, az, imu.kp, imu.ki)
+          normalized_accel_and_in_range(
+            ax,
+            ay,
+            az,
+            imu.kp,
+            imu.ki
+          )
 
         # Only use the accel to correct if the accel values are within range
         if accel_mag_in_range do
           # Logger.debug("good accel mag: #{accel_mag}")
           # Estimated direction of gravity and vector perpendicular to magnetic flux
-
-          halfvx = imu.q1 * imu.q3 - imu.q0 * imu.q2
-          halfvy = imu.q0 * imu.q1 + imu.q2 * imu.q3
-          halfvz = imu.q0 * imu.q0 - 0.5 + imu.q3 * imu.q3
+          halfvx = q1 * q3 - q0 * q2
+          halfvy = q0 * q1 + q2 * q3
+          halfvz = q0 * q0 - 0.5 + q3 * q3
 
           # Error is sum of cross product between estimated and measured direction of gravity
           halfex = ay_norm * halfvz - az_norm * halfvy
@@ -58,15 +70,17 @@ defmodule Estimation.Imu.Mahony do
             end
 
           # Apply proportional feedback
-          gx = gx + kp * halfex + integral_fbx
-          gy = gy + kp * halfey + integral_fby
-          gz = gz + kp * halfez + integral_fbz
+          gx = dt_accel_gyro.gx + kp * halfex + integral_fbx
+          gy = dt_accel_gyro.gy + kp * halfey + integral_fby
+          gz = dt_accel_gyro.gz + kp * halfez + integral_fbz
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
-          {gx, gy, gz, imu.integral_fbx, imu.integral_fby, imu.integral_fbz}
+          {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx,
+           imu.integral_fby, imu.integral_fbz}
         end
       else
-        {gx, gy, gz, imu.integral_fbx, imu.integral_fby, imu.integral_fbz}
+        {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx, imu.integral_fby,
+         imu.integral_fbz}
       end
 
     # Integrate rate of change of quaternion
@@ -74,13 +88,14 @@ defmodule Estimation.Imu.Mahony do
     gx = gx * 0.5 * dt
     gy = gy * 0.5 * dt
     gz = gz * 0.5 * dt
-    qa = imu.q0
-    qb = imu.q1
-    qc = imu.q2
-    q3 = imu.q3
-    q0 = imu.q0 + (-qb * gx - qc * gy - q3 * gz)
-    q1 = imu.q1 + (qa * gx + qc * gz - q3 * gy)
-    q2 = imu.q2 + (qa * gy - qb * gz + q3 * gx)
+
+    qa = q0
+    qb = q1
+    qc = q2
+
+    q0 = q0 + (-qb * gx - qc * gy - q3 * gz)
+    q1 = q1 + (qa * gx + qc * gz - q3 * gy)
+    q2 = q2 + (qa * gy - qb * gz + q3 * gx)
     q3 = q3 + (qa * gz + qb * gy - qc * gx)
 
     # Normalise quaternion
@@ -93,7 +108,7 @@ defmodule Estimation.Imu.Mahony do
     roll_rad = :math.atan2(2.0 * (q0 * q1 + q2 * q3), 1.0 - 2.0 * (q1 * q1 + q2 * q2))
     pitch_rad = :math.asin(2.0 * (q0 * q2 - q3 * q1))
     yaw_rad = :math.atan2(2.0 * (q0 * q3 + q1 * q2), 1.0 - 2.0 * (q2 * q2 + q3 * q3))
-    # IO.puts("rpy: #{UtilsFormat.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
+    # IO.puts("rpy: #{ViaUtils.Format.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
 
     %{
       imu
@@ -123,7 +138,7 @@ defmodule Estimation.Imu.Mahony do
       az = -az / accel_mag
       {ax, ay, az, kp, ki, true}
     else
-      {0, 0, 0, 0,0,false}
+      {0, 0, 0, 0, 0, false}
     end
   end
 end

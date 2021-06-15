@@ -1,6 +1,6 @@
 defmodule Estimation.Ekf.SevenState do
   require Logger
-  require Common.Constants, as: CC
+  require ViaUtils.Constants, as: VC
 
   @expected_imu_dt 0.005
 
@@ -13,14 +13,9 @@ defmodule Estimation.Ekf.SevenState do
             origin: nil,
             heading_established: false
 
-  def new() do
-    config = Configuration.Module.Estimation.get_config("", "")[:estimator][:kf_config]
-    new(config)
-  end
-
   def new(config) do
     %Estimation.Ekf.SevenState{
-      ekf_state: Keyword.fetch!(config, :init_state),
+      ekf_state: Matrex.zeros(7, 1),
       ekf_cov: generate_ekf_cov(config),
       r_gps: generate_r_gps(config),
       r_heading: generate_r_heading(config),
@@ -33,10 +28,14 @@ defmodule Estimation.Ekf.SevenState do
     }
   end
 
-  @spec predict(struct(), list()) :: struct
+  @spec predict(struct(), map()) :: struct
   def predict(state, dt_accel_gyro) do
     imu = Estimation.Imu.Mahony.update(state.imu, dt_accel_gyro)
-    [dt, ax, ay, az, _gx, _gy, _gz] = dt_accel_gyro
+    dt = dt_accel_gyro.dt
+    ax = dt_accel_gyro.ax
+    ay = dt_accel_gyro.ay
+    az = dt_accel_gyro.az
+
     # Acceleration due to gravity is measured in the negative-Z direction
 
     # Predict State
@@ -52,7 +51,7 @@ defmodule Estimation.Ekf.SevenState do
         [ekf_state_prev[3] + ekf_state_prev[6] * dt],
         [ekf_state_prev[4] + ax_inertial * dt],
         [ekf_state_prev[5] + ay_inertial * dt],
-        [ekf_state_prev[6] + (az_inertial + CC.gravity()) * dt],
+        [ekf_state_prev[6] + (az_inertial + VC.gravity()) * dt],
         [imu.yaw_rad]
       ])
 
@@ -95,7 +94,7 @@ defmodule Estimation.Ekf.SevenState do
         state.origin
       end
 
-    {dx, dy} = Common.Utils.Location.dx_dy_between_points(origin, position_rrm)
+    {dx, dy} = ViaUtils.Location.dx_dy_between_points(origin, position_rrm)
 
     dz = -position_rrm.altitude_m - origin.altitude_m
 
@@ -153,7 +152,7 @@ defmodule Estimation.Ekf.SevenState do
   @spec update_from_heading(struct(), float()) :: struct()
   def update_from_heading(state, heading_rad) do
     if state.heading_established do
-      delta_z = Common.Utils.Motion.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
+      delta_z = ViaUtils.Math.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
 
       ekf_cov = state.ekf_cov
       r_heading = state.r_heading
@@ -183,7 +182,7 @@ defmodule Estimation.Ekf.SevenState do
       imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
       %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
     else
-      Logger.debug("Established heading at #{UtilsFormat.eftb_deg(heading_rad, 2)}")
+      Logger.debug("Established heading at #{ViaUtils.Format.eftb_deg(heading_rad, 2)}")
       ekf_state = state.ekf_state |> Matrex.set(7, 1, heading_rad)
       %{state | ekf_state: ekf_state, heading_established: true}
     end
@@ -232,7 +231,12 @@ defmodule Estimation.Ekf.SevenState do
     init_std_devs = Keyword.fetch!(config, :init_std_devs)
 
     Enum.reduce(1..7, Matrex.zeros(7), fn index, acc ->
-      Matrex.set(acc, index, index, init_std_devs[index] * init_std_devs[index])
+      Matrex.set(
+        acc,
+        index,
+        index,
+        Enum.at(init_std_devs, index - 1) * Enum.at(init_std_devs, index - 1)
+      )
     end)
   end
 
@@ -272,7 +276,7 @@ defmodule Estimation.Ekf.SevenState do
   def position_rrm(state) do
     ekf_state = state.ekf_state
 
-    Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+    ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
     |> Map.put(:altitude_m, ekf_state[3])
   end
 
@@ -287,7 +291,7 @@ defmodule Estimation.Ekf.SevenState do
     ekf_state = state.ekf_state
 
     position_rrm =
-      Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+      ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
       |> Map.put(:altitude_m, -ekf_state[3])
 
     velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}

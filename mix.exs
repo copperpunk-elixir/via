@@ -58,16 +58,8 @@ defmodule Via.MixProject do
       # COPPERPUNK packages
       {:ubx_interpreter,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
-      {:utils_math,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_math"},
-      {:utils_format,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_format"},
-      {:utils_enum,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_enum"},
-      {:utils_process,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_process"},
-      {:utils_uart,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/all-utils/utils_uart"}
+      {:via_utils,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"}
     ]
   end
 

@@ -5,24 +5,11 @@ defmodule Estimation.Estimator do
 
   def start_link(config) do
     Logger.debug("Start Estimation.Estimator GenServer")
-    {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil, __MODULE__)
-    GenServer.cast(__MODULE__, {:begin, config})
-    {:ok, process_id}
+    ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 
   @impl GenServer
-  def init(_) do
-    {:ok, %{}}
-  end
-
-  @impl GenServer
-  def terminate(reason, state) do
-    Logging.Logger.log_terminate(reason, state, __MODULE__)
-    state
-  end
-
-  @impl GenServer
-  def handle_cast({:begin, config}, _state) do
+  def init(config) do
     kf_module = Module.concat(Estimation, Keyword.fetch!(config, :kf_type))
     kf = apply(kf_module, :new, [Keyword.fetch!(config, :kf_config)])
 
@@ -42,35 +29,42 @@ defmodule Estimation.Estimator do
       # ground_altitude: 0.0
     }
 
-    Comms.System.start_operator(__MODULE__)
+    Comms.Supervisor.start_operator(__MODULE__)
     Comms.Operator.join_group(__MODULE__, :dt_accel_gyro_val, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_position_velocity, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_relheading_reldistance, self())
-    {:noreply, state}
+
+    {:ok, state}
+  end
+
+  @impl GenServer
+  def terminate(reason, state) do
+    Logging.Logger.log_terminate(reason, state, __MODULE__)
+    state
   end
 
   @impl GenServer
   def handle_cast({:dt_accel_gyro_val, values}, state) do
-    #  Logger.debug("vals: #{inspect(UtilsFormat.eftb_list(values,2))}")
+    #  Logger.debug("vals: #{inspect(ViaUtils.Format.eftb_list(values,2))}")
     kf = apply(state.kf_module, :predict, [state.kf, values])
 
-    # imu = ekf.imu
-    # rpy =
-    #   Enum.map([imu.roll_rad, imu.pitch_rad, imu.yaw_rad], fn x ->
-    #     UtilsMath.rad2deg(x)
-    #   end)
-    # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
-    # Logger.debug("rpy: #{elapsed_time}: #{UtilsFormat.eftb_list(rpy, 2)}")
+    imu = kf.imu
+    rpy =
+      Enum.map([imu.roll_rad, imu.pitch_rad, imu.yaw_rad], fn x ->
+        ViaUtils.Math.rad2deg(x)
+      end)
+    elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
+    Logger.debug("rpy: #{elapsed_time}: #{ViaUtils.Format.eftb_list(rpy, 2)}")
     {:noreply, %{state | kf: kf}}
   end
 
   @impl GenServer
-  def handle_cast({:gps_itow_position_velocity, _itow_ms, position_rrm, velocity_mps}, state) do
-    # Logger.debug("EKF update with GPS: #{Common.Utils.LatLonAlt.to_string(position_rrm)}")
+  def handle_cast({:gps_itow_position_velocity, _itow_s, position_rrm, velocity_mps}, state) do
+    # Logger.debug("EKF update with GPS: #{ViaUtils.Location.to_string(position_rrm)}")
     kf = apply(state.kf_module, :update_from_gps, [state.kf, position_rrm, velocity_mps])
     # {position, velocity} = Estimation.SevenStateEkf.position_rrm_velocity_mps(kf)
-    # Logger.debug("new position: #{Common.Utils.LatLonAlt.to_string(position)}")
-    # Logger.debug("new velocity: #{UtilsFormat.eftb_map(velocity, 1)}")
+    # Logger.debug("new position: #{ViaUtils.Location.to_string(position)}")
+    # Logger.debug("new velocity: #{ViaUtils.Format.eftb_map(velocity, 1)}")
 
     {:noreply, %{state | kf: kf}}
   end
@@ -80,7 +74,7 @@ defmodule Estimation.Estimator do
         {:gps_itow_relheading, _itow_ms, rel_heading_rad},
         state
       ) do
-    # Logger.debug("EKF update with heading: #{UtilsFormat.eftb_deg(rel_heading_rad, 1)}")
+    # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
     kf = apply(state.kf_module, :update_from_heading, [state.kf, rel_heading_rad])
 
     {:noreply, %{state | kf: kf}}

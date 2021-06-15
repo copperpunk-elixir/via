@@ -1,8 +1,8 @@
 defmodule Configuration.Generic do
   require Logger
 
-  @spec get_loop_interval_ms(atom()) :: integer()
-  def get_loop_interval_ms(loop_type) do
+  @spec loop_interval_ms(atom()) :: integer()
+  def loop_interval_ms(loop_type) do
     case loop_type do
       :super_fast -> 10
       :fast -> 20

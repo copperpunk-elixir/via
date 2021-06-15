@@ -3,20 +3,21 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
   require Logger
 
   setup do
-    {model_type, node_type} = Common.Application.start_test()
-    {:ok, [model_type: model_type, node_type: node_type]}
+    full_config = Via.Application.start_test()
+    {:ok, full_config}
   end
 
-  test "Run full EKF cycle" do
-    ekf = Estimation.Ekf.SevenState.new()
-    position = Common.Utils.LatLonAlt.new_deg(42, -120, 123)
+  test "Run full EKF cycle", full_config do
+    ekf_config = full_config[:Estimation][:Estimator][:kf_config]
+    ekf = Estimation.Ekf.SevenState.new(ekf_config)
+    position = ViaUtils.Location.new_location_input_degrees(42, -120, 123)
     velocity = %{north: 1.0, east: 0 * 2.0, down: 0 * -3.0}
 
     ekf =
       Estimation.Ekf.SevenState.update_from_gps(ekf, position, velocity)
       |> Estimation.Ekf.SevenState.update_from_heading(0.1)
 
-    dt_accel_gyro = [0.05, 1.0, 0, 0, 0.1, 0, 0]
+    dt_accel_gyro = %{dt: 0.05, ax: 1.0, ay: 0, az: 0, gx: 0.1, gy: 0, gz: 0}
 
     ekf =
       Enum.reduce(1..2000, ekf, fn _x, acc ->
@@ -28,9 +29,13 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
       end)
 
     IO.inspect(ekf)
-    IO.puts("position: #{Common.Utils.LatLonAlt.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}")
+
+    IO.puts(
+      "position: #{ViaUtils.Location.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}"
+    )
+
     {position, velocity} = Estimation.Ekf.SevenState.position_rrm_velocity_mps(ekf)
-    IO.puts("position: #{Common.Utils.LatLonAlt.to_string(position)}")
-    IO.puts("velocity: #{UtilsFormat.eftb_map(velocity, 2)}")
+    IO.puts("position: #{ViaUtils.Location.to_string(position)}")
+    IO.puts("velocity: #{ViaUtils.Format.eftb_map(velocity, 2)}")
   end
 end

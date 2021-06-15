@@ -5,14 +5,24 @@ defmodule Comms.Operator do
   def start_link(config) do
     name = Keyword.fetch!(config, :name)
     Logger.debug("Start Comms.Operator: #{inspect(name)}")
-    {:ok, pid} = UtilsProcess.start_link_singular(GenServer, __MODULE__, nil, via_tuple(name))
-    GenServer.cast(via_tuple(name), {:begin, config})
-    {:ok, pid}
+    ViaUtils.Process.start_link_singular(GenServer, __MODULE__, config, via_tuple(name))
   end
 
   @impl GenServer
-  def init(_) do
-    {:ok, %{}}
+  def init(config) do
+    state = %{
+      groups: %{},
+      # purely for dianostics
+      name: Keyword.fetch!(config, :name)
+    }
+
+    ViaUtils.Process.start_loop(
+      self(),
+      Keyword.fetch!(config, :refresh_groups_loop_interval_ms),
+      :refresh_groups
+    )
+
+    {:ok, state}
   end
 
   @impl GenServer
@@ -21,24 +31,17 @@ defmodule Comms.Operator do
     state
   end
 
-  def handle_cast({:begin, config}, _state) do
-    state = %{
-      groups: %{},
-      name: Keyword.fetch!(config, :name) #purely for dianostics
-    }
-    UtilsProcess.start_loop(self(), Keyword.fetch!(config, :refresh_groups_loop_interval_ms), :refresh_groups)
-    {:noreply, state}
-  end
-
-  @impl GenServer
+   @impl GenServer
   def handle_cast({:join_group, group, process_id}, state) do
     # We will be added to our own record of the group during the
     # :refresh_groups cycle
     Logger.warn("#{inspect(state.name)} is joining group: #{inspect(group)}")
     :pg2.create(group)
+
     if !is_in_group?(group, process_id) do
       :pg2.join(group, process_id)
     end
+
     {:noreply, state}
   end
 
@@ -49,6 +52,7 @@ defmodule Comms.Operator do
     if is_in_group?(group, process_id) do
       :pg2.leave(group, process_id)
     end
+
     {:noreply, state}
   end
 
@@ -65,11 +69,12 @@ defmodule Comms.Operator do
   @impl GenServer
   def handle_info(:refresh_groups, state) do
     groups =
-      Enum.reduce(:pg2.which_groups, %{}, fn (group, acc) ->
+      Enum.reduce(:pg2.which_groups(), %{}, fn group, acc ->
         all_group_members = :pg2.get_members(group)
         local_group_members = :pg2.get_local_members(group)
         Map.put(acc, group, %{global: all_group_members, local: local_group_members})
       end)
+
     # Logger.debug("#{inspect(state.name)} groups after refresh: #{inspect(groups)}")
     {:noreply, %{state | groups: groups}}
   end
@@ -90,19 +95,28 @@ defmodule Comms.Operator do
   @spec send_local_msg_to_group(atom(), tuple(), any()) :: atom()
   def send_local_msg_to_group(operator_name, message, sender) do
     # Logger.debug("send to group: #{elem(message, 0)}: #{inspect(message)}")
-    GenServer.cast(via_tuple(operator_name), {:send_msg_to_group, message, elem(message,0), sender, :local})
+    GenServer.cast(
+      via_tuple(operator_name),
+      {:send_msg_to_group, message, elem(message, 0), sender, :local}
+    )
   end
 
   @spec send_global_msg_to_group(atom(), any(), any(), any()) :: atom()
   def send_global_msg_to_group(operator_name, message, group, sender) do
     # Logger.debug("send global: #{inspect(message)}")
-    GenServer.cast(via_tuple(operator_name), {:send_msg_to_group, message, group, sender, :global})
+    GenServer.cast(
+      via_tuple(operator_name),
+      {:send_msg_to_group, message, group, sender, :global}
+    )
   end
 
   @spec send_global_msg_to_group(atom(), tuple(), any()) :: atom()
   def send_global_msg_to_group(operator_name, message, sender) do
     # Logger.debug("send global: #{inspect(message)}")
-    GenServer.cast(via_tuple(operator_name), {:send_msg_to_group, message, elem(message,0), sender, :global})
+    GenServer.cast(
+      via_tuple(operator_name),
+      {:send_msg_to_group, message, elem(message, 0), sender, :global}
+    )
   end
 
   defp send_msg_to_group_members(message, group_members, sender) do
@@ -120,6 +134,7 @@ defmodule Comms.Operator do
         {:error, _} -> []
         members -> members
       end
+
     Enum.member?(members, pid)
   end
 
@@ -129,6 +144,6 @@ defmodule Comms.Operator do
   end
 
   def via_tuple(name) do
-    Comms.ProcessRegistry.via_tuple(__MODULE__,name)
+    ViaUtils.Registry.via_tuple(__MODULE__, name)
   end
 end
