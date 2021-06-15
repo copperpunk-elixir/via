@@ -3,17 +3,16 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
   def config() do
     [
       Estimator: [
-        imu_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
-        ins_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
-        sca_values_slow_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:slow),
+        imu_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
+        ins_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
+        sca_values_slow_loop_interval_ms: Configuration.Generic.loop_interval_ms(:slow),
         accel_gyro_rate_expected_interval_ms: 5,
         gps_expected_interval_ms: 200,
         range_expected_interval_ms: 100,
 
         kf_type: Ekf.SevenState,
         kf_config: [
-          init_state: Matrex.zeros(7, 1),
-          init_std_devs: Matrex.new([[0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05]]),
+          init_std_devs: [0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05],
           qpos_xy_std: 0.1,
           qpos_z_std: 0.05,
           qvel_xy_std: 0.05,

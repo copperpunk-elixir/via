@@ -15,7 +15,7 @@ defmodule Estimation.Ekf.SevenState do
 
   def new(config) do
     %Estimation.Ekf.SevenState{
-      ekf_state: Keyword.fetch!(config, :init_state),
+      ekf_state: Matrex.zeros(7, 1),
       ekf_cov: generate_ekf_cov(config),
       r_gps: generate_r_gps(config),
       r_heading: generate_r_heading(config),
@@ -28,10 +28,14 @@ defmodule Estimation.Ekf.SevenState do
     }
   end
 
-  @spec predict(struct(), list()) :: struct
+  @spec predict(struct(), map()) :: struct
   def predict(state, dt_accel_gyro) do
     imu = Estimation.Imu.Mahony.update(state.imu, dt_accel_gyro)
-    [dt, ax, ay, az, _gx, _gy, _gz] = dt_accel_gyro
+    dt = dt_accel_gyro.dt
+    ax = dt_accel_gyro.ax
+    ay = dt_accel_gyro.ay
+    az = dt_accel_gyro.az
+
     # Acceleration due to gravity is measured in the negative-Z direction
 
     # Predict State
@@ -227,7 +231,12 @@ defmodule Estimation.Ekf.SevenState do
     init_std_devs = Keyword.fetch!(config, :init_std_devs)
 
     Enum.reduce(1..7, Matrex.zeros(7), fn index, acc ->
-      Matrex.set(acc, index, index, init_std_devs[index] * init_std_devs[index])
+      Matrex.set(
+        acc,
+        index,
+        index,
+        Enum.at(init_std_devs, index - 1) * Enum.at(init_std_devs, index - 1)
+      )
     end)
   end
 

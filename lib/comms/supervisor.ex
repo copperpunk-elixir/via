@@ -23,15 +23,12 @@ defmodule Comms.Supervisor do
 
   @spec start_message_sorter_registry() :: atom()
   def start_message_sorter_registry() do
-    # child_spec = %{
-      # id: :message_sorter_registry,
-     spec = {Registry, [keys: :duplicate, name: MessageSorter.Sorter.registry]}
-    # }
-    DynamicSupervisor.start_child(__MODULE__,spec)
+     child_spec = {Registry, [keys: :duplicate, name: MessageSorter.Sorter.registry]}
+    DynamicSupervisor.start_child(__MODULE__,child_spec)
   end
 
-  @spec start_operator(atom()) :: atom()
-  def start_operator(name) do
+  @spec start_operator(atom(), integer()) :: atom()
+  def start_operator(name, refresh_groups_loop_interval_ms \\ 100) do
     DynamicSupervisor.start_child(
       __MODULE__,
       %{
@@ -42,7 +39,7 @@ defmodule Comms.Supervisor do
           [
             [
               name: name,
-              refresh_groups_loop_interval_ms: 100
+              refresh_groups_loop_interval_ms: refresh_groups_loop_interval_ms
             ]
           ]}
       }

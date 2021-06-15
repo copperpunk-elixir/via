@@ -21,9 +21,12 @@ defmodule Estimation.Imu.Mahony do
     %Estimation.Imu.Mahony{kp: kp, ki: ki}
   end
 
-  @spec update(struct(), list()) :: struct()
+  @spec update(struct(), map()) :: struct()
   def update(imu, dt_accel_gyro) do
-    [dt, ax, ay, az, gx, gy, gz] = dt_accel_gyro
+    dt = dt_accel_gyro.dt
+    ax = dt_accel_gyro.ax
+    ay = dt_accel_gyro.ay
+    az = dt_accel_gyro.az
     q0 = imu.q0
     q1 = imu.q1
     q2 = imu.q2
@@ -33,7 +36,13 @@ defmodule Estimation.Imu.Mahony do
       if ax != 0 or ay != 0 or az != 0 do
         # Normalise accelerometer measurement
         {ax_norm, ay_norm, az_norm, kp, ki, accel_mag_in_range} =
-          normalized_accel_and_in_range(ax, ay, az, imu.kp, imu.ki)
+          normalized_accel_and_in_range(
+            ax,
+            ay,
+            az,
+            imu.kp,
+            imu.ki
+          )
 
         # Only use the accel to correct if the accel values are within range
         if accel_mag_in_range do
@@ -61,15 +70,17 @@ defmodule Estimation.Imu.Mahony do
             end
 
           # Apply proportional feedback
-          gx = gx + kp * halfex + integral_fbx
-          gy = gy + kp * halfey + integral_fby
-          gz = gz + kp * halfez + integral_fbz
+          gx = dt_accel_gyro.gx + kp * halfex + integral_fbx
+          gy = dt_accel_gyro.gy + kp * halfey + integral_fby
+          gz = dt_accel_gyro.gz + kp * halfez + integral_fbz
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
-          {gx, gy, gz, imu.integral_fbx, imu.integral_fby, imu.integral_fbz}
+          {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx,
+           imu.integral_fby, imu.integral_fbz}
         end
       else
-        {gx, gy, gz, imu.integral_fbx, imu.integral_fby, imu.integral_fbz}
+        {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx, imu.integral_fby,
+         imu.integral_fbz}
       end
 
     # Integrate rate of change of quaternion

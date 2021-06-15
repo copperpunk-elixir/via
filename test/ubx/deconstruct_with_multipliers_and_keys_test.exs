@@ -1,7 +1,7 @@
 defmodule Ubx.DeconstructWithMultipliersAndKeys do
   use ExUnit.Case
   require Logger
-  require Ubx.MessageDefs.NavRelposned, as: NavRelposned
+  require Ubx.NavRelposned, as: NavRelposned
 
   setup do
     RingLogger.attach()
@@ -41,8 +41,8 @@ defmodule Ubx.DeconstructWithMultipliersAndKeys do
     ubx = UbxInterpreter.new()
     {_ubx, payload_rx} = UbxInterpreter.check_for_new_message(ubx, :binary.bin_to_list(msg))
 
-    multipliers = Ubx.MessageDefs.NavRelposned.multipliers()
-    keys = Ubx.MessageDefs.NavRelposned.keys()
+    multipliers = NavRelposned.multipliers()
+    keys = NavRelposned.keys()
 
     values_rx =
       UbxInterpreter.Utils.deconstruct_message(

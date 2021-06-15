@@ -1,6 +1,8 @@
-defmodule Ubx.MessageDefs.DtAccelGyroVal do
+defmodule Ubx.AccelGyro.DtAccelGyro do
   require ViaUtils.Constants, as: VC
-  defmacro class_id, do: {0x11, 0x00}
+  require Ubx.ClassDefs
+  defmacro class, do: Ubx.ClassDefs.accel_gyro()
+  defmacro id, do: 0x00
   defmacro bytes, do: [2, -2, -2, -2, -2, -2, -2]
 
   defmacro multipliers,

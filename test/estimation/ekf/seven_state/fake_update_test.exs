@@ -17,7 +17,7 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
       Estimation.Ekf.SevenState.update_from_gps(ekf, position, velocity)
       |> Estimation.Ekf.SevenState.update_from_heading(0.1)
 
-    dt_accel_gyro = [0.05, 1.0, 0, 0, 0.1, 0, 0]
+    dt_accel_gyro = %{dt: 0.05, ax: 1.0, ay: 0, az: 0, gx: 0.1, gy: 0, gz: 0}
 
     ekf =
       Enum.reduce(1..2000, ekf, fn _x, acc ->

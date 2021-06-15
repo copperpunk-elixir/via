@@ -1,5 +1,7 @@
-defmodule Ubx.MessageDefs.NavPvt do
-  defmacro class_id, do: {0x01, 0x07}
+defmodule Ubx.Nav.Pvt do
+  require Ubx.ClassDefs
+  defmacro class, do: Ubx.ClassDefs.nav()
+  defmacro id, do: 0x07
 
   defmacro bytes,
     do: [4, 2, 1, 1, 1, 1, 1, 1, 4, -4, 1, 1, 1, 1, -4, -4, -4, -4, 4, 4, -4, -4, -4]

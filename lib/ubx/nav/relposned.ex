@@ -1,5 +1,7 @@
-defmodule Ubx.MessageDefs.NavRelposned do
-  defmacro class_id, do: {0x01, 0x3C}
+defmodule Ubx.Nav.Relposned do
+  require Ubx.ClassDefs
+  defmacro class, do: Ubx.ClassDefs.nav()
+  defmacro id, do: 0x3C
 
   defmacro bytes,
     do: [1, 1, 2, 4, -4, -4, -4, -4, -4, 4, -1, -1, -1, -1, 4, 4, 4, 4, 4, 4, 4]

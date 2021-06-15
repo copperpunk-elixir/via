@@ -108,9 +108,9 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
     [
       uart_port: uart_port, # SiK or Xbee: FT231X
       port_options: [speed: 57_600],
-      fast_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:fast),
-      medium_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:medium),
-      slow_loop_interval_ms: Configuration.Generic.get_loop_interval_ms(:slow)
+      fast_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
+      medium_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
+      slow_loop_interval_ms: Configuration.Generic.loop_interval_ms(:slow)
     ]
   end
 

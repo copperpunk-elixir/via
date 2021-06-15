@@ -5,24 +5,11 @@ defmodule Estimation.Estimator do
 
   def start_link(config) do
     Logger.debug("Start Estimation.Estimator GenServer")
-    {:ok, process_id} = ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, nil, __MODULE__)
-    GenServer.cast(__MODULE__, {:begin, config})
-    {:ok, process_id}
+    ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 
   @impl GenServer
-  def init(_) do
-    {:ok, %{}}
-  end
-
-  @impl GenServer
-  def terminate(reason, state) do
-    Logging.Logger.log_terminate(reason, state, __MODULE__)
-    state
-  end
-
-  @impl GenServer
-  def handle_cast({:begin, config}, _state) do
+  def init(config) do
     kf_module = Module.concat(Estimation, Keyword.fetch!(config, :kf_type))
     kf = apply(kf_module, :new, [Keyword.fetch!(config, :kf_config)])
 
@@ -46,7 +33,14 @@ defmodule Estimation.Estimator do
     Comms.Operator.join_group(__MODULE__, :dt_accel_gyro_val, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_position_velocity, self())
     Comms.Operator.join_group(__MODULE__, :gps_itow_relheading_reldistance, self())
-    {:noreply, state}
+
+    {:ok, state}
+  end
+
+  @impl GenServer
+  def terminate(reason, state) do
+    Logging.Logger.log_terminate(reason, state, __MODULE__)
+    state
   end
 
   @impl GenServer
@@ -65,7 +59,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast({:gps_itow_position_velocity, _itow_ms, position_rrm, velocity_mps}, state) do
+  def handle_cast({:gps_itow_position_velocity, _itow_s, position_rrm, velocity_mps}, state) do
     # Logger.debug("EKF update with GPS: #{ViaUtils.Location.to_string(position_rrm)}")
     kf = apply(state.kf_module, :update_from_gps, [state.kf, position_rrm, velocity_mps])
     # {position, velocity} = Estimation.SevenStateEkf.position_rrm_velocity_mps(kf)

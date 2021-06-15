@@ -17,7 +17,7 @@ defmodule MatrixInverseTest do
     a_inv = Estimation.Ekf.SevenState.inv_66(a)
     end_time = :erlang.monotonic_time(:nanosecond)
     # IO.puts(inspect(a_inv))
-    IO.puts("dt: #{UtilsFormat.eftb((end_time - start_time) * 1.0e-6, 3)} ms")
+    IO.puts("dt: #{ViaUtils.Format.eftb((end_time - start_time) * 1.0e-6, 3)} ms")
 
     a_sol =
       Matrex.new([
