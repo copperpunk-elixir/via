@@ -6,7 +6,7 @@ defmodule Uart.Companion do
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do
     Logger.debug("Start Uart.Companion")
-    {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil)
+    {:ok, process_id} = ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
   end
@@ -18,7 +18,10 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def terminate(reason, state) do
-    Circuits.UART.close(state.uart_ref)
+    unless is_nil(Map.get(state, :uart_ref)) do
+      Circuits.UART.close(state.uart_ref)
+    end
+
     Logging.Logger.log_terminate(reason, state, __MODULE__)
     state
   end
@@ -32,10 +35,11 @@ defmodule Uart.Companion do
     uart_port = Keyword.fetch!(config, :uart_port)
     port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
 
-    uart_ref = UtilsUart.open_connection_and_return_uart_ref(
-      uart_port,
-      port_options
-    )
+    uart_ref =
+      ViaUtils.Uart.open_connection_and_return_uart_ref(
+        uart_port,
+        port_options
+      )
 
     state = %{
       uart_ref: uart_ref,
@@ -58,10 +62,15 @@ defmodule Uart.Companion do
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
     ubx =
-      UbxInterpreter.check_for_new_messages_and_process(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
-        state.accel_counts_to_mpss,
-        state.gyro_counts_to_rps
-      ])
+      UbxInterpreter.check_for_new_messages_and_process(
+        state.ubx,
+        :binary.bin_to_list(data),
+        &process_data_fn/5,
+        [
+          state.accel_counts_to_mpss,
+          state.gyro_counts_to_rps
+        ]
+      )
 
     {:noreply, %{state | ubx: ubx}}
   end
@@ -73,7 +82,10 @@ defmodule Uart.Companion do
         case msg_id do
           0x00 ->
             [dt, ax, ay, az, gx, gy, gz] =
-              UbxInterpreter.deconstruct_message(Ubx.MessageDefs.dt_accel_gyro_val_bytes(), payload)
+              UbxInterpreter.deconstruct_message(
+                Ubx.MessageDefs.dt_accel_gyro_val_bytes(),
+                payload
+              )
 
             # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
             values = [
@@ -86,7 +98,7 @@ defmodule Uart.Companion do
               gz * gyro_counts_to_rps
             ]
 
-            # Logger.debug("dt/accel/gyro values: #{UtilsFormat.eftb_list(values, 3)}")
+            # Logger.debug("dt/accel/gyro values: #{ViaUtils.Format.eftb_list(values, 3)}")
             Comms.Operator.send_local_msg_to_group(
               __MODULE__,
               {:dt_accel_gyro_val, values},
@@ -106,5 +118,4 @@ defmodule Uart.Companion do
   def send_message(message) do
     GenServer.cast(__MODULE__, {:send_message, message})
   end
-
 end

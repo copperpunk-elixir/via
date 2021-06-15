@@ -3,16 +3,15 @@ defmodule Via.Application do
   require Logger
 
   def start(_type, _args) do
-    vehicle_type = "FixedWing"
-    model_type = "Cessna"
-    node_type = "Sim"
+    vehicle_type = Configuration.Utils.get_vehicle_type()
+    model_type = Configuration.Utils.get_model_type()
+    node_type = Configuration.Utils.get_node_type()
     prepare_environment()
 
-    full_config = Common.Utils.Configuration.full_config(vehicle_type, model_type, node_type)
+    full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
     Via.Supervisor.start_universal_modules(full_config)
     Enum.each(full_config, fn {module, config} ->
       supervisor_module = Module.concat(module, Supervisor)
-      # config = Via.Utils.get_config(module, model_type, node_type)
       apply(supervisor_module, :start_link, [config])
     end)
 
@@ -22,7 +21,7 @@ defmodule Via.Application do
   @spec start_test(binary(), binary(), binary()) :: keyword()
   def start_test(vehicle_type, model_type, node_type) do
     prepare_environment()
-    full_config = Common.Utils.Configuration.full_config(vehicle_type, model_type, node_type)
+    full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
     IO.puts("full_config: #{inspect(full_config)}")
     # IO.puts("Full config: #{inspect(full_config)}")
     Via.Supervisor.start_universal_modules(full_config)
@@ -43,7 +42,7 @@ defmodule Via.Application do
 
   # @spec get_modules_for_node(binary()) :: list()
   # def get_modules_for_node(node_type) do
-  #   [node_type, _metadata] = Common.Utils.Configuration.split_safely(node_type, "_")
+  #   [node_type, _metadata] = Configuration.Utils.split_safely(node_type, "_")
 
   #   case node_type do
   #     "gcs" ->

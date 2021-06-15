@@ -10,7 +10,7 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
   test "Run full EKF cycle", full_config do
     ekf_config = full_config[:Estimation][:Estimator][:kf_config]
     ekf = Estimation.Ekf.SevenState.new(ekf_config)
-    position = Common.Utils.LatLonAlt.new_deg(42, -120, 123)
+    position = ViaUtils.Location.new_location_input_degrees(42, -120, 123)
     velocity = %{north: 1.0, east: 0 * 2.0, down: 0 * -3.0}
 
     ekf =
@@ -31,11 +31,11 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
     IO.inspect(ekf)
 
     IO.puts(
-      "position: #{Common.Utils.LatLonAlt.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}"
+      "position: #{ViaUtils.Location.to_string(Estimation.Ekf.SevenState.position_rrm(ekf))}"
     )
 
     {position, velocity} = Estimation.Ekf.SevenState.position_rrm_velocity_mps(ekf)
-    IO.puts("position: #{Common.Utils.LatLonAlt.to_string(position)}")
-    IO.puts("velocity: #{UtilsFormat.eftb_map(velocity, 2)}")
+    IO.puts("position: #{ViaUtils.Location.to_string(position)}")
+    IO.puts("velocity: #{ViaUtils.Format.eftb_map(velocity, 2)}")
   end
 end

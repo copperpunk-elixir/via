@@ -7,17 +7,14 @@ defmodule Via.Supervisor do
     Logger.debug("Via.Supervisor start universal modules")
     start_link()
 
-    Process.sleep(200)
-    start_module(MessageSorter, full_config[:MessageSorter])
-    Process.sleep(200)
-    start_module(Comms, full_config[:Comms])
-
-    Process.sleep(200)
+    start_supervised_process(ViaUtils.Registry, [])
+    start_supervisor(MessageSorter, full_config[:MessageSorter])
+    start_supervisor(Comms, full_config[:Comms])
   end
 
   def start_link() do
     Logger.info("Start Via.Supervisor")
-    UtilsProcess.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
+    ViaUtils.Process.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
   end
 
   @spec init(any) ::
@@ -33,8 +30,8 @@ defmodule Via.Supervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  @spec start_module(module(), keyword()) :: atom()
-  def start_module(module, config) do
+  @spec start_supervisor(atom(), keyword()) :: atom()
+  def start_supervisor(module, config) do
     Logger.info("Via Starting Module: #{module} with config: #{inspect(config)}")
 
     DynamicSupervisor.start_child(
@@ -48,5 +45,21 @@ defmodule Via.Supervisor do
         }
       }
     )
+  end
+
+  @spec start_supervised_process(atom(), keyword()) :: atom()
+  def start_supervised_process(module, config) do
+    DynamicSupervisor.start_child(
+      __MODULE__,
+      %{
+        id: module,
+        start: {
+          module,
+          :start_link,
+          [config]
+        }
+      }
+    )
+
   end
 end

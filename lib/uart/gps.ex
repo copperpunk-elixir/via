@@ -6,7 +6,7 @@ defmodule Uart.Gps do
 
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
-    {:ok, process_id} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil)
+    {:ok, process_id} = ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, nil)
     GenServer.cast(__MODULE__, {:begin, config})
     {:ok, process_id}
   end
@@ -18,7 +18,10 @@ defmodule Uart.Gps do
 
   @impl GenServer
   def terminate(reason, state) do
-    Circuits.UART.close(state.uart_ref)
+    unless is_nil(Map.get(state, :uart_ref)) do
+      Circuits.UART.close(state.uart_ref)
+    end
+
     Logging.Logger.log_terminate(reason, state, __MODULE__)
     state
   end
@@ -30,10 +33,11 @@ defmodule Uart.Gps do
     uart_port = Keyword.fetch!(config, :uart_port)
     port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
 
-    uart_ref = UtilsUart.open_connection_and_return_uart_ref(
-      uart_port,
-      port_options
-    )
+    uart_ref =
+      ViaUtils.Uart.open_connection_and_return_uart_ref(
+        uart_port,
+        port_options
+      )
 
     state = %{
       uart_ref: uart_ref,
@@ -51,10 +55,15 @@ defmodule Uart.Gps do
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
     ubx =
-      UbxInterpreter.check_for_new_messages_and_process(state.ubx, :binary.bin_to_list(data), &process_data_fn/5, [
-        state.expected_antenna_distance_m,
-        state.antenna_distance_error_threshold_m
-      ])
+      UbxInterpreter.check_for_new_messages_and_process(
+        state.ubx,
+        :binary.bin_to_list(data),
+        &process_data_fn/5,
+        [
+          state.expected_antenna_distance_m,
+          state.antenna_distance_error_threshold_m
+        ]
+      )
 
     {:noreply, %{state | ubx: ubx}}
   end
@@ -110,7 +119,7 @@ defmodule Uart.Gps do
             ] = UbxInterpreter.deconstruct_message(Ubx.MessageDefs.nav_pvt_bytes(), payload)
 
             position_rrm =
-              Common.Utils.LatLonAlt.new_deg(
+              ViaUtils.Location.new_location_input_degrees(
                 lat_deg_e7 * 1.0e-7,
                 lon_deg_e7 * 1.0e-7,
                 height_mm * 1.0e-3
@@ -123,7 +132,7 @@ defmodule Uart.Gps do
             }
 
             # Logger.debug("NAVPVT itow: #{itow_ms}")
-            # Logger.debug("pos: #{Common.Utils.LatLonAlt.to_string(position_rrm)}")
+            # Logger.debug("pos: #{ViaUtils.Location.to_string(position_rrm)}")
             # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
             if fix_type > 1 and fix_type < 5 do
               Comms.Operator.send_local_msg_to_group(
@@ -165,7 +174,7 @@ defmodule Uart.Gps do
             if (flags &&& 261) == 261 and
                  abs(rel_distance_m - expected_antenna_distance_m) <
                    antenna_distance_error_threshold_m do
-              rel_heading_rad = (rel_pos_heading_deg_e5 * 1.0e-5) |> UtilsMath.deg2rad()
+              rel_heading_rad = (rel_pos_heading_deg_e5 * 1.0e-5) |> ViaUtils.Math.deg2rad()
 
               Comms.Operator.send_local_msg_to_group(
                 __MODULE__,

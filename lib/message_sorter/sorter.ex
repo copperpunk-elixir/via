@@ -1,6 +1,7 @@
 defmodule MessageSorter.Sorter do
   use GenServer
   require Logger
+  alias MessageSorter.DiscreteLooper
 
   @registry MessageSorterRegistry
   @classification_length 2
@@ -9,7 +10,7 @@ defmodule MessageSorter.Sorter do
 
   def start_link(config) do
     Logger.debug("Start MessageSorter: #{inspect(config[:name])}")
-    {:ok, pid} = UtilsProcess.start_link_redundant(GenServer, __MODULE__, nil, via_tuple(config[:name]))
+    {:ok, pid} = ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, nil, via_tuple(config[:name]))
     GenServer.cast(via_tuple(config[:name]), {:begin, config})
     {:ok, pid}
   end
@@ -39,18 +40,18 @@ defmodule MessageSorter.Sorter do
       case Keyword.get(config, :publish_value_interval_ms) do
         nil -> nil
         interval_ms ->
-          UtilsProcess.start_loop(self(), interval_ms, {:publish_loop, :value})
-          UtilsProcess.start_loop(self(), 1000, {:update_subscriber_loop, :value})
-          Common.DiscreteLooper.new({name, :value}, interval_ms)
+          ViaUtils.Process.start_loop(self(), interval_ms, {:publish_loop, :value})
+          ViaUtils.Process.start_loop(self(), 1000, {:update_subscriber_loop, :value})
+          DiscreteLooper.new_discrete_looper({name, :value}, interval_ms)
       end
 
     publish_messages_looper =
       case Keyword.get(config, :publish_messages_interval_ms) do
         nil -> nil
         interval_ms ->
-          UtilsProcess.start_loop(self(), interval_ms, {:publish_loop, :messages})
-          UtilsProcess.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
-          Common.DiscreteLooper.new({name, :messages}, interval_ms)
+          ViaUtils.Process.start_loop(self(), interval_ms, {:publish_loop, :messages})
+          ViaUtils.Process.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
+          DiscreteLooper.new_discrete_looper({name, :messages}, interval_ms)
       end
 
 
@@ -113,11 +114,11 @@ defmodule MessageSorter.Sorter do
 
   @impl GenServer
   def handle_info({:publish_loop, :value}, state) do
-    publish_looper = Common.DiscreteLooper.step(state.publish_loopers.value)
+    publish_looper = DiscreteLooper.step(state.publish_loopers.value)
 
     {state, classification, value, status} = get_current_value(state)
     name = state.name
-    Enum.each(Common.DiscreteLooper.get_members_now(publish_looper), fn dest ->
+    Enum.each(DiscreteLooper.get_members_now(publish_looper), fn dest ->
       # Logger.debug("Send #{inspect(value)}/#{status} to #{inspect(dest)}")
       GenServer.cast(dest, {:message_sorter_value, name, classification, value, status})
     end)
@@ -127,10 +128,10 @@ defmodule MessageSorter.Sorter do
 
   @impl GenServer
   def handle_info({:publish_loop, :messages}, state) do
-    publish_looper = Common.DiscreteLooper.step(state.publish_loopers.messages)
+    publish_looper = DiscreteLooper.step(state.publish_loopers.messages)
     messages = get_all_messages(state)
     name = state.name
-    Enum.each(Common.DiscreteLooper.get_members_now(publish_looper), fn dest ->
+    Enum.each(DiscreteLooper.get_members_now(publish_looper), fn dest ->
       # Logger.debug("Send #{inspect(value)}/#{status} to #{inspect(dest)}")
       GenServer.cast(dest, {:message_sorter_messages, name, messages})
     end)
@@ -144,7 +145,7 @@ defmodule MessageSorter.Sorter do
     # Logger.info("subs: #{inspect(subs)}")
     # Logger.debug("sorter update members: #{inspect(state.name)}/#{sub_type}")
     # Logger.debug("pub looper pre: #{inspect(publish_looper)}")
-    publish_looper = Common.DiscreteLooper.update_all_members(Map.get(state.publish_loopers, sub_type), subs)
+    publish_looper = DiscreteLooper.update_all_members(Map.get(state.publish_loopers, sub_type), subs)
     # Logger.debug("pub looper post: #{inspect(publish_looper)}")
     publish_loopers = Map.put(state.publish_loopers, sub_type, publish_looper)
     {:noreply, %{state | publish_loopers: publish_loopers}}
@@ -218,7 +219,7 @@ defmodule MessageSorter.Sorter do
   end
 
   def via_tuple(name) do
-    Comms.ProcessRegistry.via_tuple(__MODULE__, name)
+    ViaUtils.Registry.via_tuple(__MODULE__, name)
   end
 
   defp is_valid_type?(value, desired_type) do

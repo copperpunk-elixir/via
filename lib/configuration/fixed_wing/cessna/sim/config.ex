@@ -10,8 +10,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Config do
     ]
 
     IO.puts("modules: #{inspect(modules)}")
-    config = [vehicle_type: "FixedWing", model_type: "Cessna", node_type: "Sim"]
-    Enum.reduce(modules, config, fn module, acc ->
+
+    Enum.reduce(modules, [], fn module, acc ->
       full_module_name = Module.concat(Configuration.FixedWing.Cessna.Sim, module)
       single_config = apply(full_module_name, :config, [])
       # IO.puts("config for module #{inspect(module)}: #{inspect(single_config)}")

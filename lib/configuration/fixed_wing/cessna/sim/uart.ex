@@ -1,12 +1,12 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Uart do
   require Logger
-  require Common.Constants, as: CC
+  require ViaUtils.Constants, as: VC
 
   @spec config() :: list()
   def config() do
     # Logger.warn("uart node type: #{node_type}")
-    # peripherals = Common.Utils.Configuration.get_uart_peripherals("sim")
-    peripherals = ["Gps_u-blox", "Companion_Pico"]
+    peripherals = Configuration.Utils.get_uart_peripherals("Sim")
+    # peripherals = ["Gps_u-blox", "Companion_Pico"]
     Logger.debug("peripherals: #{inspect(peripherals)}")
 
     Enum.reduce(peripherals, [], fn peripheral, acc ->
@@ -54,8 +54,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
     [
       uart_port: uart_port, # usually Pico
       port_options: [speed: 115_200],
-      accel_counts_to_mpss: CC.gravity() / 8192,
-      gyro_counts_to_rps: CC.deg2rad() / 16.4
+      accel_counts_to_mpss: VC.gravity() / 8192,
+      gyro_counts_to_rps: VC.deg2rad() / 16.4
     ]
   end
 

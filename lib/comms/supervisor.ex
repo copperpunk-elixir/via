@@ -5,7 +5,7 @@ defmodule Comms.Supervisor do
 
   def start_link(_) do
     Logger.debug("Start Comms DynamicSupervisor")
-    {:ok, pid} = UtilsProcess.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
+    {:ok, pid} = ViaUtils.Process.start_link_redundant(DynamicSupervisor, __MODULE__, nil, __MODULE__)
     start_process_registry()
     start_message_sorter_registry()
     {:ok, pid}
@@ -18,7 +18,7 @@ defmodule Comms.Supervisor do
 
   @spec start_process_registry() :: atom()
   def start_process_registry() do
-    DynamicSupervisor.start_child(__MODULE__,%{id: :registry, start: {Comms.ProcessRegistry, :start_link,[]}})
+    DynamicSupervisor.start_child(__MODULE__,%{id: :registry, start: {ViaUtils.Registry, :start_link,[]}})
   end
 
   @spec start_message_sorter_registry() :: atom()

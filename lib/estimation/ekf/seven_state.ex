@@ -1,6 +1,6 @@
 defmodule Estimation.Ekf.SevenState do
   require Logger
-  require Common.Constants, as: CC
+  require ViaUtils.Constants, as: VC
 
   @expected_imu_dt 0.005
 
@@ -47,7 +47,7 @@ defmodule Estimation.Ekf.SevenState do
         [ekf_state_prev[3] + ekf_state_prev[6] * dt],
         [ekf_state_prev[4] + ax_inertial * dt],
         [ekf_state_prev[5] + ay_inertial * dt],
-        [ekf_state_prev[6] + (az_inertial + CC.gravity()) * dt],
+        [ekf_state_prev[6] + (az_inertial + VC.gravity()) * dt],
         [imu.yaw_rad]
       ])
 
@@ -90,7 +90,7 @@ defmodule Estimation.Ekf.SevenState do
         state.origin
       end
 
-    {dx, dy} = Common.Utils.Location.dx_dy_between_points(origin, position_rrm)
+    {dx, dy} = ViaUtils.Location.dx_dy_between_points(origin, position_rrm)
 
     dz = -position_rrm.altitude_m - origin.altitude_m
 
@@ -148,7 +148,7 @@ defmodule Estimation.Ekf.SevenState do
   @spec update_from_heading(struct(), float()) :: struct()
   def update_from_heading(state, heading_rad) do
     if state.heading_established do
-      delta_z = Common.Utils.Motion.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
+      delta_z = ViaUtils.Math.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
 
       ekf_cov = state.ekf_cov
       r_heading = state.r_heading
@@ -178,7 +178,7 @@ defmodule Estimation.Ekf.SevenState do
       imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
       %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
     else
-      Logger.debug("Established heading at #{UtilsFormat.eftb_deg(heading_rad, 2)}")
+      Logger.debug("Established heading at #{ViaUtils.Format.eftb_deg(heading_rad, 2)}")
       ekf_state = state.ekf_state |> Matrex.set(7, 1, heading_rad)
       %{state | ekf_state: ekf_state, heading_established: true}
     end
@@ -267,7 +267,7 @@ defmodule Estimation.Ekf.SevenState do
   def position_rrm(state) do
     ekf_state = state.ekf_state
 
-    Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+    ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
     |> Map.put(:altitude_m, ekf_state[3])
   end
 
@@ -282,7 +282,7 @@ defmodule Estimation.Ekf.SevenState do
     ekf_state = state.ekf_state
 
     position_rrm =
-      Common.Utils.Location.lla_from_point(state.origin, ekf_state[1], ekf_state[2])
+      ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
       |> Map.put(:altitude_m, -ekf_state[3])
 
     velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
