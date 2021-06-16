@@ -1,4 +1,4 @@
-defmodule Peripherals.Estimation.Ekf.SevenState.EkfWithHardware do
+defmodule Estimation.Ekf.SevenState.EkfWithHardware do
   use ExUnit.Case
   require Logger
 

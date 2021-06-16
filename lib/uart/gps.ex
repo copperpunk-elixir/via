@@ -103,11 +103,11 @@ defmodule Uart.Gps do
               down: values.v_down_mps
             }
 
-            # Logger.debug("NAVPVT itow: #{itow_ms}")
+            # Logger.debug("NAVPVT itow/fix: #{values.itow_s}/#{values.fix_type}")
             # Logger.debug("pos: #{ViaUtils.Location.to_string(position_rrm)}")
             # Logger.debug("dt/accel/gyro values: #{inspect(values)}")
             if values.fix_type > 1 and values.fix_type < 5 do
-              Comms.Operator.send_local_msg_to_group(
+              Comms.Operator.send_global_msg_to_group(
                 __MODULE__,
                 {:gps_itow_position_velocity, values.itow_s, position_rrm, velocity_mps},
                 self()
@@ -132,7 +132,7 @@ defmodule Uart.Gps do
                    antenna_distance_error_threshold_m do
               rel_heading_rad = values.rel_pos_heading_deg |> ViaUtils.Math.deg2rad()
 
-              Comms.Operator.send_local_msg_to_group(
+              Comms.Operator.send_global_msg_to_group(
                 __MODULE__,
                 {:gps_itow_relheading, values.itow_s, rel_heading_rad},
                 self()
