@@ -1,7 +1,7 @@
 defmodule TestHelper.Estimation.GenServer do
   use GenServer
   require Logger
-  alias ViaUtils, as: VU
+  require Comms.Groups, as: Groups
 
   def start_link() do
     Logger.debug("Start #{__MODULE__}")
@@ -11,11 +11,11 @@ defmodule TestHelper.Estimation.GenServer do
   @impl GenServer
   def init(_) do
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, {:estimation_values, :attitude}, self())
+    Comms.Operator.join_group(__MODULE__, Groups.estimation_attitude, self())
 
     Comms.Operator.join_group(
       __MODULE__,
-      {:estimation_values, :position_speed_course_airspeed},
+      Groups.estimation_position_speed_course_airspeed,
       self()
     )
 
@@ -31,13 +31,13 @@ defmodule TestHelper.Estimation.GenServer do
   end
 
   @impl GenServer
-  def handle_cast({{:estimation_values, :attitude}, attitude_rad, _dt}, state) do
+  def handle_cast({Groups.estimation_attitude, attitude_rad, _dt}, state) do
     {:noreply, %{state | attitude_rad: attitude_rad}}
   end
 
   @impl GenServer
   def handle_cast(
-        {{:estimation_values, :position_speed_course_airspeed}, position_rrm, speed_mps,
+        {Groups.estimation_position_speed_course_airspeed, position_rrm, speed_mps,
          course_rad, airspeed_mps, _dt},
         state
       ) do

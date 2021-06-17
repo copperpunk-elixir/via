@@ -1,4 +1,4 @@
-defmodule Peripherals.Uart.Gps.ParseNavpvtRelposnedTest do
+defmodule Uart.Gps.ParseNavpvtRelposnedTest do
   use ExUnit.Case
   require Logger
 

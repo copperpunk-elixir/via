@@ -1,6 +1,7 @@
 defmodule Estimation.Estimator do
   use GenServer
   require Logger
+  require Comms.Groups, as: Groups
 
   def start_link(config) do
     Logger.debug("Start Estimation.Estimator GenServer")
@@ -18,7 +19,7 @@ defmodule Estimation.Estimator do
     state = %{
       min_speed_for_course: Keyword.fetch!(config, :min_speed_for_course),
       attitude_rad: %{},
-      speed_mps: 0,
+      groundspeed_mps: 0,
       course_rad: 0,
       vertical_velocity_mps: 0.0,
       position_rrm: %{},
@@ -35,9 +36,9 @@ defmodule Estimation.Estimator do
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, :dt_accel_gyro_val, self())
-    Comms.Operator.join_group(__MODULE__, :gps_itow_position_velocity, self())
-    Comms.Operator.join_group(__MODULE__, :gps_itow_relheading_reldistance, self())
+    Comms.Operator.join_group(__MODULE__, Groups.dt_accel_gyro_val, self())
+    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_position_velocity, self())
+    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_relheading, self())
 
     ViaUtils.Process.start_loop(
       self(),
@@ -61,7 +62,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast({:dt_accel_gyro_val, values}, state) do
+  def handle_cast({Groups.dt_accel_gyro_val, values}, state) do
     ins_kf = apply(state.ins_kf_module, :predict, [state.ins_kf, values])
 
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
@@ -70,7 +71,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast({:gps_itow_position_velocity, _itow_s, position_rrm, velocity_mps}, state) do
+  def handle_cast({Groups.gps_itow_position_velocity, _itow_s, position_rrm, velocity_mps}, state) do
     # Logger.debug("EKF update with GPS: #{ViaUtils.Location.to_string(position_rrm)}")
     ins_kf = apply(state.ins_kf_module, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
     # {position, velocity} = Estimation.SevenStateEkf.position_rrm_velocity_mps(kf)
@@ -82,7 +83,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {:gps_itow_relheading, _itow_ms, rel_heading_rad},
+        {Groups.gps_itow_relheading, _itow_ms, rel_heading_rad},
         state
       ) do
     # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
@@ -99,7 +100,7 @@ defmodule Estimation.Estimator do
 
     Comms.Operator.send_local_msg_to_group(
       __MODULE__,
-      {{:estimation_values, :attitude}, attitude_rad, dt},
+      {Groups.estimation_attitude, attitude_rad, dt},
       self()
     )
 
@@ -116,7 +117,7 @@ defmodule Estimation.Estimator do
       else
         # Watchdog.Active.feed(:pos_vel)
         # If the velocity is below a threshold, we use yaw instead
-        {speed_mps, course_rad} =
+        {groundspeed_mps, course_rad} =
           ViaUtils.Motion.get_speed_course_for_velocity(
             velocity_mps.north,
             velocity_mps.east,
@@ -154,11 +155,11 @@ defmodule Estimation.Estimator do
             {state.agl_kf, position_rrm.altitude_m - ground_altitude_m, ground_altitude_m}
           end
 
-        airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: speed_mps
+        airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: groundspeed_mps
 
         Comms.Operator.send_local_msg_to_group(
           __MODULE__,
-          {{:estimation_values, :position_speed_course_airspeed}, position_rrm, speed_mps, course_rad,
+          {Groups.estimation_position_speed_course_airspeed, position_rrm, groundspeed_mps, course_rad,
            airspeed_mps, dt},
           self()
         )
@@ -166,7 +167,7 @@ defmodule Estimation.Estimator do
         %{
           state
           | position_rrm: position_rrm,
-            speed_mps: speed_mps,
+            groundspeed_mps: groundspeed_mps,
             course_rad: course_rad,
             vertical_velocity_mps: vertical_velocity_mps,
             agl_kf: agl_kf,

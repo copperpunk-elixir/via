@@ -2,9 +2,11 @@ defmodule Uart.Gps do
   use GenServer
   use Bitwise
   require Logger
+  require Comms.Groups, as: Groups
   require Ubx.ClassDefs
   require Ubx.Nav.Pvt, as: Pvt
   require Ubx.Nav.Relposned, as: Relposned
+
 
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
@@ -109,7 +111,7 @@ defmodule Uart.Gps do
             if values.fix_type > 1 and values.fix_type < 5 do
               Comms.Operator.send_global_msg_to_group(
                 __MODULE__,
-                {:gps_itow_position_velocity, values.itow_s, position_rrm, velocity_mps},
+                {Groups.gps_itow_position_velocity, values.itow_s, position_rrm, velocity_mps},
                 self()
               )
             end
@@ -134,7 +136,7 @@ defmodule Uart.Gps do
 
               Comms.Operator.send_global_msg_to_group(
                 __MODULE__,
-                {:gps_itow_relheading, values.itow_s, rel_heading_rad},
+                {Groups.gps_itow_relheading, values.itow_s, rel_heading_rad},
                 self()
               )
             end

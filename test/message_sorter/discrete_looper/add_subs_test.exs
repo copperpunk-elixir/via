@@ -15,7 +15,7 @@ defmodule MessageSorter.DiscreteLooper.AddSubsTest do
     registry = context[:registry]
     key = :test
     interval = 50
-    looper = DiscreteLooper.new_discrete_looper("looper", interval)
+    looper = DiscreteLooper.new("looper", interval)
     sub1 = [name: "sub1", interval: 50]
     sub2 = [name: "sub2", interval: 200]
     {:ok, pid1} = DLG.start_link(sub1)

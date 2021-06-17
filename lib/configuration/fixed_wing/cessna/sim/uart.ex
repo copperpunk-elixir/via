@@ -73,7 +73,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
   def get_dsm_rx_config(uart_port) do
     [
       uart_port: uart_port, # usually CP2104
-      rx_module: :Dsm,
+      rx_module: DsmParser,
       port_options: [
         speed: 115_200
       ]
@@ -84,7 +84,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
   def get_frsky_rx_config(uart_port) do
     [
       uart_port: uart_port, # usually CP2104
-      rx_module: :Frsky,
+      rx_module: FrskyParser,
       port_options: [
         speed: 100_000,
         stop_bits: 2,
