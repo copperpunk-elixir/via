@@ -32,7 +32,7 @@ defmodule MessageSorter.Sorter do
         interval_ms ->
           ViaUtils.Process.start_loop(self(), interval_ms, {:publish_loop, :value})
           ViaUtils.Process.start_loop(self(), 1000, {:update_subscriber_loop, :value})
-          DiscreteLooper.new_discrete_looper({name, :value}, interval_ms)
+          DiscreteLooper.new({name, :value}, interval_ms)
       end
 
     publish_messages_looper =
@@ -43,7 +43,7 @@ defmodule MessageSorter.Sorter do
         interval_ms ->
           ViaUtils.Process.start_loop(self(), interval_ms, {:publish_loop, :messages})
           ViaUtils.Process.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
-          DiscreteLooper.new_discrete_looper({name, :messages}, interval_ms)
+          DiscreteLooper.new({name, :messages}, interval_ms)
       end
 
     state = %{

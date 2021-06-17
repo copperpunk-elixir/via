@@ -4,6 +4,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Config do
   def config() do
     modules = [
       :Comms,
+      :Control,
       :MessageSorter,
       :Estimation,
       :Uart

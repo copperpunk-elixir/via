@@ -58,8 +58,9 @@ defmodule Via.MixProject do
       # COPPERPUNK packages
       {:ubx_interpreter,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
-      {:via_utils,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"}
+      {:frsky_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/frsky-parser"},
+      {:dsm_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/dsm-parser"},
+      {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"}
     ]
   end
 

@@ -3,8 +3,8 @@ defmodule MessageSorter.DiscreteLooper do
 
   defstruct interval_ms: nil, members: %{}, time_ms: 0, name: nil
 
-  @spec new_discrete_looper(any(), integer()) :: struct()
-  def new_discrete_looper(name, interval_ms) do
+  @spec new(any(), integer()) :: struct()
+  def new(name, interval_ms) do
     # Logger.info("Creating DiscreteLooper with inteval: #{interval_ms}")
     %MessageSorter.DiscreteLooper{
       name: name,
@@ -57,7 +57,7 @@ defmodule MessageSorter.DiscreteLooper do
 
   @spec update_all_members(struct(), list()) :: struct()
   def update_all_members(looper, member_interval_list) do
-    looper = new_discrete_looper(looper.name, looper.interval_ms)
+    looper = new(looper.name, looper.interval_ms)
     Enum.reduce(member_interval_list, looper, fn ({pid, interval_ms}, acc) ->
       add_member_to_looper(acc, pid, interval_ms)
     end)

@@ -1,6 +1,7 @@
 defmodule Uart.Companion do
   use GenServer
   require Logger
+  require Comms.Groups, as: Groups
   require Ubx.ClassDefs
   require Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
 
@@ -13,7 +14,6 @@ defmodule Uart.Companion do
   @impl GenServer
   def init(config) do
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, :gps_time, self())
 
     state = %{
       uart_ref: nil,
@@ -89,7 +89,7 @@ defmodule Uart.Companion do
             # Logger.debug("dt/accel/gyro values: #{ViaUtils.Format.eftb_list(values, 3)}")
             Comms.Operator.send_local_msg_to_group(
               __MODULE__,
-              {:dt_accel_gyro_val, values},
+              {Groups.dt_accel_gyro_val, values},
               self()
             )
 

@@ -274,10 +274,14 @@ defmodule Estimation.Ekf.SevenState do
 
   @spec position_rrm(struct()) :: struct()
   def position_rrm(state) do
-    ekf_state = state.ekf_state
+    if is_nil(state.origin) do
+      nil
+    else
+      ekf_state = state.ekf_state
 
-    ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
-    |> Map.put(:altitude_m, ekf_state[3])
+      ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
+      |> Map.put(:altitude_m, ekf_state[3])
+    end
   end
 
   @spec velocity_mps(struct()) :: map()
@@ -291,8 +295,12 @@ defmodule Estimation.Ekf.SevenState do
     ekf_state = state.ekf_state
 
     position_rrm =
-      ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
-      |> Map.put(:altitude_m, -ekf_state[3])
+      if is_nil(state.origin) do
+        nil
+      else
+        ViaUtils.Location.location_from_point_with_dx_dy(state.origin, ekf_state[1], ekf_state[2])
+        |> Map.put(:altitude_m, -ekf_state[3])
+      end
 
     velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
     {position_rrm, velocity_mps}
