@@ -1,4 +1,4 @@
-defmodule Command.CommanderReceivingRxTest do
+defmodule Command.CommanderReceivingGoalsTest do
   use ExUnit.Case
   require Logger
 
@@ -12,6 +12,7 @@ defmodule Command.CommanderReceivingRxTest do
     config = Configuration.FixedWing.Cessna.Sim.Uart.get_frsky_rx_config("CP2104")
     Uart.CommandRx.start_link(config)
     config = Configuration.FixedWing.Cessna.Sim.Command.config()
+    Command.RemotePilot.start_link(config[:RemotePilot])
     Command.Commander.start_link(config[:Commander])
 
     Process.sleep(200_000)

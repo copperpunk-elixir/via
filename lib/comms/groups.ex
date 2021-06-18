@@ -16,4 +16,8 @@ defmodule Comms.Groups do
   defmacro speed_courserate_altituderate_sideslip_cmd, do: :s_cdot_adot_s_cmd
   defmacro roll_pitch_yawrate_throttle_cmd, do: :rp_ydot_t_cmd
   defmacro rollrate_pitchrate_yawrate_throttle_cmd, do: :rdot_pdot_y_dot_t_cmd
+
+  defmacro goals_sorter, do: :goals_sorter
+  def goals_for_pilot_control_level(pcl), do: {:goals, pcl}
+  defmacro message_sorter_value, do: :message_sorter_value
 end

@@ -2,7 +2,7 @@ defmodule Command.Commander do
   use GenServer
   require Logger
   require Comms.Groups, as: Groups
-  require Command.ControlTypes
+  require Comms.Sorters, as: Sorters
 
   def start_link(config) do
     Logger.debug("Start Command.Commander GenServer")
@@ -11,33 +11,27 @@ defmodule Command.Commander do
 
   @impl GenServer
   def init(config) do
-    universal_channel_number_min_mid_max =
-      Keyword.fetch!(config, :universal_channel_number_min_mid_max)
-
-    pilot_control_level_channel =
-      Map.fetch!(universal_channel_number_min_mid_max, :pilot_control_level) |> elem(0)
-
-    autopilot_control_mode_channel =
-      Map.fetch!(universal_channel_number_min_mid_max, :autopilot_control_mode) |> elem(0)
-
-    universal_channel_number_min_mid_max =
-      Map.drop(universal_channel_number_min_mid_max, [
-        :pilot_control_level,
-        :autopilot_control_mode
-      ])
+    {default_pilot_control_level, default_goals} =
+      Keyword.fetch!(config, :default_goals) |> Map.to_list() |> Enum.at(0)
 
     state = %{
-      num_channels: Keyword.fetch!(config, :num_channels),
-      control_level_dependent_channel_number_min_mid_max:
-        Keyword.fetch!(config, :control_level_dependent_channel_number_min_mid_max),
-      universal_channel_number_min_mid_max: universal_channel_number_min_mid_max,
-      pilot_control_level_channel: pilot_control_level_channel,
-      autopilot_control_mode_channel: autopilot_control_mode_channel
-      # command_limits_min_mid_max: Keyword.fetch!(config, :command_limits_min_mid_max)
+      default_pilot_control_level: default_pilot_control_level,
+      default_goals: default_goals,
+      goals_store: %{},
+      pilot_control_level: Key
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
+    Comms.Operator.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
+    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
+    Comms.Operator.join_group(__MODULE__, Groups.goals_sorter(), self())
+
+    ViaUtils.Process.start_loop(
+      self(),
+      Keyword.fetch!(config, :commander_loop_interval_ms),
+      :commander_loop
+    )
+
     {:ok, state}
   end
 
@@ -48,91 +42,61 @@ defmodule Command.Commander do
   end
 
   @impl GenServer
-  def handle_cast({Groups.command_channels_failsafe(), channel_values, _failsafe_active}, state) do
-    Logger.debug("Channel values: #{inspect(channel_values)}")
-    channel_value_map = Stream.zip(0..(state.num_channels - 1), channel_values) |> Enum.into(%{})
+  def handle_cast(
+        {Groups.goals_sorter(), pilot_control_level, classification, time_validity_ms, goals},
+        state
+      ) do
+    Logger.debug("nav rx: #{ViaUtils.Format.eftb_map(goals, 3)}")
 
-    autopilot_control_mode =
-      Map.fetch!(channel_value_map, state.autopilot_control_mode_channel)
-      |> autopilot_control_mode_from_float()
+    MessageSorter.Sorter.add_message(
+      Groups.goals_for_pilot_control_level(pilot_control_level),
+      classification,
+      time_validity_ms,
+      goals
+    )
 
-    Logger.debug("acm: #{autopilot_control_mode}")
-
-    if autopilot_control_mode != Command.ControlTypes.autopilot_control_mode_full_auto() do
-      pilot_control_level =
-        Map.fetch!(channel_value_map, state.pilot_control_level_channel)
-        |> pilot_control_level_from_float()
-
-      Logger.debug("pcl: #{pilot_control_level}")
-
-      channels =
-        Map.fetch!(state.control_level_dependent_channel_number_min_mid_max, pilot_control_level)
-        |> Map.merge(state.universal_channel_number_min_mid_max)
-
-      Logger.debug("channels: #{inspect(channels)}")
-
-      commands =
-        Enum.reduce(channels, %{}, fn {channel_name,
-                                       {channel_number, output_min, output_mid, output_max,
-                                        multiplier}},
-                                      acc ->
-          # Logger.debug(
-          #   "ch num/min/max: #{channel_number}/#{ViaUtils.Format.eftb(output_min, 2)}/#{
-          #     ViaUtils.Format.eftb(output_max, 2)
-          #   }"
-          # )
-
-          unscaled_value = multiplier * Map.fetch!(channel_value_map, channel_number)
-
-          scaled_value =
-            if unscaled_value > 0 do
-              output_mid + unscaled_value * (output_max - output_mid)
-            else
-              output_mid + unscaled_value * (output_mid - output_min)
-            end
-
-          Map.put(acc, channel_name, scaled_value)
-        end)
-
-      Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
-
-      {:noreply, state}
-    end
+    MessageSorter.Sorter.add_message(
+      Groups.pilot_control_level(),
+      classification,
+      time_validity_ms,
+      pilot_control_level
+    )
 
     {:noreply, state}
   end
 
-  @spec autopilot_control_mode_from_float(float()) :: integer()
-  def autopilot_control_mode_from_float(acm_float) do
-    cond do
-      acm_float > 0.5 -> Command.ControlTypes.autopilot_control_mode_disengaged()
-      acm_float > -0.5 -> Command.ControlTypes.autopilot_control_mode_controller_assist()
-      true -> Command.ControlTypes.autopilot_control_mode_full_auto()
-    end
-  end
-
-  @spec pilot_control_level_from_float(float()) :: integer()
-  def pilot_control_level_from_float(pcl_float) do
-    cond do
-      pcl_float > 0.5 ->
-        Command.ControlTypes.pilot_control_level_speed_courserate_altituderate_sideslip()
-
-      pcl_float > -0.5 ->
-        Command.ControlTypes.pilot_control_level_roll_pitch_yawrate_throttle()
-
-      true ->
-        Command.ControlTypes.pilot_control_level_rollrate_pitchrate_yawrate_throttle()
-    end
-  end
-
-  @spec get_command_for_min_mid_max_multiplier(number(), number(), number(), number(), number()) ::
-          number()
-  def get_command_for_min_mid_max_multiplier(
-        value,
-        output_min,
-        output_mid,
-        output_max,
-        multiplier
+  @impl GenServer
+  def handle_cast(
+        {Groups.message_sorter_value(), {Sorters.goals(), pilot_control_level}, _classification,
+         goals, status},
+        state
       ) do
+    goals_store =
+      if status == :current do
+        Map.put(state.goals_store, pilot_control_level, goals)
+      else
+        Map.drop(state.goals_store, [pilot_control_level])
+      end
+
+    {:noreply, %{state | goals_store: goals_store}}
+  end
+
+  @impl GenServer
+  def handle_cast(
+        {Groups.pilot_control_level(), pilot_control_level, _classification, pilot_control_level,
+         _status},
+        state
+      ) do
+    {:noreply, %{state | pilot_control_level: pilot_control_level}}
+  end
+
+  @impl GenServer
+  def handle_info(:commander_loop, state) do
+    pilot_control_level = state.pilot_control_level
+    goals = Map.get(state.goals_store, pilot_control_level
+    goals = if is_nil(goals), do: state.default_goals
+
+    Logger.debug("loop. current pcl/goals: #{pilot_control_level}/#{inspect(goals)}")
+    {:noreply, state}
   end
 end

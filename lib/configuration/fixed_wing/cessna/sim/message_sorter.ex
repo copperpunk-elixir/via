@@ -8,11 +8,17 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
 
   @spec sorter_configs() :: list()
   def sorter_configs() do
+    root_module =
+      Module.split(__MODULE__)
+      |> Enum.drop(-1)
+      |> Module.concat()
+
+    sorter_modules = [Commander]
+
     control = []
     estimation = []
     navigator = []
-
-    []
+    commander = []
   end
 
   @spec message_sorter_classification_time_validity_ms(atom(), any()) :: tuple()
@@ -21,25 +27,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
     classification_all = %{
       {:hb, :node} => %{
         Cluster.Heartbeat => [1, 1]
-      },
-      :indirect_actuator_cmds => %{
-        Control.Controller => [1, 1]
-        # Navigation.Navigator => [0,2]
-      },
-      :indirect_override_cmds => %{
-        Command.Commander => [1, 1]
-        # Navigation.PathManager => [0,2]
-      },
-      {:direct_actuator_cmds, :flaps} => %{
-        Command.Commander => [1, 1],
-        Navigation.PathManager => [1, 2]
-      },
-      {:direct_actuator_cmds, :gear} => %{
-        Command.Commander => [1, 1],
-        Navigation.PathManager => [1, 2]
-      },
-      {:direct_actuator_cmds, :all} => %{
-        Command.Commander => [1, 1]
       },
       :control_cmds => %{
         Control.Controller => [1, 1],

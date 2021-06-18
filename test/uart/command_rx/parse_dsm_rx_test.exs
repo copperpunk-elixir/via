@@ -1,4 +1,3 @@
-
 defmodule Uart.CommandRx.ParseDsmRxTest do
   use ExUnit.Case
   require Logger
