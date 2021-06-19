@@ -1,5 +1,6 @@
 defmodule MessageSorter.DiscreteLooper do
   require Logger
+  alias MessageSorter.DiscreteLooper.Member, as: DLMember
 
   defstruct interval_ms: nil, members: %{}, time_ms: 0, name: nil
 
@@ -14,26 +15,27 @@ defmodule MessageSorter.DiscreteLooper do
     }
   end
 
-  @spec add_member_to_looper(struct(), any(), integer()) :: struct()
-  def add_member_to_looper(looper, pid, new_interval_ms) do
+  @spec add_member_to_looper(struct(), any(), integer(), boolean()) :: struct()
+  def add_member_to_looper(looper, pid, new_interval_ms, send_when_stale \\ true) do
     looper_interval_ms = looper.interval_ms
     members =
     if valid_interval?(new_interval_ms, looper_interval_ms) do
       members = looper.members
-      # Logger.info("add #{inspect(pid)} to #{new_interval_ms} member list")
+      # Logger.info("add #{inspect(pid)} to #{new_interval_ms}/#{send_when_stale} member list")
       # Logger.info("members: #{inspect(members)}")
       # Logger.debug("looper_interval: #{looper_interval_ms}")
       num_intervals = round(1000/looper_interval_ms)
       # Logger.info("num_ints: #{num_intervals}")
-      Enum.reduce(1..num_intervals, members, fn (mult, members_acc) ->
-        single_interval_ms = mult*looper_interval_ms
-        pids =
+      Enum.reduce(1..num_intervals, members, fn (interval_multiplier, members_acc) ->
+        single_interval_ms = interval_multiplier*looper_interval_ms
+        members_for_interval =
         if rem(single_interval_ms, new_interval_ms) == 0 do
-          [pid] ++ Map.get(members, single_interval_ms, [])
+          new_member = DLMember.new(pid, send_when_stale)
+          [new_member] ++ Map.get(members, single_interval_ms, [])
         else
           Map.get(members, single_interval_ms, [])
         end
-        if Enum.empty?(pids), do: members_acc, else: Map.put(members_acc, single_interval_ms, pids)
+        if Enum.empty?(members_for_interval), do: members_acc, else: Map.put(members_acc, single_interval_ms, members_for_interval)
       end)
     else
       Logger.warn("Add Members Interval #{new_interval_ms} is invalid: #{looper_interval_ms} for #{inspect(looper.name)}")
@@ -58,8 +60,8 @@ defmodule MessageSorter.DiscreteLooper do
   @spec update_all_members(struct(), list()) :: struct()
   def update_all_members(looper, member_interval_list) do
     looper = new(looper.name, looper.interval_ms)
-    Enum.reduce(member_interval_list, looper, fn ({pid, interval_ms}, acc) ->
-      add_member_to_looper(acc, pid, interval_ms)
+    Enum.reduce(member_interval_list, looper, fn ({pid, {interval_ms, send_when_stale}}, acc) ->
+      add_member_to_looper(acc, pid, interval_ms, send_when_stale)
     end)
   end
 

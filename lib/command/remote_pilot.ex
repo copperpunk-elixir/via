@@ -50,27 +50,27 @@ defmodule Command.RemotePilot do
 
   @impl GenServer
   def handle_cast({Groups.command_channels_failsafe(), channel_values, _failsafe_active}, state) do
-    Logger.debug("Channel values: #{inspect(channel_values)}")
+    # Logger.debug("Channel values: #{inspect(channel_values)}")
     channel_value_map = Stream.zip(0..(state.num_channels - 1), channel_values) |> Enum.into(%{})
 
     autopilot_control_mode =
       Map.fetch!(channel_value_map, state.autopilot_control_mode_channel)
       |> autopilot_control_mode_from_float()
 
-    Logger.debug("acm: #{autopilot_control_mode}")
+    # Logger.debug("acm: #{autopilot_control_mode}")
 
     if autopilot_control_mode != Command.ControlTypes.autopilot_control_mode_full_auto() do
       pilot_control_level =
         Map.fetch!(channel_value_map, state.pilot_control_level_channel)
         |> pilot_control_level_from_float()
 
-      Logger.debug("pcl: #{pilot_control_level}")
+      # Logger.debug("pcl: #{pilot_control_level}")
 
       channels =
         Map.fetch!(state.control_level_dependent_channel_number_min_mid_max, pilot_control_level)
         |> Map.merge(state.universal_channel_number_min_mid_max)
 
-      Logger.debug("channels: #{inspect(channels)}")
+      # Logger.debug("channels: #{inspect(channels)}")
 
       commands =
         Enum.reduce(channels, %{}, fn {channel_name,
@@ -89,11 +89,11 @@ defmodule Command.RemotePilot do
           Map.put(acc, channel_name, output)
         end)
 
-      Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
+      # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
       {goals_sorter_classification, goals_sorter_time_validity_ms} = state.goals_sorter_classification_and_time_validity_ms
       Comms.Operator.send_global_msg_to_group(
         __MODULE__,
-        {Groups.goals_sorter, pilot_control_level, goals_sorter_classification, goals_sorter_time_validity_ms, commands},
+        {Groups.goals_sorter, goals_sorter_classification, goals_sorter_time_validity_ms, {commands, pilot_control_level}},
         self()
       )
     end

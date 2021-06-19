@@ -13,12 +13,11 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
       |> Enum.drop(-1)
       |> Module.concat()
 
-    sorter_modules = [Commander]
-
-    control = []
-    estimation = []
-    navigator = []
-    commander = []
+    sorter_modules = [Command]
+    Enum.reduce(sorter_modules,[], fn module, acc ->
+      full_module = Module.concat(root_module, module)
+      acc ++ apply(full_module, :message_sorter_configs, [])
+    end)
   end
 
   @spec message_sorter_classification_time_validity_ms(atom(), any()) :: tuple()
@@ -33,7 +32,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
         Navigation.Navigator => [1, 2]
       },
       :goals => %{
-        Command.Commander => [1, 1],
+        Command.RemotePilot => [1, 1],
         Navigation.PathManager => [1, 2]
       },
       :control_state => %{

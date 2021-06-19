@@ -22,8 +22,7 @@ defmodule Via.Application do
   def start_test(vehicle_type, model_type, node_type) do
     prepare_environment()
     full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
-    IO.puts("full_config: #{inspect(full_config)}")
-    # IO.puts("Full config: #{inspect(full_config)}")
+    Logger.debug("full_config: #{inspect(full_config)}")
     Via.Supervisor.start_universal_modules(full_config)
     full_config
   end

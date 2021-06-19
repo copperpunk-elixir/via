@@ -2,11 +2,21 @@ defmodule MessageSorter.Sorter do
   use GenServer
   require Logger
   alias MessageSorter.DiscreteLooper
+  # require MessageSorter.Sorter, as: Sorter
 
-  @registry MessageSorterRegistry
   @classification_length 2
 
-  defmacro registry, do: @registry
+  @message_sorter_registry MessageSorterRegistry
+  @status_current :current_value
+  @status_last :last_value
+  @status_decay :decay_value
+  @status_default :default_value
+
+  defmacro registry(), do: @message_sorter_registry
+  defmacro status_current(), do: @status_current
+  defmacro status_last(), do: @status_last
+  defmacro status_decay(), do: @status_decay
+  defmacro status_default(), do: @status_default
 
   def start_link(config) do
     Logger.debug("Start MessageSorter: #{inspect(config[:name])}")
@@ -19,9 +29,9 @@ defmodule MessageSorter.Sorter do
 
     {default_message_behavior, default_value} =
       case Keyword.get(config, :default_message_behavior) do
-        :last -> {:last, nil}
-        :default_value -> {:default_value, config[:default_value]}
-        :decay -> {:decay, config[:decay_value]}
+        @status_last-> {@status_last, nil}
+        @status_default -> {@status_default, config[@status_default]}
+        @status_decay -> {@status_decay, config[@status_decay]}
       end
 
     publish_value_looper =
@@ -65,9 +75,22 @@ defmodule MessageSorter.Sorter do
     state
   end
 
+  @spec register_for_sorter(any(), atom(), integer(), boolean()) :: tuple()
+  def register_for_sorter(sorter_name, value_or_messages, publish_interval_ms, send_when_stale) do
+    if (value_or_messages == :message) and !send_when_stale do
+      raise ":messages sorters will always send values. They currently do not confirm that all messages are current."
+    end
+    Registry.register(
+      @message_sorter_registry,
+      {sorter_name, value_or_messages},
+      {publish_interval_ms, send_when_stale}
+    )
+  end
+
   @impl GenServer
   def handle_cast({:add_message, classification, expiration_mono_ms, value}, state) do
     # Check if message has a valid classification
+    # Logger.debug("add msg to #{inspect(state.name)}: #{inspect(value)}")
     messages =
       if is_valid_classification?(classification) do
         # Remove any messages that have the same classification (there should be at most 1)
@@ -119,9 +142,14 @@ defmodule MessageSorter.Sorter do
     {state, classification, value, status} = get_current_value(state)
     name = state.name
 
-    Enum.each(DiscreteLooper.get_members_now(publish_looper), fn dest ->
+    Enum.each(DiscreteLooper.get_members_now(publish_looper), fn member ->
       # Logger.debug("Send #{inspect(value)}/#{status} to #{inspect(dest)}")
-      GenServer.cast(dest, {:message_sorter_value, name, classification, value, status})
+      if status == @status_current or member.send_when_stale do
+        GenServer.cast(
+          member.process_id,
+          {:message_sorter_value, name, classification, value, status}
+        )
+      end
     end)
 
     publish_loopers = Map.put(state.publish_loopers, :value, publish_looper)
@@ -145,7 +173,7 @@ defmodule MessageSorter.Sorter do
 
   @impl GenServer
   def handle_info({:update_subscriber_loop, sub_type}, state) do
-    subs = Registry.lookup(@registry, {state.name, sub_type})
+    subs = Registry.lookup(@message_sorter_registry, {state.name, sub_type})
     # Logger.info("subs: #{inspect(subs)}")
     # Logger.debug("sorter update members: #{inspect(state.name)}/#{sub_type}")
     # Logger.debug("pub looper pre: #{inspect(publish_looper)}")
@@ -165,11 +193,11 @@ defmodule MessageSorter.Sorter do
     {classification, value, value_status} =
       if is_nil(msg) do
         case state.default_message_behavior do
-          :last -> {nil, state.last_value, :last}
-          :default_value -> {nil, state.default_value, :default_value}
+          @status_last -> {nil, state.last_value, @status_last}
+          @status_default -> {nil, state.default_value, @status_default}
         end
       else
-        {msg.classification, msg.value, :current}
+        {msg.classification, msg.value, @status_current}
       end
 
     {%{state | messages: messages, last_value: value}, classification, value, value_status}
