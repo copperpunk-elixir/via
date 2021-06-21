@@ -81,15 +81,16 @@ defmodule Command.RemotePilot do
         commands =
           Enum.reduce(channels, %{}, fn {channel_name,
                                          {channel_number, output_min, output_mid, output_max,
-                                          multiplier}},
+                                          multiplier, deadband}},
                                         acc ->
             output =
-              get_command_for_min_mid_max_multiplier(
+              get_command_for_min_mid_max_multiplier_deadband(
                 Map.fetch!(channel_value_map, channel_number),
                 output_min,
                 output_mid,
                 output_max,
-                multiplier
+                multiplier,
+                deadband
               )
 
             Map.put(acc, channel_name, output)
@@ -108,13 +109,15 @@ defmodule Command.RemotePilot do
 
       autopilot_control_mode == Command.ControlTypes.autopilot_control_mode_disengaged() ->
         commands =
-          Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name, channel_number}, acc ->
+          Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name, channel_number},
+                                                                    acc ->
             Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
           end)
 
+        {_classification, override_time_validity_ms} = state.goals_sorter_classification_and_time_validity_ms
         ViaUtils.Comms.send_global_msg_to_group(
           __MODULE__,
-          {Groups.remote_pilot_goals_override(), commands},
+          {Groups.remote_pilot_goals_override(), commands, override_time_validity_ms},
           self()
         )
 
@@ -148,15 +151,24 @@ defmodule Command.RemotePilot do
     end
   end
 
-  @spec get_command_for_min_mid_max_multiplier(number(), number(), number(), number(), number()) ::
+  @spec get_command_for_min_mid_max_multiplier_deadband(
+          number(),
+          number(),
+          number(),
+          number(),
+          number(),
           number()
-  def get_command_for_min_mid_max_multiplier(
+        ) ::
+          number()
+  def get_command_for_min_mid_max_multiplier_deadband(
         value,
         output_min,
         output_mid,
         output_max,
-        multiplier
+        multiplier,
+        deadband
       ) do
+    value = ViaUtils.Math.apply_deadband(value, deadband)
     unscaled_value = multiplier * value
 
     if unscaled_value > 0 do

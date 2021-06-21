@@ -11,18 +11,19 @@ defmodule TestHelper.Estimation.GenServer do
   @impl GenServer
   def init(_) do
     Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
 
     ViaUtils.Comms.join_group(
       __MODULE__,
-      Groups.estimation_position_speed_course_airspeed,
+      Groups.estimation_position_groundalt_groundspeed_course_airspeed(),
       self()
     )
 
     state = %{
       attitude_rad: nil,
       position_rrm: nil,
-      speed_mps: nil,
+      ground_altitude_m: nil,
+      groundspeed_mps: nil,
       course_rad: nil,
       airspeed_mps: nil
     }
@@ -31,21 +32,22 @@ defmodule TestHelper.Estimation.GenServer do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude, attitude_rad, _dt}, state) do
+  def handle_cast({Groups.estimation_attitude(), attitude_rad, _dt}, state) do
     {:noreply, %{state | attitude_rad: attitude_rad}}
   end
 
   @impl GenServer
   def handle_cast(
-        {Groups.estimation_position_speed_course_airspeed, position_rrm, speed_mps,
-         course_rad, airspeed_mps, _dt},
+        {Groups.estimation_position_groundalt_groundspeed_course_airspeed(), position_rrm,
+         ground_altitude_m, groundspeed_mps, course_rad, airspeed_mps, _dt},
         state
       ) do
     {:noreply,
      %{
        state
        | position_rrm: position_rrm,
-         speed_mps: speed_mps,
+         ground_altitude_m: ground_altitude_m,
+         groundspeed_mps: groundspeed_mps,
          course_rad: course_rad,
          airspeed_mps: airspeed_mps
      }}

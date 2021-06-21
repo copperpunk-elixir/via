@@ -175,7 +175,7 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_speed_course_airspeed(), position_rrm, groundspeed_mps,
+          {Groups.estimation_position_groundalt_groundspeed_course_airspeed(), position_rrm, ground_altitude_m, groundspeed_mps,
            course_rad, airspeed_mps, dt},
           self()
         )

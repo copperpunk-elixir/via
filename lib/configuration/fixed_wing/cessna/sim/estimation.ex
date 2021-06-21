@@ -5,7 +5,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
       Estimator: [
         attitude_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
         position_speed_course_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
-        sca_values_slow_loop_interval_ms: Configuration.Generic.loop_interval_ms(:slow),
         accel_gyro_rate_expected_interval_ms: 5,
         gps_expected_interval_ms: 200,
         range_expected_interval_ms: 100,

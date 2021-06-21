@@ -98,6 +98,7 @@ defmodule Estimation.Ekf.SevenState do
 
     dz = -position_rrm.altitude_m - origin.altitude_m
 
+    # TODO: This is the line that is givin a "no local return" warning
     z =
       Matrex.new([
         [dx],
