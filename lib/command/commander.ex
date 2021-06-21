@@ -26,27 +26,25 @@ defmodule Command.Commander do
 
     commander_loop_interval_ms = Keyword.fetch!(config, :commander_loop_interval_ms)
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
-    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
-    Comms.Operator.join_group(__MODULE__, Groups.goals_sorter(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.goals_sorter(), self())
 
     Enum.each(
       CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle()..CCT.pilot_control_level_speed_course_altitude_sideslip(),
       fn pilot_control_level ->
-        MessageSorter.Sorter.register_for_sorter(
+        MessageSorter.Sorter.register_for_sorter_current_only(
           {Sorters.goals(), pilot_control_level},
           :value,
-          commander_loop_interval_ms,
-          false
+          commander_loop_interval_ms
         )
       end
     )
 
-    MessageSorter.Sorter.register_for_sorter(
+    MessageSorter.Sorter.register_for_sorter_current_and_stale(
       Sorters.pilot_control_level(),
       :value,
-      commander_loop_interval_ms,
-      true
+      commander_loop_interval_ms
     )
 
     ViaUtils.Process.start_loop(
@@ -97,7 +95,7 @@ defmodule Command.Commander do
   @impl GenServer
   def handle_cast(
         {Groups.message_sorter_value(), {Sorters.goals(), pilot_control_level}, _classification,
-         goals, MessageSorter.Sorter.status_current},
+         goals, MessageSorter.Sorter.status_current()},
         state
       ) do
     goals_store = Map.put(state.goals_store, pilot_control_level, goals)
@@ -132,7 +130,8 @@ defmodule Command.Commander do
         {goals, :current}
       end
 
-    Logger.debug("loop. #{inspect(status)} pcl/goals: #{pilot_control_level}/#{inspect(goals)}")
+    ViaUtils.Comms.send_local_msg_to_group(__MODULE__, {Groups.commander_goals(), pilot_control_level, goals}, self())
+    # Logger.debug("cmdr loop. #{inspect(status)} pcl/goals: #{pilot_control_level}/#{inspect(goals)}")
     {:noreply, state}
   end
 

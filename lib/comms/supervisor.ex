@@ -34,7 +34,7 @@ defmodule Comms.Supervisor do
       %{
         id: name,
         start: {
-          Comms.Operator,
+          ViaUtils.Comms,
           :start_link,
           [
             [

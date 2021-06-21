@@ -3,6 +3,7 @@ defmodule Command.RemotePilot do
   require Logger
   require Comms.Groups, as: Groups
   require Command.ControlTypes
+  require Command.Actuators, as: Act
 
   def start_link(config) do
     Logger.debug("Start Command.RemotePilot GenServer")
@@ -30,15 +31,17 @@ defmodule Command.RemotePilot do
       num_channels: Keyword.fetch!(config, :num_channels),
       control_level_dependent_channel_number_min_mid_max:
         Keyword.fetch!(config, :control_level_dependent_channel_number_min_mid_max),
+      remote_pilot_override_channels: Keyword.fetch!(config, :remote_pilot_override_channels),
       universal_channel_number_min_mid_max: universal_channel_number_min_mid_max,
       pilot_control_level_channel: pilot_control_level_channel,
       autopilot_control_mode_channel: autopilot_control_mode_channel,
-      goals_sorter_classification_and_time_validity_ms: Keyword.fetch!(config, :goals_sorter_classification_and_time_validity_ms),
+      goals_sorter_classification_and_time_validity_ms:
+        Keyword.fetch!(config, :goals_sorter_classification_and_time_validity_ms)
       # command_limits_min_mid_max: Keyword.fetch!(config, :command_limits_min_mid_max)
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
     {:ok, state}
   end
 
@@ -59,43 +62,65 @@ defmodule Command.RemotePilot do
 
     # Logger.debug("acm: #{autopilot_control_mode}")
 
-    if autopilot_control_mode != Command.ControlTypes.autopilot_control_mode_full_auto() do
-      pilot_control_level =
-        Map.fetch!(channel_value_map, state.pilot_control_level_channel)
-        |> pilot_control_level_from_float()
+    cond do
+      autopilot_control_mode == Command.ControlTypes.autopilot_control_mode_controller_assist() ->
+        pilot_control_level =
+          Map.fetch!(channel_value_map, state.pilot_control_level_channel)
+          |> pilot_control_level_from_float()
 
-      # Logger.debug("pcl: #{pilot_control_level}")
+        # Logger.debug("pcl: #{pilot_control_level}")
 
-      channels =
-        Map.fetch!(state.control_level_dependent_channel_number_min_mid_max, pilot_control_level)
-        |> Map.merge(state.universal_channel_number_min_mid_max)
+        channels =
+          Map.fetch!(
+            state.control_level_dependent_channel_number_min_mid_max,
+            pilot_control_level
+          )
+          |> Map.merge(state.universal_channel_number_min_mid_max)
 
-      # Logger.debug("channels: #{inspect(channels)}")
+        # Logger.debug("channels: #{inspect(channels)}")
 
-      commands =
-        Enum.reduce(channels, %{}, fn {channel_name,
-                                       {channel_number, output_min, output_mid, output_max,
-                                        multiplier}},
-                                      acc ->
-          output =
-            get_command_for_min_mid_max_multiplier(
-              Map.fetch!(channel_value_map, channel_number),
-              output_min,
-              output_mid,
-              output_max,
-              multiplier
-            )
+        commands =
+          Enum.reduce(channels, %{}, fn {channel_name,
+                                         {channel_number, output_min, output_mid, output_max,
+                                          multiplier}},
+                                        acc ->
+            output =
+              get_command_for_min_mid_max_multiplier(
+                Map.fetch!(channel_value_map, channel_number),
+                output_min,
+                output_mid,
+                output_max,
+                multiplier
+              )
 
-          Map.put(acc, channel_name, output)
-        end)
+            Map.put(acc, channel_name, output)
+          end)
 
-      # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
-      {goals_sorter_classification, goals_sorter_time_validity_ms} = state.goals_sorter_classification_and_time_validity_ms
-      Comms.Operator.send_global_msg_to_group(
-        __MODULE__,
-        {Groups.goals_sorter, goals_sorter_classification, goals_sorter_time_validity_ms, {commands, pilot_control_level}},
-        self()
-      )
+        # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
+        {goals_sorter_classification, goals_sorter_time_validity_ms} =
+          state.goals_sorter_classification_and_time_validity_ms
+
+        ViaUtils.Comms.send_global_msg_to_group(
+          __MODULE__,
+          {Groups.goals_sorter(), goals_sorter_classification, goals_sorter_time_validity_ms,
+           {commands, pilot_control_level}},
+          self()
+        )
+
+      autopilot_control_mode == Command.ControlTypes.autopilot_control_mode_disengaged() ->
+        commands =
+          Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name, channel_number}, acc ->
+            Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
+          end)
+
+        ViaUtils.Comms.send_global_msg_to_group(
+          __MODULE__,
+          {Groups.remote_pilot_goals_override(), commands},
+          self()
+        )
+
+      true ->
+        :ok
     end
 
     {:noreply, state}

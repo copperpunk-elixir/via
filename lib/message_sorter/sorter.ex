@@ -29,7 +29,7 @@ defmodule MessageSorter.Sorter do
 
     {default_message_behavior, default_value} =
       case Keyword.get(config, :default_message_behavior) do
-        @status_last-> {@status_last, nil}
+        @status_last -> {@status_last, nil}
         @status_default -> {@status_default, config[@status_default]}
         @status_decay -> {@status_decay, config[@status_decay]}
       end
@@ -75,11 +75,22 @@ defmodule MessageSorter.Sorter do
     state
   end
 
+  @spec register_for_sorter_current_only(any(), atom(), integer()) :: tuple()
+  def register_for_sorter_current_only(sorter_name, value_or_messages, publish_interval_ms) do
+    register_for_sorter(sorter_name, value_or_messages, publish_interval_ms, false)
+  end
+
+  @spec register_for_sorter_current_and_stale(any(), atom(), integer()) :: tuple()
+  def register_for_sorter_current_and_stale(sorter_name, value_or_messages, publish_interval_ms) do
+    register_for_sorter(sorter_name, value_or_messages, publish_interval_ms, true)
+  end
+
   @spec register_for_sorter(any(), atom(), integer(), boolean()) :: tuple()
   def register_for_sorter(sorter_name, value_or_messages, publish_interval_ms, send_when_stale) do
-    if (value_or_messages == :message) and !send_when_stale do
+    if value_or_messages == :message and !send_when_stale do
       raise ":messages sorters will always send values. They currently do not confirm that all messages are current."
     end
+
     Registry.register(
       @message_sorter_registry,
       {sorter_name, value_or_messages},

@@ -2,6 +2,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require MessageSorter.Sorter, as: MSS
+  require Command.Actuators, as: Act
 
   @spec config() :: list()
   def config() do
@@ -59,6 +60,14 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           pilot_control_level: {7, -1.0, 0, 1.0, CCT.input_inverted()},
           autopilot_control_mode: {11, -1.0, 0, 1.0, CCT.input_inverted()}
         },
+        remote_pilot_override_channels: %{
+          Act.aileron => 0,
+          Act.elevator => 1,
+          Act.throttle => 2,
+          Act.rudder => 3,
+          Act.flaps => 4,
+          Act.gear => 5
+        },
         goals_sorter_classification_and_time_validity_ms:
           remote_pilot_goals_sorter_classification_and_time_validity_ms
         #   command_limits_min_max: %{
@@ -79,31 +88,4 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
     ]
   end
 
-  def message_sorter_configs() do
-    goals_sorters =
-      Enum.map(
-        CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle()..CCT.pilot_control_level_speed_course_altitude_sideslip(),
-        fn pilot_control_level ->
-          [
-            name: {Sorters.goals, pilot_control_level},
-            default_message_behavior: MSS.status_default,
-            default_value: nil,
-            value_type: :map,
-            publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
-          ]
-        end
-      )
-
-    pilot_control_level_sorter = [
-      [
-        name: Sorters.pilot_control_level(),
-        default_message_behavior: MSS.status_default,
-        default_value: CCT.pilot_control_level_roll_pitch_yawrate_throttle(),
-        value_type: :number,
-        publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
-      ]
-    ]
-
-    goals_sorters ++ pilot_control_level_sorter
-  end
 end
