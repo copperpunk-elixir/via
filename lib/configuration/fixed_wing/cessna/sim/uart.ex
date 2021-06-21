@@ -1,6 +1,5 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Uart do
   require Logger
-  require ViaUtils.Constants, as: VC
 
   @spec config() :: list()
   def config() do

@@ -2,8 +2,6 @@ defmodule Control.Controller do
   use GenServer
   require Logger
   require Comms.Groups, as: Groups
-  require Comms.Sorters, as: Sorters
-  require Command.ControlTypes, as: CCT
   require MessageSorter.Sorter
 
   @controller_loop :controller_loop
@@ -26,12 +24,23 @@ defmodule Control.Controller do
       goals_store: %{},
       pilot_control_level: default_pilot_control_level,
       remote_pilot_goals_override: %{},
-      remote_pilot_override: false
+      remote_pilot_override: false,
+      speed_mps: 0,
+      course_rad: 0,
+      altitude_m: 0,
+      airspeed_mps: 0
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.commander_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.remote_pilot_goals_override(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
+
+    ViaUtils.Comms.join_group(
+      __MODULE__,
+      Groups.estimation_position_speed_course_airspeed(),
+      self()
+    )
 
     controller_loop_interval_ms = Keyword.fetch!(config, :controller_loop_interval_ms)
 
@@ -77,6 +86,30 @@ defmodule Control.Controller do
   def handle_cast({Groups.remote_pilot_goals_override(), goals}, state) do
     # Logger.debug("Remote override rx: #{ViaUtils.Format.eftb_map(goals, 3)}")
     {:noreply, %{state | remote_pilot_override: true, remote_pilot_goals_override: goals}}
+  end
+
+  @impl GenServer
+  def handle_cast({Groups.estimation_attitude(), attitude_rad, _dt}, state) do
+    Logger.debug("ctrl att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_cast(
+        {Groups.estimation_position_speed_course_airspeed(), position_rrm, speed_mps, course_rad,
+         airspeed_mps, _dt},
+        state
+      ) do
+    Logger.debug("ctrl course: #{ViaUtils.Format.eftb_deg(course_rad, 1)}")
+
+    {:noreply,
+     %{
+       state
+       | speed_mps: speed_mps,
+         course_rad: course_rad,
+         altitude_m: position_rrm.altitude_m,
+         airspeed_mps: airspeed_mps
+     }}
   end
 
   @impl GenServer

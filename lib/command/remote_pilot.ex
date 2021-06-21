@@ -3,7 +3,6 @@ defmodule Command.RemotePilot do
   require Logger
   require Comms.Groups, as: Groups
   require Command.ControlTypes
-  require Command.Actuators, as: Act
 
   def start_link(config) do
     Logger.debug("Start Command.RemotePilot GenServer")

@@ -26,8 +26,6 @@ defmodule Command.Commander do
 
     commander_loop_interval_ms = Keyword.fetch!(config, :commander_loop_interval_ms)
     Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.goals_sorter(), self())
 
     Enum.each(
@@ -119,7 +117,7 @@ defmodule Command.Commander do
     pilot_control_level = state.pilot_control_level
     goals = Map.get(state.goals_store, pilot_control_level)
 
-    {goals, status} =
+    {goals, _status} =
       if is_nil(goals) do
         {update_goals_to_reflect_goal_restrictions(
            state.default_goals,

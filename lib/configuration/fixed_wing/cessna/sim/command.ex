@@ -1,7 +1,6 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Command do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
-  require MessageSorter.Sorter, as: MSS
   require Command.Actuators, as: Act
 
   @spec config() :: list()
@@ -66,7 +65,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           Act.throttle => 2,
           Act.rudder => 3,
           Act.flaps => 4,
-          Act.gear => 5
+          Act.gear =>5
         },
         goals_sorter_classification_and_time_validity_ms:
           remote_pilot_goals_sorter_classification_and_time_validity_ms
