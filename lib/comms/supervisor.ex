@@ -23,7 +23,7 @@ defmodule Comms.Supervisor do
 
   @spec start_message_sorter_registry() :: atom()
   def start_message_sorter_registry() do
-     child_spec = {Registry, [keys: :duplicate, name: MessageSorter.Sorter.registry]}
+     child_spec = {Registry, [keys: :duplicate, name: MessageSorter.Sorter.registry()]}
     DynamicSupervisor.start_child(__MODULE__,child_spec)
   end
 
@@ -34,7 +34,7 @@ defmodule Comms.Supervisor do
       %{
         id: name,
         start: {
-          Comms.Operator,
+          ViaUtils.Comms,
           :start_link,
           [
             [

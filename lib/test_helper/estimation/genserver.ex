@@ -11,9 +11,9 @@ defmodule TestHelper.Estimation.GenServer do
   @impl GenServer
   def init(_) do
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, Groups.estimation_attitude, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude, self())
 
-    Comms.Operator.join_group(
+    ViaUtils.Comms.join_group(
       __MODULE__,
       Groups.estimation_position_speed_course_airspeed,
       self()

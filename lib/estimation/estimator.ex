@@ -3,6 +3,8 @@ defmodule Estimation.Estimator do
   require Logger
   require Comms.Groups, as: Groups
 
+  @attitude_loop :attitude_loop
+  @position_speed_course_loop :position_speed_course_loop
   def start_link(config) do
     Logger.debug("Start Estimation.Estimator GenServer")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
@@ -36,20 +38,20 @@ defmodule Estimation.Estimator do
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    Comms.Operator.join_group(__MODULE__, Groups.dt_accel_gyro_val, self())
-    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_position_velocity, self())
-    Comms.Operator.join_group(__MODULE__, Groups.gps_itow_relheading, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading, self())
 
     ViaUtils.Process.start_loop(
       self(),
       config[:attitude_loop_interval_ms],
-      {:attitude_loop, config[:attitude_loop_interval_ms] / 1000}
+      {@attitude_loop, config[:attitude_loop_interval_ms] / 1000}
     )
 
     ViaUtils.Process.start_loop(
       self(),
       config[:position_speed_course_loop_interval_ms],
-      {:position_speed_course_loop, config[:position_speed_course_loop_interval_ms] / 1000}
+      {@position_speed_course_loop, config[:position_speed_course_loop_interval_ms] / 1000}
     )
 
     {:ok, state}
@@ -93,12 +95,12 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({:attitude_loop, dt}, state) do
+  def handle_info({@attitude_loop, dt}, state) do
     # Logger.debug("att loop: #{dt}")
     imu = state.ins_kf.imu
     attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
 
-    Comms.Operator.send_local_msg_to_group(
+    ViaUtils.Comms.send_local_msg_to_group(
       __MODULE__,
       {Groups.estimation_attitude, attitude_rad, dt},
       self()
@@ -108,7 +110,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({:position_speed_course_loop, dt}, state) do
+  def handle_info({@position_speed_course_loop, dt}, state) do
     {position_rrm, velocity_mps} = apply(state.ins_kf_module, :position_rrm_velocity_mps, [state.ins_kf])
 
     state =
@@ -157,7 +159,7 @@ defmodule Estimation.Estimator do
 
         airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: groundspeed_mps
 
-        Comms.Operator.send_local_msg_to_group(
+        ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_position_speed_course_airspeed, position_rrm, groundspeed_mps, course_rad,
            airspeed_mps, dt},

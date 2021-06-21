@@ -7,6 +7,7 @@ defmodule Command.ControlTypes do
   defmacro pilot_control_level_speed_courserate_altituderate_sideslip, do: 3
   defmacro pilot_control_level_roll_pitch_yawrate_throttle, do: 2
   defmacro pilot_control_level_rollrate_pitchrate_yawrate_throttle, do: 1
+  defmacro remote_pilot_override, do: 0
 
   defmacro input_inverted, do: -1
   defmacro input_not_inverted, do: 1

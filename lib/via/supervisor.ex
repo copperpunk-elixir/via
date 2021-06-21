@@ -32,7 +32,7 @@ defmodule Via.Supervisor do
 
   @spec start_supervisor(atom(), keyword()) :: atom()
   def start_supervisor(module, config) do
-    Logger.info("Via Starting Module: #{module} with config: #{inspect(config)}")
+    Logger.debug("Via Starting Module: #{module} with config: #{inspect(config)}")
 
     DynamicSupervisor.start_child(
       __MODULE__,

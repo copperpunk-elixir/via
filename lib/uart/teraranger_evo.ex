@@ -70,7 +70,7 @@ defmodule Uart.TerarangerEvo do
 
     state =
       if state.new_range_data_to_publish do
-        Comms.Operator.send_global_msg_to_group(
+        ViaUtils.Comms.send_global_msg_to_group(
           __MODULE__,
           {{:estimation_measured, :range}, state.range},
           self()
