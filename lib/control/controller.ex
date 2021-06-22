@@ -220,57 +220,7 @@ defmodule Control.Controller do
             {pilot_control_level, goals}
           end
 
-        case pilot_control_level do
-          CCT.pilot_control_level_speed_courserate_altituderate_sideslip() ->
-            cmds = %{
-              groundspeed_mps: goals.groundspeed_mps,
-              sideslip_rad: goals.sideslip_rad,
-              altitude_m: state.latch_altitude_m,
-              course_rad: state.latch_course_rad
-            }
-
-            # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
-            Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(cmds, 3)}")
-            Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
-            state
-
-          CCT.pilot_control_level_speed_course_altitude_sideslip() ->
-            Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(state.goals, 3)}")
-            Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
-            state
-
-          CCT.pilot_control_level_roll_pitch_yawrate_throttle() ->
-            Logger.debug("attitude. Calculate bodyrates, then pass to companion")
-            attitude_rad = state.attitude_rad
-
-            unless Enum.empty?(attitude_rad) do
-              values =
-                Map.put(attitude_rad, :yawrate_rps, 0)
-                |> Map.put(:throttle_scaled, 0)
-
-              {rpyt_controller, bodyrate_cmds} =
-                apply(state.roll_pitch_yawrate_throttle_module, :update, [
-                  state.roll_pitch_yawrate_throttle_controller,
-                  goals,
-                  values,
-                  state.airspeed_mps,
-                  state.controller_loop_interval_ms*1.0e-3
-                ])
-
-              Logger.debug("output: #{ViaUtils.Format.eftb_map(bodyrate_cmds, 3)}")
-              %{state | roll_pitch_yawrate_throttle_controller: rpyt_controller}
-            else
-              state
-            end
-
-          CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle() ->
-            Logger.debug("bodyrates: pass straight to companion")
-            state
-
-          invalid_pcl ->
-            raise "Commander has PCL of #{invalid_pcl}, which should not be possible"
-        end
-
+        process_commands(pilot_control_level, goals, state)
         # Logger.debug(
         #   "ctrl loop. pcl/goals: #{pilot_control_level} #{ViaUtils.Format.eftb_map(goals, 3)}"
         # )
@@ -289,5 +239,65 @@ defmodule Control.Controller do
   def handle_info(@clear_remote_pilot_override_callback, state) do
     Logger.debug("clear remote override")
     {:noreply, %{state | remote_pilot_override: false}}
+  end
+
+  @spec process_commands(integer(), map(), map()) :: map()
+  def process_commands(pilot_control_level, goals, state) do
+    case pilot_control_level do
+      CCT.pilot_control_level_speed_courserate_altituderate_sideslip() ->
+        cmds = %{
+          groundspeed_mps: goals.groundspeed_mps,
+          sideslip_rad: goals.sideslip_rad,
+          altitude_m: state.latch_altitude_m,
+          course_rad: state.latch_course_rad
+        }
+
+        # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
+        Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(cmds, 3)}")
+        Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
+        state
+
+      CCT.pilot_control_level_speed_course_altitude_sideslip() ->
+        Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(state.goals, 3)}")
+        Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
+        state
+
+      CCT.pilot_control_level_roll_pitch_yawrate_throttle() ->
+        Logger.debug("attitude. Calculate bodyrates, then pass to companion")
+        attitude_rad = state.attitude_rad
+
+        unless Enum.empty?(attitude_rad) do
+          values =
+            Map.put(attitude_rad, :yawrate_rps, 0)
+            |> Map.put(:throttle_scaled, 0)
+
+          {rpyt_controller, bodyrate_cmds} =
+            apply(state.roll_pitch_yawrate_throttle_module, :update, [
+              state.roll_pitch_yawrate_throttle_controller,
+              goals,
+              values,
+              state.airspeed_mps,
+              state.controller_loop_interval_ms * 1.0e-3
+            ])
+
+          Logger.debug("output: #{ViaUtils.Format.eftb_map(bodyrate_cmds, 3)}")
+          state = %{state | roll_pitch_yawrate_throttle_controller: rpyt_controller}
+
+          process_commands(
+            CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle(),
+            bodyrate_cmds,
+            state
+          )
+        else
+          state
+        end
+
+      CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle() ->
+        Logger.debug("bodyrates: pass straight to companion")
+        state
+
+      invalid_pcl ->
+        raise "Commander has PCL of #{invalid_pcl}, which should not be possible"
+    end
   end
 end
