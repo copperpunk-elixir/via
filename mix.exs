@@ -60,7 +60,9 @@ defmodule Via.MixProject do
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
       {:frsky_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/frsky-parser"},
       {:dsm_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/dsm-parser"},
-      {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"}
+      {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"},
+      {:via_controllers,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers/"}
     ]
   end
 

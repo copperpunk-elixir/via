@@ -23,7 +23,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           CCT.pilot_control_level_roll_pitch_yawrate_throttle() => %{
             roll_rad: 0.26,
             pitch_rad: 0.03,
-            yawrate_rad: 0,
+            yawrate_rps: 0,
             throttle_scaled: 0,
             flaps_scaled: 0,
             gear_scaled: 1.0
