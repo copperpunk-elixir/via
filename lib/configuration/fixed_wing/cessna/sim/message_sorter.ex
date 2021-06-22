@@ -66,7 +66,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
       Command ->
         goals_sorters =
           Enum.map(
-            CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle()..CCT.pilot_control_level_speed_course_altitude_sideslip(),
+            CCT.pilot_control_level_1()..CCT.pilot_control_level_4(),
             fn pilot_control_level ->
               [
                 name: {Sorters.goals(), pilot_control_level},
@@ -82,7 +82,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
           [
             name: Sorters.pilot_control_level(),
             default_message_behavior: MSS.status_default(),
-            default_value: CCT.pilot_control_level_roll_pitch_yawrate_throttle(),
+            default_value: CCT.pilot_control_level_2(),
             value_type: :number,
             publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
           ]

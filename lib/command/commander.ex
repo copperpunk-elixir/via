@@ -34,7 +34,7 @@ defmodule Command.Commander do
     ViaUtils.Comms.join_group(__MODULE__, Groups.goals_sorter(), self())
 
     Enum.each(
-      CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle()..CCT.pilot_control_level_speed_course_altitude_sideslip(),
+      CCT.pilot_control_level_1()..CCT.pilot_control_level_4(),
       fn pilot_control_level ->
         MessageSorter.Sorter.register_for_sorter_current_only(
           {Sorters.goals(), pilot_control_level},
@@ -98,14 +98,13 @@ defmodule Command.Commander do
     goals_store = Map.put(state.goals_store, pilot_control_level, goals)
 
     ViaUtils.Process.detach_callback(state.clear_goals_timer)
+
     clear_goals_timer =
       ViaUtils.Process.attach_callback(
         self(),
         2 * state.commander_loop_interval_ms,
         @clear_goals_callback
       )
-
-
 
     # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals, 3)}")
     {:noreply, %{state | goals_store: goals_store, clear_goals_timer: clear_goals_timer}}
@@ -156,10 +155,8 @@ defmodule Command.Commander do
   @spec update_goals_to_reflect_goal_restrictions(map(), map(), integer()) :: map()
   def update_goals_to_reflect_goal_restrictions(goals, _goal_restrictions, pilot_control_level) do
     # This function currently just passes on the goals, without considering the goal restrictions
-    if pilot_control_level ==
-         Command.ControlTypes.pilot_control_level_speed_courserate_altituderate_sideslip() or
-         pilot_control_level ==
-           Command.ControlTypes.pilot_control_level_speed_course_altitude_sideslip() do
+    if pilot_control_level == CCT.pilot_control_level_3() or
+         pilot_control_level == CCT.pilot_control_level_4() do
       # Take goal_restrictions into account
       goals
     else

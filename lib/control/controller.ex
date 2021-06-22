@@ -22,16 +22,16 @@ defmodule Control.Controller do
 
     controller_loop_interval_ms = Keyword.fetch!(config, :controller_loop_interval_ms)
 
-    roll_pitch_yawrate_throttle_config =
-      Keyword.fetch!(config, :roll_pitch_yawrate_throttle_controller)
+    pcl_2_controller_config =
+      Keyword.fetch!(config, :pilot_control_level_2_controller)
 
-    roll_pitch_yawrate_throttle_module = roll_pitch_yawrate_throttle_config[:module]
+    pcl_2_controller_module = pcl_2_controller_config[:module]
 
-    roll_pitch_yawrate_throttle_controller =
+    pcl_2_controller =
       apply(
-        roll_pitch_yawrate_throttle_module,
+        pcl_2_controller_module,
         :new,
-        [Keyword.fetch!(roll_pitch_yawrate_throttle_config, :controller_config)]
+        [Keyword.fetch!(pcl_2_controller_config, :controller_config)]
       )
 
     state = %{
@@ -53,8 +53,12 @@ defmodule Control.Controller do
       controller_loop_interval_ms: controller_loop_interval_ms,
       clear_goals_timer: nil,
       clear_remote_pilot_override_timer: nil,
-      roll_pitch_yawrate_throttle_module: roll_pitch_yawrate_throttle_module,
-      roll_pitch_yawrate_throttle_controller: roll_pitch_yawrate_throttle_controller
+      controller_modules: %{
+        CCT.pilot_control_level_2() => pcl_2_controller_module
+      },
+      controllers: %{
+        CCT.pilot_control_level_2() => pcl_2_controller
+      }
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
@@ -93,11 +97,10 @@ defmodule Control.Controller do
 
     state =
       cond do
-        pilot_control_level != CCT.pilot_control_level_speed_courserate_altituderate_sideslip() ->
+        pilot_control_level != CCT.pilot_control_level_3() ->
           state
 
-        state.pilot_control_level !=
-            CCT.pilot_control_level_speed_courserate_altituderate_sideslip() ->
+        state.pilot_control_level != CCT.pilot_control_level_3() ->
           Logger.warn(
             "latch to alt/course: #{ViaUtils.Format.eftb(state.altitude_m, 3)}/#{
               ViaUtils.Format.eftb_deg(state.course_rad, 1)
@@ -244,7 +247,12 @@ defmodule Control.Controller do
   @spec process_commands(integer(), map(), map()) :: map()
   def process_commands(pilot_control_level, goals, state) do
     case pilot_control_level do
-      CCT.pilot_control_level_speed_courserate_altituderate_sideslip() ->
+      CCT.pilot_control_level_4() ->
+        Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(state.goals, 3)}")
+        Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
+        state
+
+      CCT.pilot_control_level_3() ->
         cmds = %{
           groundspeed_mps: goals.groundspeed_mps,
           sideslip_rad: goals.sideslip_rad,
@@ -257,34 +265,27 @@ defmodule Control.Controller do
         Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
         state
 
-      CCT.pilot_control_level_speed_course_altitude_sideslip() ->
-        Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(state.goals, 3)}")
-        Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
-        state
-
-      CCT.pilot_control_level_roll_pitch_yawrate_throttle() ->
+      CCT.pilot_control_level_2() ->
         Logger.debug("attitude. Calculate bodyrates, then pass to companion")
-        attitude_rad = state.attitude_rad
+        values = state.attitude_rad
 
-        unless Enum.empty?(attitude_rad) do
-          values =
-            Map.put(attitude_rad, :yawrate_rps, 0)
-            |> Map.put(:throttle_scaled, 0)
-
-          {rpyt_controller, bodyrate_cmds} =
-            apply(state.roll_pitch_yawrate_throttle_module, :update, [
-              state.roll_pitch_yawrate_throttle_controller,
+        unless Enum.empty?(values) do
+          controllers = state.controllers
+          {pcl_2_controller, bodyrate_cmds} =
+            apply(get_in(state, [:controller_modules, CCT.pilot_control_level_2]), :update, [
+              Map.get(controllers, CCT.pilot_control_level_2),
               goals,
               values,
               state.airspeed_mps,
               state.controller_loop_interval_ms * 1.0e-3
             ])
 
+          controllers = Map.put(controllers, CCT.pilot_control_level_2, pcl_2_controller)
           Logger.debug("output: #{ViaUtils.Format.eftb_map(bodyrate_cmds, 3)}")
-          state = %{state | roll_pitch_yawrate_throttle_controller: rpyt_controller}
+          state = %{state | controllers: controllers}
 
           process_commands(
-            CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle(),
+            CCT.pilot_control_level_1(),
             bodyrate_cmds,
             state
           )
@@ -292,7 +293,7 @@ defmodule Control.Controller do
           state
         end
 
-      CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle() ->
+      CCT.pilot_control_level_1() ->
         Logger.debug("bodyrates: pass straight to companion")
         state
 

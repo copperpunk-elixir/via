@@ -141,13 +141,13 @@ defmodule Command.RemotePilot do
   def pilot_control_level_from_float(pcl_float) do
     cond do
       pcl_float > 0.5 ->
-        Command.ControlTypes.pilot_control_level_speed_courserate_altituderate_sideslip()
+        Command.ControlTypes.pilot_control_level_3()
 
       pcl_float > -0.5 ->
-        Command.ControlTypes.pilot_control_level_roll_pitch_yawrate_throttle()
+        Command.ControlTypes.pilot_control_level_2()
 
       true ->
-        Command.ControlTypes.pilot_control_level_rollrate_pitchrate_yawrate_throttle()
+        Command.ControlTypes.pilot_control_level_1()
     end
   end
 

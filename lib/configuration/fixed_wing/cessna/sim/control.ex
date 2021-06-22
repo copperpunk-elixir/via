@@ -5,7 +5,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
     [
       Controller: [
         default_goals: %{
-          CCT.pilot_control_level_roll_pitch_yawrate_throttle() => %{
+          CCT.pilot_control_level_2() => %{
             roll_rad: 0.26,
             pitch_rad: 0.03,
             yawrate_rps: 0,
@@ -15,7 +15,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
           }
         },
         controller_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
-        roll_pitch_yawrate_throttle_controller: [
+        pilot_control_level_2_controller: [
           module: ViaControllers.FixedWing.RollPitchYawrateThrottle,
           controller_config: [
             roll: [
