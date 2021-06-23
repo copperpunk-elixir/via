@@ -101,8 +101,8 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({@attitude_loop, dt}, state) do
-    # Logger.debug("att loop: #{dt}")
+  def handle_info({@attitude_loop, dt_s}, state) do
+    # Logger.debug("att loop: #{dt_s}")
     state =
       if state.new_imu do
         imu = state.ins_kf.imu
@@ -110,7 +110,7 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_attitude(), attitude_rad, dt},
+          {Groups.estimation_attitude(), attitude_rad, dt_s},
           self()
         )
 
@@ -123,7 +123,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({@position_speed_course_loop, dt}, state) do
+  def handle_info({@position_speed_course_loop, dt_s}, state) do
     {position_rrm, velocity_mps} =
       apply(state.ins_kf_module, :position_rrm_velocity_mps, [state.ins_kf])
 
@@ -131,6 +131,8 @@ defmodule Estimation.Estimator do
       if is_nil(position_rrm) do
         state
       else
+
+        # Logger.debug("alt: #{ViaUtils.Format.eftb(position_rrm.altitude_m,2)}")
         # Watchdog.Active.feed(:pos_vel)
         # If the velocity is below a threshold, we use yaw instead
         {groundspeed_mps, course_rad} =
@@ -175,8 +177,9 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_groundalt_groundspeed_course_airspeed(), position_rrm, ground_altitude_m, groundspeed_mps,
-           course_rad, airspeed_mps, dt},
+          {Groups.estimation_position_groundalt_groundspeed_verticalvelocity_course_airspeed(), position_rrm,
+           ground_altitude_m, groundspeed_mps, vertical_velocity_mps, course_rad, airspeed_mps,
+           dt_s},
           self()
         )
 

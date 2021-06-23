@@ -23,9 +23,9 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           CCT.pilot_control_level_2() => %{
             roll_rad: 0.26,
             pitch_rad: 0.03,
-            yawrate_rps: 0,
-            throttle_scaled: 0,
-            flaps_scaled: 0,
+            deltayaw_rad: 0,
+            throttle_scaled: 0.0,
+            flaps_scaled: -1.0,
             gear_scaled: 1.0
           }
         },
@@ -34,7 +34,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
       RemotePilot: [
         num_channels: 12,
         control_level_dependent_channel_number_min_mid_max: %{
-          CCT.pilot_control_level_3() => %{
+          CCT.pilot_control_level_4() => %{
             course_rate_rps: {0, -0.52, 0, 0.52, CCT.input_not_inverted(), 0.017},
             altitude_rate_mps: {1, -1.0, 0, 2.0, CCT.input_inverted(), 0.05},
             groundspeed_mps: {2, 0, 15.0, 30.0, CCT.input_not_inverted(), 0},
@@ -44,7 +44,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
             roll_rad: {0, -1.05, 0, 1.05, CCT.input_not_inverted(), 0.017},
             pitch_rad: {1, -0.52, 0, 0.52, CCT.input_inverted(), 0.017},
             throttle_scaled: {2, 0, 0.5, 1.0, CCT.input_not_inverted(), 0.01},
-            yawrate_rps: {3, -3.14, 0, 3.14, CCT.input_not_inverted(), 0.087}
+            deltayaw_rad: {3, -0.26, 0, 0.26, CCT.input_not_inverted(), 0.087}
           },
           CCT.pilot_control_level_1() => %{
             rollrate_rps: {0, -6.28, 0, 6.28, CCT.input_not_inverted(), 0.087},

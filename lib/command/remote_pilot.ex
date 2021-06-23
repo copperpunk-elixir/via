@@ -141,7 +141,7 @@ defmodule Command.RemotePilot do
   def pilot_control_level_from_float(pcl_float) do
     cond do
       pcl_float > 0.5 ->
-        Command.ControlTypes.pilot_control_level_3()
+        Command.ControlTypes.pilot_control_level_4()
 
       pcl_float > -0.5 ->
         Command.ControlTypes.pilot_control_level_2()

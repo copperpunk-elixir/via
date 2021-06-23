@@ -4,8 +4,8 @@ defmodule Comms.Groups do
   defmacro dt_accel_gyro_val(), do: :dt_accel_gyro_val
   defmacro estimation_attitude, do: {:estimation_values, :attitude}
 
-  defmacro estimation_position_groundalt_groundspeed_course_airspeed,
-    do: {:estimation_values, :pos_gndalt_gndspd_crs_airspd}
+  defmacro estimation_position_groundalt_groundspeed_verticalvelocity_course_airspeed,
+    do: {:estimation_values, :pos_gndalt_gndspd_vv_crs_airspd}
 
   defmacro gps_itow_position_velocity, do: :gps_pos_vel
   defmacro gps_itow_relheading, do: :gps_relhdg

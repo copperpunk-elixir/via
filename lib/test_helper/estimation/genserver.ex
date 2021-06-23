@@ -15,7 +15,7 @@ defmodule TestHelper.Estimation.GenServer do
 
     ViaUtils.Comms.join_group(
       __MODULE__,
-      Groups.estimation_position_groundalt_groundspeed_course_airspeed(),
+      Groups.estimation_position_groundalt_groundspeed_verticalvelocity_course_airspeed(),
       self()
     )
 
@@ -24,6 +24,7 @@ defmodule TestHelper.Estimation.GenServer do
       position_rrm: nil,
       ground_altitude_m: nil,
       groundspeed_mps: nil,
+      vertical_velocity_mps: nil,
       course_rad: nil,
       airspeed_mps: nil
     }
@@ -38,8 +39,8 @@ defmodule TestHelper.Estimation.GenServer do
 
   @impl GenServer
   def handle_cast(
-        {Groups.estimation_position_groundalt_groundspeed_course_airspeed(), position_rrm,
-         ground_altitude_m, groundspeed_mps, course_rad, airspeed_mps, _dt},
+        {Groups.estimation_position_groundalt_groundspeed_verticalvelocity_course_airspeed(), position_rrm,
+         ground_altitude_m, groundspeed_mps, vertical_velocity_mps, course_rad, airspeed_mps, _dt},
         state
       ) do
     {:noreply,
@@ -48,6 +49,7 @@ defmodule TestHelper.Estimation.GenServer do
        | position_rrm: position_rrm,
          ground_altitude_m: ground_altitude_m,
          groundspeed_mps: groundspeed_mps,
+         vertical_velocity_mps: vertical_velocity_mps,
          course_rad: course_rad,
          airspeed_mps: airspeed_mps
      }}
