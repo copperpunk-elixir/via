@@ -7,7 +7,7 @@ defmodule Control.ContollerComputingAttitudeCmds do
     {:ok, full_config}
   end
 
-  test "Open Serial Port", full_config do
+  test "Compute Commands", full_config do
     # Expects comments from Gps operator
     uart_config = Configuration.FixedWing.Cessna.Sim.Uart.config(["FrskyRx_CP2104", "Companion_Pico", "Gps_u-blox"])
     Logger.debug(inspect(uart_config))

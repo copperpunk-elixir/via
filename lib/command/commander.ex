@@ -15,13 +15,9 @@ defmodule Command.Commander do
 
   @impl GenServer
   def init(config) do
-    # {default_pilot_control_level, default_goals} = Keyword.fetch!(config, :default_goals)
-
     commander_loop_interval_ms = Keyword.fetch!(config, :commander_loop_interval_ms)
 
     state = %{
-      # default_pilot_control_level: default_pilot_control_level,
-      # default_goals: default_goals,
       goals_store: %{},
       goal_restrictions_store: %{},
       pilot_control_level: nil,
@@ -30,7 +26,6 @@ defmodule Command.Commander do
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    # ViaUtils.Comms.join_group(__MODULE__, Groups.pilot_control_level_and_goals_sorter(), self())
 
     MessageSorter.Sorter.register_for_sorter_current_and_stale(
       Sorters.pilot_control_level_and_goals(),

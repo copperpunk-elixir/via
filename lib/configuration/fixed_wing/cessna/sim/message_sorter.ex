@@ -71,7 +71,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
             },
             value_type: :tuple,
             publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
-            global_sorter_group: Groups.pilot_control_level_and_goals_sorter()
+            global_sorter_group: Groups.sorter_pilot_control_level_and_goals()
           ]
         ]
     end

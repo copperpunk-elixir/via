@@ -1,21 +1,21 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Control do
   require Command.ControlTypes, as: CCT
-  require ViaUtils.Constants, as: VC
 
   @spec config() :: list()
   def config() do
     [
       Controller: [
+        default_pilot_control_level: CCT.pilot_control_level_2(),
         default_goals: %{
-          CCT.pilot_control_level_2() => %{
-            roll_rad: 0.26,
-            pitch_rad: 0.03,
-            deltayaw_rad: 0,
-            throttle_scaled: 0.0,
-            flaps_scaled: 0.0,
-            gear_scaled: 1.0
-          }
-        },
+          CCT.pilot_control_level_2() =>
+          %{
+          roll_rad: 0.26,
+          pitch_rad: 0.03,
+          deltayaw_rad: 0,
+          throttle_scaled: 0.0,
+          flaps_scaled: 0.0,
+          gear_scaled: 1.0
+        }},
         controller_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
         controllers: %{
           CCT.pilot_control_level_3() => [
@@ -27,9 +27,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
                 altitude_kp: 1.0,
                 energy_rate_scalar: 0.004,
                 integrator_range: 100,
-                ff: fn _cmd, _value, speed_cmd ->
-                  if speed_cmd > 0, do: speed_cmd * speed_cmd / 400.0, else: 0.0
-                end,
+                feed_forward_speed_max_mps: 60.0,
                 output_min: 0.0,
                 output_max: 1.0,
                 output_neutral: 0.0
@@ -52,10 +50,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
                 ki: 0.0,
                 integrator_range: 0.052,
                 integrator_airspeed_min: 5.0,
-                ff: fn cmd, _value, airspeed ->
-                  # Logger.debug("ff cmd/as/output: #{Common.Utils.Math.rad2deg(cmd)]/#{airspeed]/#{Common.Utils.Math.rad2deg(:math.atan(cmd*airspeed/Common.Constants.gravity()))}")
-                  :math.atan(0.5 * cmd * airspeed / VC.gravity())
-                end,
                 output_min: -0.78,
                 output_max: 0.78,
                 output_neutral: 0.0

@@ -1,7 +1,7 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Uart.Companion do
   require Logger
   require ViaUtils.Constants, as: VC
-  require Command.Actuators, as: Act
+  require Command.ActuatorNames, as: Act
 
   @spec module_key_and_config(binary()) :: tuple()
   def module_key_and_config(uart_port) do

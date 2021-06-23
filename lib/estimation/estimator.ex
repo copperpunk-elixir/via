@@ -131,7 +131,6 @@ defmodule Estimation.Estimator do
       if is_nil(position_rrm) do
         state
       else
-
         # Logger.debug("alt: #{ViaUtils.Format.eftb(position_rrm.altitude_m,2)}")
         # Watchdog.Active.feed(:pos_vel)
         # If the velocity is below a threshold, we use yaw instead
@@ -175,11 +174,18 @@ defmodule Estimation.Estimator do
 
         airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: groundspeed_mps
 
+        position_velocity = %{
+          position_rrm: position_rrm,
+          ground_altitude_m: ground_altitude_m,
+          groundspeed_mps: groundspeed_mps,
+          vertical_velocity_mps: vertical_velocity_mps,
+          course_rad: course_rad,
+          airspeed_mps: airspeed_mps,
+        }
+
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_groundalt_groundspeed_verticalvelocity_course_airspeed(), position_rrm,
-           ground_altitude_m, groundspeed_mps, vertical_velocity_mps, course_rad, airspeed_mps,
-           dt_s},
+          {Groups.estimation_position_velocity(), position_velocity, dt_s},
           self()
         )
 

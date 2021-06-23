@@ -114,28 +114,16 @@ defmodule MessageSorter.Sorter do
 
   @impl GenServer
   def handle_cast(
-        {Comms.MessageHeaders.global_group_to_sorter(), sorter, classification, time_validity_ms,
-         value},
+        {Comms.MessageHeaders.global_group_to_sorter(), classification, time_validity_ms, value},
         state
       ) do
-    add_message(
-      sorter,
-      classification,
-      time_validity_ms,
-      value
-    )
-
-    # Logger.debug("add #{inspect(value)} to sorter: #{inspect(sorter)}")
     expiration_mono_ms = get_expiration_mono_ms(time_validity_ms)
     messages = add_message_helper(classification, expiration_mono_ms, value, state)
-
     {:noreply, %{state | messages: messages}}
   end
 
   @impl GenServer
   def handle_cast({:add_message, classification, expiration_mono_ms, value}, state) do
-    # Check if message has a valid classification
-    # Logger.debug("add msg to #{inspect(state.name)}: #{inspect(value)}")
     messages = add_message_helper(classification, expiration_mono_ms, value, state)
     {:noreply, %{state | messages: messages}}
   end
@@ -241,6 +229,7 @@ defmodule MessageSorter.Sorter do
   end
 
   def add_message_helper(classification, expiration_mono_ms, value, state) do
+    # Logger.debug("add #{inspect(value)} to sorter: #{inspect(state.name)}")
     if is_valid_classification?(classification) do
       # Remove any messages that have the same classification (there should be at most 1)
       if is_nil(value) or !is_valid_type?(value, state.value_type) do
