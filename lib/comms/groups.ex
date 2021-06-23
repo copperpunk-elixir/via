@@ -18,7 +18,7 @@ defmodule Comms.Groups do
   defmacro rollrate_pitchrate_yawrate_throttle_cmd, do: :rdot_pdot_y_dot_t_cmd
 
   defmacro commander_goals, do: :commander_goals
-  defmacro goals_sorter, do: :goals_sorter
+  defmacro pilot_control_level_and_goals_sorter, do: :pcl_and_goals_sorter
   defmacro message_sorter_value, do: :message_sorter_value
   defmacro remote_pilot_goals_override, do: :remote_pilot_goals_override
 end

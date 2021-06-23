@@ -14,21 +14,11 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
     remote_pilot_goals_sorter_classification_and_time_validity_ms =
       apply(message_sorter_module, :message_sorter_classification_time_validity_ms, [
         Command.RemotePilot,
-        Sorters.goals
+        Sorters.pilot_control_level_and_goals()
       ])
 
     [
       Commander: [
-        default_goals: %{
-          CCT.pilot_control_level_2() => %{
-            roll_rad: 0.26,
-            pitch_rad: 0.03,
-            deltayaw_rad: 0,
-            throttle_scaled: 0.0,
-            flaps_scaled: -1.0,
-            gear_scaled: 1.0
-          }
-        },
         commander_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
       ],
       RemotePilot: [
@@ -54,23 +44,22 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           }
         },
         universal_channel_number_min_mid_max: %{
-          flaps_scaled: {4, 0, 0.5, 1.0, CCT.input_inverted(),0.01},
+          flaps_scaled: {4, 0, 0.5, 1.0, CCT.input_inverted(), 0.01},
           gear_scaled: {5, 0, 0.5, 1.0, CCT.input_inverted(), 0.01},
-          pilot_control_level: {7, -1.0, 0, 1.0, CCT.input_inverted(),0},
-          autopilot_control_mode: {11, -1.0, 0, 1.0, CCT.input_inverted(),0}
+          pilot_control_level: {7, -1.0, 0, 1.0, CCT.input_inverted(), 0},
+          autopilot_control_mode: {11, -1.0, 0, 1.0, CCT.input_inverted(), 0}
         },
         remote_pilot_override_channels: %{
-          Act.aileron => 0,
-          Act.elevator => 1,
-          Act.throttle => 2,
-          Act.rudder => 3,
-          Act.flaps => 4,
-          Act.gear =>5
+          Act.aileron() => 0,
+          Act.elevator() => 1,
+          Act.throttle() => 2,
+          Act.rudder() => 3,
+          Act.flaps() => 4,
+          Act.gear() => 5
         },
         goals_sorter_classification_and_time_validity_ms:
           remote_pilot_goals_sorter_classification_and_time_validity_ms
       ]
     ]
   end
-
 end

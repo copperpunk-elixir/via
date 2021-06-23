@@ -2,6 +2,7 @@ defmodule Command.RemotePilot do
   use GenServer
   require Logger
   require Comms.Groups, as: Groups
+  require Comms.MessageHeaders, as: MessageHeaders
   require Command.ControlTypes
 
   def start_link(config) do
@@ -102,8 +103,9 @@ defmodule Command.RemotePilot do
 
         ViaUtils.Comms.send_global_msg_to_group(
           __MODULE__,
-          {Groups.goals_sorter(), goals_sorter_classification, goals_sorter_time_validity_ms,
-           {commands, pilot_control_level}},
+          {MessageHeaders.global_group_to_sorter(), Groups.pilot_control_level_and_goals_sorter, goals_sorter_classification,
+           goals_sorter_time_validity_ms, {pilot_control_level, commands}},
+          Groups.pilot_control_level_and_goals_sorter(),
           self()
         )
 
@@ -114,7 +116,9 @@ defmodule Command.RemotePilot do
             Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
           end)
 
-        {_classification, override_time_validity_ms} = state.goals_sorter_classification_and_time_validity_ms
+        {_classification, override_time_validity_ms} =
+          state.goals_sorter_classification_and_time_validity_ms
+
         ViaUtils.Comms.send_global_msg_to_group(
           __MODULE__,
           {Groups.remote_pilot_goals_override(), commands, override_time_validity_ms},
