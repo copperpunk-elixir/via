@@ -1,6 +1,7 @@
 defmodule MessageSorter.Sorter do
   use GenServer
   require Logger
+  require Comms.MessageHeaders
   alias MessageSorter.DiscreteLooper
   # require MessageSorter.Sorter, as: Sorter
 
@@ -11,6 +12,7 @@ defmodule MessageSorter.Sorter do
   @status_last :last_value
   @status_decay :decay_value
   @status_default :default_value
+  @join_global_sorter_group :join_global_sorter_group
 
   defmacro registry(), do: @message_sorter_registry
   defmacro status_current(), do: @status_current
@@ -19,7 +21,7 @@ defmodule MessageSorter.Sorter do
   defmacro status_default(), do: @status_default
 
   def start_link(config) do
-    Logger.debug("Start MessageSorter: #{inspect(config[:name])}")
+    Logger.info("Start MessageSorter: #{inspect(config[:name])}")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, via_tuple(config[:name]))
   end
 
@@ -55,6 +57,11 @@ defmodule MessageSorter.Sorter do
           ViaUtils.Process.start_loop(self(), 1000, {:update_subscriber_loop, :messages})
           DiscreteLooper.new({name, :messages}, interval_ms)
       end
+
+    if !is_nil(Keyword.get(config, :global_sorter_group)) do
+      Comms.Supervisor.start_operator(name)
+      GenServer.cast(via_tuple(name), {@join_global_sorter_group, config[:global_sorter_group]})
+    end
 
     state = %{
       name: name,
@@ -99,24 +106,25 @@ defmodule MessageSorter.Sorter do
   end
 
   @impl GenServer
-  def handle_cast({:add_message, classification, expiration_mono_ms, value}, state) do
-    # Check if message has a valid classification
-    # Logger.debug("add msg to #{inspect(state.name)}: #{inspect(value)}")
-    messages =
-      if is_valid_classification?(classification) do
-        # Remove any messages that have the same classification (there should be at most 1)
-        if is_nil(value) or !is_valid_type?(value, state.value_type) do
-          Logger.error("Sorter #{inspect(state.name)} add message rejected")
-          state.messages
-        else
-          unique_msgs = Enum.reject(state.messages, &(&1.classification == classification))
-          new_msg = MessageSorter.MsgStruct.create_msg(classification, expiration_mono_ms, value)
-          [new_msg | unique_msgs]
-        end
-      else
-        state.messages
-      end
+  def handle_cast({@join_global_sorter_group, group}, state) do
+    Logger.warn("join global sorter group: #{inspect(group)}")
+    ViaUtils.Comms.join_group(state.name, group, self())
+    {:noreply, state}
+  end
 
+  @impl GenServer
+  def handle_cast(
+        {Comms.MessageHeaders.global_group_to_sorter(), classification, time_validity_ms, value},
+        state
+      ) do
+    expiration_mono_ms = get_expiration_mono_ms(time_validity_ms)
+    messages = add_message_helper(classification, expiration_mono_ms, value, state)
+    {:noreply, %{state | messages: messages}}
+  end
+
+  @impl GenServer
+  def handle_cast({:add_message, classification, expiration_mono_ms, value}, state) do
+    messages = add_message_helper(classification, expiration_mono_ms, value, state)
     {:noreply, %{state | messages: messages}}
   end
 
@@ -154,7 +162,8 @@ defmodule MessageSorter.Sorter do
     name = state.name
 
     Enum.each(DiscreteLooper.get_members_now(publish_looper), fn member ->
-      # Logger.debug("Send #{inspect(value)}/#{status} to #{inspect(dest)}")
+      # Logger.debug("Send #{inspect(value)}/#{status} to #{inspect(name)}")
+
       if status == @status_current or member.send_when_stale do
         GenServer.cast(
           member.process_id,
@@ -217,6 +226,23 @@ defmodule MessageSorter.Sorter do
   @spec get_all_messages(map()) :: list()
   def get_all_messages(state) do
     prune_old_messages(state.messages)
+  end
+
+  def add_message_helper(classification, expiration_mono_ms, value, state) do
+    # Logger.debug("add #{inspect(value)} to sorter: #{inspect(state.name)}")
+    if is_valid_classification?(classification) do
+      # Remove any messages that have the same classification (there should be at most 1)
+      if is_nil(value) or !is_valid_type?(value, state.value_type) do
+        Logger.error("Sorter #{inspect(state.name)} add message rejected")
+        state.messages
+      else
+        unique_msgs = Enum.reject(state.messages, &(&1.classification == classification))
+        new_msg = MessageSorter.MsgStruct.create_msg(classification, expiration_mono_ms, value)
+        [new_msg | unique_msgs]
+      end
+    else
+      state.messages
+    end
   end
 
   def add_message(name, classification, time_validity_ms, value) do

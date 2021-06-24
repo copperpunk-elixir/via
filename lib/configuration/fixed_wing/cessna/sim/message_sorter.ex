@@ -1,7 +1,9 @@
 defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
+  require Comms.Groups, as: Groups
   require MessageSorter.Sorter, as: MSS
+  require Comms.MessageHeaders
 
   @spec config() :: list()
   def config() do
@@ -23,31 +25,19 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
   def message_sorter_classification_time_validity_ms(sender, sorter) do
     # Logger.debug("sender: #{inspect(sender)}")
     classification_all = %{
-      {:hb, :node} => %{
+      Sorters.heartbeat_node() => %{
         Cluster.Heartbeat => [1, 1]
       },
-      :control_cmds => %{
-        Control.Controller => [1, 1],
-        Navigation.Navigator => [1, 2]
-      },
-      :goals => %{
+      Sorters.pilot_control_level_and_goals() => %{
         Command.RemotePilot => [1, 1],
-        Navigation.PathManager => [1, 2]
-      },
-      :control_state => %{
-        Navigation.Navigator => [1, 1]
+        Navigation.Navigator => [1, 2]
       }
     }
 
     time_validity =
       case sorter do
-        {:hb, :node} -> 500
-        :indirect_actuator_cmds -> 200
-        :indirect_override_cmds -> 200
-        {:direct_actuator_cmds, _} -> 200
-        :control_cmds -> 300
-        :goals -> 300
-        :control_state -> 200
+        Sorters.heartbeat_node -> 500
+        Sorters.pilot_control_level_and_goals -> 300
         _other -> 0
       end
 
@@ -64,32 +54,26 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
   def message_sorters_for_module(module) do
     case module do
       Command ->
-        goals_sorters =
-          Enum.map(
-            CCT.pilot_control_level_rollrate_pitchrate_yawrate_throttle()..CCT.pilot_control_level_speed_course_altitude_sideslip(),
-            fn pilot_control_level ->
-              [
-                name: {Sorters.goals(), pilot_control_level},
-                default_message_behavior: MSS.status_default(),
-                default_value: nil,
-                value_type: :map,
-                publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
-              ]
-            end
-          )
-
-        pilot_control_level_sorter = [
+        [
           [
-            name: Sorters.pilot_control_level(),
+            name: Sorters.pilot_control_level_and_goals(),
             default_message_behavior: MSS.status_default(),
-            default_value: CCT.pilot_control_level_roll_pitch_yawrate_throttle(),
-            value_type: :number,
-            publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
+            default_value: {
+              CCT.pilot_control_level_2(),
+              %{
+                roll_rad: 0.26,
+                pitch_rad: 0.03,
+                deltayaw_rad: 0,
+                throttle_scaled: 0.0,
+                flaps_scaled: -1.0,
+                gear_scaled: 1.0
+              }
+            },
+            value_type: :tuple,
+            publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
+            global_sorter_group: Groups.sorter_pilot_control_level_and_goals()
           ]
         ]
-
-        goals_sorters ++ pilot_control_level_sorter
-
     end
   end
 end

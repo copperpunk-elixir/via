@@ -31,10 +31,10 @@ defmodule Estimation.Ekf.Agl do
   @spec predict(struct(), float(), float(), float()) :: struct()
   def predict(ekf, roll_rad, pitch_rad, zdot_mps) do
     current_time_us = :os.system_time(:microsecond)
-    dt = if (ekf.time_prev_us < 0), do: 0, else: (current_time_us - ekf.time_prev_us)*(1.0e-6)
-    z_m = ekf.z_m + ekf.zdot_mps*dt
-    # Logger.debug("zdot/zprev/z/dt: #{zdot}/#{ekf.z}/#{z}/#{dt}")
-    p33 = ekf.p33 + ekf.p22*dt*dt + ekf.q33
+    dt_s = if (ekf.time_prev_us < 0), do: 0, else: (current_time_us - ekf.time_prev_us)*(1.0e-6)
+    z_m = ekf.z_m + ekf.zdot_mps*dt_s
+    # Logger.debug("zdot/zprev/z/dt: #{zdot}/#{ekf.z}/#{z}/#{dt_s}")
+    p33 = ekf.p33 + ekf.p22*dt_s*dt_s + ekf.q33
     %{ekf | roll_rad: roll_rad, pitch_rad: pitch_rad, zdot_mps: zdot_mps, z_m: z_m, p33: p33, time_prev_us: current_time_us}
   end
 

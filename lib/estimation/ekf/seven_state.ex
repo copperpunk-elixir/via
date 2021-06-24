@@ -2,7 +2,7 @@ defmodule Estimation.Ekf.SevenState do
   require Logger
   require ViaUtils.Constants, as: VC
 
-  @expected_imu_dt 0.005
+  @expected_imu_dt_s 0.005
 
   defstruct ekf_state: nil,
             ekf_cov: nil,
@@ -31,10 +31,10 @@ defmodule Estimation.Ekf.SevenState do
   @spec predict(struct(), map()) :: struct
   def predict(state, dt_accel_gyro) do
     imu = Estimation.Imu.Mahony.update(state.imu, dt_accel_gyro)
-    dt = dt_accel_gyro.dt
-    ax = dt_accel_gyro.ax
-    ay = dt_accel_gyro.ay
-    az = dt_accel_gyro.az
+    dt_s = dt_accel_gyro.dt_s
+    ax = dt_accel_gyro.ax_mpss
+    ay = dt_accel_gyro.ay_mpss
+    az = dt_accel_gyro.az_mpss
 
     # Acceleration due to gravity is measured in the negative-Z direction
 
@@ -46,12 +46,12 @@ defmodule Estimation.Ekf.SevenState do
 
     ekf_state =
       Matrex.new([
-        [ekf_state_prev[1] + ekf_state_prev[4] * dt],
-        [ekf_state_prev[2] + ekf_state_prev[5] * dt],
-        [ekf_state_prev[3] + ekf_state_prev[6] * dt],
-        [ekf_state_prev[4] + ax_inertial * dt],
-        [ekf_state_prev[5] + ay_inertial * dt],
-        [ekf_state_prev[6] + (az_inertial + VC.gravity()) * dt],
+        [ekf_state_prev[1] + ekf_state_prev[4] * dt_s],
+        [ekf_state_prev[2] + ekf_state_prev[5] * dt_s],
+        [ekf_state_prev[3] + ekf_state_prev[6] * dt_s],
+        [ekf_state_prev[4] + ax_inertial * dt_s],
+        [ekf_state_prev[5] + ay_inertial * dt_s],
+        [ekf_state_prev[6] + (az_inertial + VC.gravity()) * dt_s],
         [imu.yaw_rad]
       ])
 
@@ -62,9 +62,9 @@ defmodule Estimation.Ekf.SevenState do
     # Update Covariance Matrix
     g_prime =
       Matrex.eye(7)
-      |> Matrex.set(1, 4, dt)
-      |> Matrex.set(2, 5, dt)
-      |> Matrex.set(3, 6, dt)
+      |> Matrex.set(1, 4, dt_s)
+      |> Matrex.set(2, 5, dt_s)
+      |> Matrex.set(3, 6, dt_s)
       |> Matrex.set(4, 7, g_prime_sub[1])
       |> Matrex.set(5, 7, g_prime_sub[2])
       |> Matrex.set(6, 7, g_prime_sub[3])
@@ -98,6 +98,7 @@ defmodule Estimation.Ekf.SevenState do
 
     dz = -position_rrm.altitude_m - origin.altitude_m
 
+    # TODO: This is the line that is givin a "no local return" warning
     z =
       Matrex.new([
         [dx],
@@ -269,7 +270,7 @@ defmodule Estimation.Ekf.SevenState do
     |> Matrex.set(6, 6, config[:qvel_z_std])
     |> Matrex.set(7, 7, config[:qyaw_std])
     |> Matrex.square()
-    |> Matrex.multiply(@expected_imu_dt)
+    |> Matrex.multiply(@expected_imu_dt_s)
   end
 
   @spec position_rrm(struct()) :: struct()

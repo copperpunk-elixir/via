@@ -8,8 +8,8 @@ defmodule Via.Supervisor do
     start_link()
 
     start_supervised_process(ViaUtils.Registry, [])
-    start_supervisor(MessageSorter, full_config[:MessageSorter])
     start_supervisor(Comms, full_config[:Comms])
+    start_supervisor(MessageSorter, full_config[:MessageSorter])
   end
 
   def start_link() do
@@ -60,6 +60,5 @@ defmodule Via.Supervisor do
         }
       }
     )
-
   end
 end

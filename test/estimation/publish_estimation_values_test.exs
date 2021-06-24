@@ -29,7 +29,7 @@ defmodule Estimation.PublishEstimationValues do
     Enum.each(1..500, fn _x ->
       attitude_rad = TEG.get_value_for_key(:attitude_rad)
       position_rrm = TEG.get_value_for_key(:position_rrm)
-      speed_mps = TEG.get_value_for_key(:speed_mps)
+      groundspeed_mps = TEG.get_value_for_key(:groundspeed_mps)
       course_rad = TEG.get_value_for_key(:course_rad)
       airspeed_mps = TEG.get_value_for_key(:airspeed_mps)
 
@@ -38,7 +38,7 @@ defmodule Estimation.PublishEstimationValues do
       Logger.debug("position_rrm: #{VU.Location.to_string(position_rrm)}")
 
       Logger.debug(
-        "speed/course/AS/dt: #{VU.Format.eftb(speed_mps, 1)}/#{VU.Format.eftb_deg(course_rad, 1)}/#{
+        "speed/course/AS/dt: #{VU.Format.eftb(groundspeed_mps, 1)}/#{VU.Format.eftb_deg(course_rad, 1)}/#{
           VU.Format.eftb(airspeed_mps, 1)
         }"
       )

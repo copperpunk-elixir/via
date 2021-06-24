@@ -33,14 +33,15 @@ defmodule Estimation.Estimator do
       agl_kf_module: agl_kf_module,
       agl_kf: agl_kf,
       watchdog_fed: %{agl: false, airspeed: false},
-      start_time: :erlang.monotonic_time(:microsecond)
+      start_time: :erlang.monotonic_time(:microsecond),
+      new_imu: false
       # ground_altitude: 0.0
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val, self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity, self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading(), self())
 
     ViaUtils.Process.start_loop(
       self(),
@@ -64,18 +65,23 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast({Groups.dt_accel_gyro_val, values}, state) do
+  def handle_cast({Groups.dt_accel_gyro_val(), values}, state) do
     ins_kf = apply(state.ins_kf_module, :predict, [state.ins_kf, values])
 
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
     # Logger.debug("rpy: #{elapsed_time}: #{Imu.Utils.rpy_to_string(ins_kf.imu, 2)}")
-    {:noreply, %{state | ins_kf: ins_kf}}
+    {:noreply, %{state | ins_kf: ins_kf, new_imu: true}}
   end
 
   @impl GenServer
-  def handle_cast({Groups.gps_itow_position_velocity, _itow_s, position_rrm, velocity_mps}, state) do
+  def handle_cast(
+        {Groups.gps_itow_position_velocity(), _itow_s, position_rrm, velocity_mps},
+        state
+      ) do
     # Logger.debug("EKF update with GPS: #{ViaUtils.Location.to_string(position_rrm)}")
-    ins_kf = apply(state.ins_kf_module, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
+    ins_kf =
+      apply(state.ins_kf_module, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
+
     # {position, velocity} = Estimation.SevenStateEkf.position_rrm_velocity_mps(kf)
     # Logger.debug("new position: #{ViaUtils.Location.to_string(position)}")
     # Logger.debug("new velocity: #{ViaUtils.Format.eftb_map(velocity, 1)}")
@@ -85,7 +91,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {Groups.gps_itow_relheading, _itow_ms, rel_heading_rad},
+        {Groups.gps_itow_relheading(), _itow_ms, rel_heading_rad},
         state
       ) do
     # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
@@ -95,28 +101,37 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({@attitude_loop, dt}, state) do
-    # Logger.debug("att loop: #{dt}")
-    imu = state.ins_kf.imu
-    attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
+  def handle_info({@attitude_loop, dt_s}, state) do
+    # Logger.debug("att loop: #{dt_s}")
+    state =
+      if state.new_imu do
+        imu = state.ins_kf.imu
+        attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
 
-    ViaUtils.Comms.send_local_msg_to_group(
-      __MODULE__,
-      {Groups.estimation_attitude, attitude_rad, dt},
-      self()
-    )
+        ViaUtils.Comms.send_local_msg_to_group(
+          __MODULE__,
+          {Groups.estimation_attitude_dt(), attitude_rad, dt_s},
+          self()
+        )
 
-    {:noreply, %{state | attitude_rad: attitude_rad}}
+        %{state | attitude_rad: attitude_rad, new_imu: false}
+      else
+        state
+      end
+
+    {:noreply, state}
   end
 
   @impl GenServer
-  def handle_info({@position_speed_course_loop, dt}, state) do
-    {position_rrm, velocity_mps} = apply(state.ins_kf_module, :position_rrm_velocity_mps, [state.ins_kf])
+  def handle_info({@position_speed_course_loop, dt_s}, state) do
+    {position_rrm, velocity_mps} =
+      apply(state.ins_kf_module, :position_rrm_velocity_mps, [state.ins_kf])
 
     state =
       if is_nil(position_rrm) do
         state
       else
+        # Logger.debug("alt: #{ViaUtils.Format.eftb(position_rrm.altitude_m,2)}")
         # Watchdog.Active.feed(:pos_vel)
         # If the velocity is below a threshold, we use yaw instead
         {groundspeed_mps, course_rad} =
@@ -159,10 +174,20 @@ defmodule Estimation.Estimator do
 
         airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: groundspeed_mps
 
+        position =
+          Map.take(position_rrm, [:latitude_rad, :longitude_rad, :altitude_m])
+          |> Map.put(:ground_altitude_m, ground_altitude_m)
+
+        velocity = %{
+          groundspeed_mps: groundspeed_mps,
+          vertical_velocity_mps: vertical_velocity_mps,
+          course_rad: course_rad,
+          airspeed_mps: airspeed_mps
+        }
+
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_speed_course_airspeed, position_rrm, groundspeed_mps, course_rad,
-           airspeed_mps, dt},
+          {Groups.estimation_position_velocity_dt(), position, velocity, dt_s},
           self()
         )
 

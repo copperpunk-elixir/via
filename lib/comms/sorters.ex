@@ -1,4 +1,4 @@
 defmodule Comms.Sorters do
-  defmacro goals, do: :goals
-  defmacro pilot_control_level, do: :pilot_control_level_sorter
+  defmacro heartbeat_node, do: {:hb, :node}
+  defmacro pilot_control_level_and_goals, do: :pcl_and_goals
 end

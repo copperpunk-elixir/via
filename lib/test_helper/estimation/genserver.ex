@@ -11,43 +11,37 @@ defmodule TestHelper.Estimation.GenServer do
   @impl GenServer
   def init(_) do
     Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude, self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_dt(), self())
 
     ViaUtils.Comms.join_group(
       __MODULE__,
-      Groups.estimation_position_speed_course_airspeed,
+      Groups.estimation_position_velocity_dt(),
       self()
     )
 
     state = %{
-      attitude_rad: nil,
-      position_rrm: nil,
-      speed_mps: nil,
-      course_rad: nil,
-      airspeed_mps: nil
+      attitude_rad: %{},
+      position_velocity: %{}
     }
 
     {:ok, state}
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude, attitude_rad, _dt}, state) do
+  def handle_cast({Groups.estimation_attitude_dt(), attitude_rad, _dt}, state) do
     {:noreply, %{state | attitude_rad: attitude_rad}}
   end
 
   @impl GenServer
   def handle_cast(
-        {Groups.estimation_position_speed_course_airspeed, position_rrm, speed_mps,
-         course_rad, airspeed_mps, _dt},
+        {Groups.estimation_position_velocity_dt(), position, velocity, _dt_s},
         state
       ) do
     {:noreply,
      %{
        state
-       | position_rrm: position_rrm,
-         speed_mps: speed_mps,
-         course_rad: course_rad,
-         airspeed_mps: airspeed_mps
+       | position: position,
+         velocity: velocity
      }}
   end
 

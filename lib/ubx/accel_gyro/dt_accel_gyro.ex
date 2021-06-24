@@ -16,5 +16,5 @@ defmodule Ubx.AccelGyro.DtAccelGyro do
       VC.deg2rad() / 16.4
     ]
 
-  defmacro keys, do: [:dt, :ax, :ay, :az, :gx, :gy, :gz]
+  defmacro keys, do: [:dt_s, :ax_mpss, :ay_mpss, :az_mpss, :gx_rps, :gy_rps, :gz_rps]
 end

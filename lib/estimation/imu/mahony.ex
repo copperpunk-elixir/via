@@ -23,10 +23,10 @@ defmodule Estimation.Imu.Mahony do
 
   @spec update(struct(), map()) :: struct()
   def update(imu, dt_accel_gyro) do
-    dt = dt_accel_gyro.dt
-    ax = dt_accel_gyro.ax
-    ay = dt_accel_gyro.ay
-    az = dt_accel_gyro.az
+    dt_s = dt_accel_gyro.dt_s
+    ax = dt_accel_gyro.ax_mpss
+    ay = dt_accel_gyro.ay_mpss
+    az = dt_accel_gyro.az_mpss
     q0 = imu.q0
     q1 = imu.q1
     q2 = imu.q2
@@ -61,33 +61,33 @@ defmodule Estimation.Imu.Mahony do
           {integral_fbx, integral_fby, integral_fbz} =
             if ki > 0 do
               # integral error scaled by Ki
-              integral_fbx = imu.integral_fbx + ki * halfex * dt
-              integral_fby = imu.integral_fby + ki * halfey * dt
-              integral_fbz = imu.integral_fbz + ki * halfez * dt
+              integral_fbx = imu.integral_fbx + ki * halfex * dt_s
+              integral_fby = imu.integral_fby + ki * halfey * dt_s
+              integral_fbz = imu.integral_fbz + ki * halfez * dt_s
               {integral_fbx, integral_fby, integral_fbz}
             else
               {0, 0, 0}
             end
 
           # Apply proportional feedback
-          gx = dt_accel_gyro.gx + kp * halfex + integral_fbx
-          gy = dt_accel_gyro.gy + kp * halfey + integral_fby
-          gz = dt_accel_gyro.gz + kp * halfez + integral_fbz
+          gx = dt_accel_gyro.gx_rps + kp * halfex + integral_fbx
+          gy = dt_accel_gyro.gy_rps + kp * halfey + integral_fby
+          gz = dt_accel_gyro.gz_rps + kp * halfez + integral_fbz
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
-          {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx,
+          {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx,
            imu.integral_fby, imu.integral_fbz}
         end
       else
-        {dt_accel_gyro.gx, dt_accel_gyro.gy, dt_accel_gyro.gz, imu.integral_fbx, imu.integral_fby,
+        {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx, imu.integral_fby,
          imu.integral_fbz}
       end
 
     # Integrate rate of change of quaternion
     # pre-multiply common factors
-    gx = gx * 0.5 * dt
-    gy = gy * 0.5 * dt
-    gz = gz * 0.5 * dt
+    gx = gx * 0.5 * dt_s
+    gy = gy * 0.5 * dt_s
+    gz = gz * 0.5 * dt_s
 
     qa = q0
     qb = q1
