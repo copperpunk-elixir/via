@@ -110,7 +110,7 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_attitude(), attitude_rad, dt_s},
+          {Groups.estimation_attitude_dt(), attitude_rad, dt_s},
           self()
         )
 
@@ -174,18 +174,20 @@ defmodule Estimation.Estimator do
 
         airspeed_mps = if state.watchdog_fed.airspeed, do: state.airspeed, else: groundspeed_mps
 
-        position_velocity = %{
-          position_rrm: position_rrm,
-          ground_altitude_m: ground_altitude_m,
+        position =
+          Map.take(position_rrm, [:latitude_rad, :longitude_rad, :altitude_m])
+          |> Map.put(:ground_altitude_m, ground_altitude_m)
+
+        velocity = %{
           groundspeed_mps: groundspeed_mps,
           vertical_velocity_mps: vertical_velocity_mps,
           course_rad: course_rad,
-          airspeed_mps: airspeed_mps,
+          airspeed_mps: airspeed_mps
         }
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_velocity(), position_velocity, dt_s},
+          {Groups.estimation_position_velocity_dt(), position, velocity, dt_s},
           self()
         )
 

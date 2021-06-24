@@ -3,10 +3,10 @@ defmodule Comms.Groups do
   defmacro command_channels_failsafe, do: :command_channels_failsafe
   defmacro commander_goals, do: :commander_goals
   defmacro dt_accel_gyro_val(), do: :dt_accel_gyro_val
-  defmacro estimation_attitude, do: {:estimation_values, :attitude}
+  defmacro estimation_attitude_dt, do: {:estimation_values, :attitude_dt}
 
-  defmacro estimation_position_velocity,
-    do: {:estimation_values, :position_velocity}
+  defmacro estimation_position_velocity_dt,
+    do: {:estimation_values, :position_velocity_dt}
 
   defmacro gps_itow_position_velocity, do: :gps_pos_vel
   defmacro gps_itow_relheading, do: :gps_relhdg

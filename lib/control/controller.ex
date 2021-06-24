@@ -6,12 +6,11 @@ defmodule Control.Controller do
   require Command.ControlTypes, as: CCT
 
   @controller_loop :controller_loop
-  # @clear_goals_callback :clear_goals_callback
-  # @clear_attitude_callback :clear_attitude_callback
-  # @clear_position_velocity_callback :clear_position_velocity_callback
-  # @clear_remote_pilot_override_callback :clear_remote_pilot_override_callback
+  @goals :goals
+  @attitude :attitude
+  @position_velocity :position_velocity
+  @remote_pilot_override_commands :remote_pilot_override_commands
   @clear_values_callback :clear_values_callback
-  @agl_ceiling_m 150.0
 
   def start_link(config) do
     Logger.debug("Start Control.Controller GenServer")
@@ -21,7 +20,6 @@ defmodule Control.Controller do
   @impl GenServer
   def init(config) do
     controller_loop_interval_ms = Keyword.fetch!(config, :controller_loop_interval_ms)
-    controllers = get_controllers_from_config(config)
 
     state = %{
       default_pilot_control_level: Keyword.fetch!(config, :default_pilot_control_level),
@@ -30,42 +28,25 @@ defmodule Control.Controller do
       pilot_control_level: nil,
       remote_pilot_override_commands: %{},
       latch_values: %{},
-      # latch_course_rad: 0,
-      # latch_altitude_m: 0,
-      # latch_command_time_prev_ms: 0,
-      position_velocity: %{},
-      # ground_altitude_m: 0,
-      # course_rad: 0,
-      # groundspeed_mps: 0,
-      # vertical_velocity_mps: 0,
-      # altitude_m: 0,
-      # airspeed_mps: 0,
+      position: %{},
+      velocity: %{},
       attitude: %{},
+      agl_ceiling_m: Keyword.fetch!(config, :agl_ceiling_m),
       controller_loop_interval_ms: controller_loop_interval_ms,
       clear_goals_timer: nil,
       clear_remote_pilot_override_commands_timer: nil,
       clear_attitude_timer: nil,
       clear_position_velocity_timer: nil,
-      controllers: controllers
+      controllers: get_controllers_from_config(config)
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.commander_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.remote_pilot_override_commands(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_dt(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_dt(), self())
 
-    ViaUtils.Comms.join_group(
-      __MODULE__,
-      Groups.estimation_position_velocity(),
-      self()
-    )
-
-    ViaUtils.Process.start_loop(
-      self(),
-      controller_loop_interval_ms,
-      @controller_loop
-    )
-
+    ViaUtils.Process.start_loop(self(), controller_loop_interval_ms, @controller_loop)
     {:ok, state}
   end
 
@@ -73,6 +54,36 @@ defmodule Control.Controller do
   def terminate(reason, state) do
     Logging.Logger.log_terminate(reason, state, __MODULE__)
     state
+  end
+
+  @impl GenServer
+  def handle_cast({Groups.estimation_attitude_dt(), attitude, dt_s}, state) do
+    clear_attitude_timer =
+      ViaUtils.Process.reattach_timer(
+        state.clear_attitude_timer,
+        2 * round(dt_s * 1000),
+        {@clear_values_callback, @attitude}
+      )
+
+    {:noreply, %{state | attitude: attitude, clear_attitude_timer: clear_attitude_timer}}
+  end
+
+  @impl GenServer
+  def handle_cast({Groups.estimation_position_velocity_dt(), position, velocity, dt_s}, state) do
+    clear_position_velocity_timer =
+      ViaUtils.Process.reattach_timer(
+        state.clear_position_velocity_timer,
+        2 * round(dt_s * 1000),
+        {@clear_values_callback, @position_velocity}
+      )
+
+    {:noreply,
+     %{
+       state
+       | position: position,
+         velocity: velocity,
+         clear_position_velocity_timer: clear_position_velocity_timer
+     }}
   end
 
   @impl GenServer
@@ -89,20 +100,13 @@ defmodule Control.Controller do
           %{state | goals: goals, pilot_control_level: pilot_control_level}
 
         state.pilot_control_level != CCT.pilot_control_level_4() ->
-          position_velocity = state.position_velocity
-          position = Map.get(position_velocity, :position_rrm, %{})
-
           latch_values =
-            Map.take(position, [:altitude_m])
-            |> Map.merge(Map.take(position_velocity, [:course_rad]))
+            Map.take(state.position, [:altitude_m])
+            |> Map.merge(Map.take(state.velocity, [:course_rad]))
             |> Map.put(:command_time_prev_ms, :erlang.monotonic_time(:millisecond))
 
           # Logger.debug("latch values: #{inspect(latch_values)}")
-          if Enum.count(latch_values) != 3 do
-            # We do not have position_velocity values, so do not latch yet
-            Logger.warn("Attempting to latch, but no Position/Velocity values available")
-            state
-          else
+          if Enum.count(latch_values) == 3 do
             Logger.warn(
               "latch to alt/course: #{ViaUtils.Format.eftb(latch_values.altitude_m, 3)}/#{
                 ViaUtils.Format.eftb_deg(latch_values.course_rad, 1)
@@ -115,9 +119,13 @@ defmodule Control.Controller do
                 latch_values: latch_values,
                 pilot_control_level: pilot_control_level
             }
+          else
+            # We do not have position_velocity values, so do not latch yet
+            Logger.warn("Attempting to latch, but no Position/Velocity values available")
+            state
           end
 
-        !Enum.empty?(state.position_velocity) ->
+        map_size(state.position) > 0 ->
           # pilot_control_level == CCT.pilot_control_level_4 and has since the last loop,
           # i.e., it did not just change
           # Therefore we know that the latch values are populated
@@ -130,15 +138,13 @@ defmodule Control.Controller do
             (latch_values.course_rad + goals.course_rate_rps * dt_s)
             |> ViaUtils.Math.constrain_angle_to_compass()
 
-          # Logger.debug("ground alt: #{ViaUtils.Format.eftb(state.ground_altitude_m, 3)}")
-
-          ground_altitude_m = state.position_velocity.ground_altitude_m
+          ground_altitude_m = state.position.ground_altitude_m
 
           latch_altitude_m =
             (latch_values.altitude_m + goals.altitude_rate_mps * dt_s)
             |> ViaUtils.Math.constrain(
               ground_altitude_m,
-              ground_altitude_m + @agl_ceiling_m
+              ground_altitude_m + state.agl_ceiling_m
             )
 
           %{
@@ -160,7 +166,7 @@ defmodule Control.Controller do
       ViaUtils.Process.reattach_timer(
         state.clear_goals_timer,
         2 * state.controller_loop_interval_ms,
-        {@clear_values_callback, :goals}
+        {@clear_values_callback, @goals}
       )
 
     {:noreply,
@@ -183,7 +189,7 @@ defmodule Control.Controller do
       ViaUtils.Process.reattach_timer(
         state.clear_remote_pilot_override_commands_timer,
         time_validity_ms,
-        {@clear_values_callback, :remote_pilot_override_commands}
+        {@clear_values_callback, @remote_pilot_override_commands}
       )
 
     {:noreply,
@@ -195,44 +201,11 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude(), attitude_rad, dt_s}, state) do
-    # Logger.debug("ctrl att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
-    clear_attitude_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_attitude_timer,
-        2 * round(dt_s * 1000),
-        {@clear_values_callback, :attitude}
-      )
-
-    {:noreply, %{state | attitude: attitude_rad, clear_attitude_timer: clear_attitude_timer}}
-  end
-
-  @impl GenServer
-  def handle_cast(
-        {Groups.estimation_position_velocity(), position_velocity, dt_s},
-        state
-      ) do
-    clear_position_velocity_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_position_velocity_timer,
-        2 * round(dt_s * 1000),
-        {@clear_values_callback, :position_velocity}
-      )
-
-    {:noreply,
-     %{
-       state
-       | position_velocity: position_velocity,
-         clear_position_velocity_timer: clear_position_velocity_timer
-     }}
-  end
-
-  @impl GenServer
   def handle_info(@controller_loop, state) do
     override_commands = state.remote_pilot_override_commands
 
     state =
-      if !Enum.empty?(override_commands) do
+      if map_size(override_commands) > 0 do
         # Send values straight to companion
         Logger.warn(
           "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
@@ -244,7 +217,7 @@ defmodule Control.Controller do
         goals = state.goals
 
         {pilot_control_level, goals} =
-          if Enum.empty?(goals) do
+          if map_size(goals) == 0 do
             {state.default_pilot_control_level,
              Map.get(state.default_goals, state.default_pilot_control_level)}
           else
@@ -268,125 +241,118 @@ defmodule Control.Controller do
     {:noreply, Map.put(state, key, %{})}
   end
 
-  # @impl GenServer
-  # def handle_info(@clear_remote_pilot_override_callback, state) do
-  #   Logger.debug("clear remote override")
-  #   {:noreply, %{state | remote_pilot_override: false}}
-  # end
-
-  # @impl GenServer
-  # def handle_info(@clear_goals_callback, state) do
-  #   Logger.debug("clear goals: #{inspect(state.goals)}")
-  #   {:noreply, %{state | goals_store: %{}}}
-  # end
-
   @spec process_commands(integer(), map(), map()) :: map()
-  def process_commands(pilot_control_level, goals, state) do
-    if Enum.empty?(goals) do
+  def process_commands(_pilot_control_level, goals, state) when map_size(goals) == 0 do
+    state
+  end
+
+  def process_commands(pilot_control_level, goals, state)
+      when pilot_control_level == CCT.pilot_control_level_4() do
+    pcl_3_cmds =
+      Map.take(goals, [:groundspeed_mps, :sideslip_rad])
+      |> Map.merge(Map.take(state.latch_values, [:altitude_m, :course_rad]))
+
+    Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
+
+    if Enum.count(pcl_3_cmds) == 4 do
+      process_commands(
+        CCT.pilot_control_level_3(),
+        pcl_3_cmds,
+        state
+      )
+    else
+      state
+    end
+  end
+
+  def process_commands(pilot_control_level, goals, state)
+      when pilot_control_level == CCT.pilot_control_level_3() do
+    Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(goals, 3)}")
+
+    velocity = state.velocity
+
+    values =
+      Map.take(velocity, [
+        :groundspeed_mps,
+        :vertical_velocity_mps,
+        :course_rad
+      ])
+      |> Map.merge(Map.take(state.position, [:altitude_m]))
+      |> Map.merge(Map.take(state.attitude, [:yaw_rad]))
+
+    if Enum.count(values) != 5 do
       state
     else
-      case pilot_control_level do
-        CCT.pilot_control_level_4() ->
-          pcl_3_cmds =
-            Map.take(goals, [:groundspeed_mps, :sideslip_rad])
-            |> Map.merge(Map.take(state.latch_values, [:altitude_m, :course_rad]))
+      controllers = state.controllers
+      controller = Map.get(controllers, CCT.pilot_control_level_3())
 
-          Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
+      {pcl_3_controller, pcl_2_cmds} =
+        apply(controller.__struct__, :update, [
+          controller,
+          goals,
+          values,
+          velocity.airspeed_mps,
+          state.controller_loop_interval_ms * 1.0e-3
+        ])
 
-          if Enum.count(pcl_3_cmds) == 4 do
-            process_commands(
-              CCT.pilot_control_level_3(),
-              pcl_3_cmds,
-              state
-            )
-          else
-            state
-          end
+      throttle_cmd_scaled =
+        if goals.groundspeed_mps < 1.0, do: 0, else: pcl_2_cmds.throttle_scaled
 
-        CCT.pilot_control_level_3() ->
-          Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(goals, 3)}")
-          position_velocity = state.position_velocity
-          position =  Map.get(position_velocity, :position_rrm, %{})
-          values =
-            Map.take(position_velocity, [
-              :groundspeed_mps,
-              :vertical_velocity_mps,
-              :course_rad
-            ])
-            |> Map.merge(Map.take(position, [:altitude_m]))
-            |> Map.merge(Map.take(state.attitude, [:yaw_rad]))
+      pcl_2_cmds = Map.put(pcl_2_cmds, :throttle_scaled, throttle_cmd_scaled)
+      # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
+      Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
+      controllers = Map.put(controllers, CCT.pilot_control_level_3(), pcl_3_controller)
+      Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
+      state = %{state | controllers: controllers}
 
-
-          if Enum.count(values) != 5 do
-            state
-          else
-            controllers = state.controllers
-            controller = Map.get(controllers, CCT.pilot_control_level_3())
-
-            {pcl_3_controller, pcl_2_cmds} =
-              apply(controller.__struct__, :update, [
-                controller,
-                goals,
-                values,
-                position_velocity.airspeed_mps,
-                state.controller_loop_interval_ms * 1.0e-3
-              ])
-
-            throttle_cmd_scaled =
-              if goals.groundspeed_mps < 1.0, do: 0, else: pcl_2_cmds.throttle_scaled
-
-            pcl_2_cmds = Map.put(pcl_2_cmds, :throttle_scaled, throttle_cmd_scaled)
-            # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
-            Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
-            controllers = Map.put(controllers, CCT.pilot_control_level_3(), pcl_3_controller)
-            Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
-            state = %{state | controllers: controllers}
-
-            process_commands(
-              CCT.pilot_control_level_2(),
-              pcl_2_cmds,
-              state
-            )
-          end
-
-        CCT.pilot_control_level_2() ->
-          Logger.debug("attitude. Calculate bodyrates, then pass to companion")
-          values = state.attitude
-
-          if Enum.empty?(values) do
-            state
-          else
-            controllers = state.controllers
-            controller = Map.get(controllers, CCT.pilot_control_level_2())
-
-            {pcl_2_controller, pcl_1_cmds} =
-              apply(controller.__struct__, :update, [
-                controller,
-                goals,
-                values,
-                Map.get(state.position_velocity, :airspeed_mps, 0),
-                state.controller_loop_interval_ms * 1.0e-3
-              ])
-
-            controllers = Map.put(controllers, CCT.pilot_control_level_2(), pcl_2_controller)
-            Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
-            state = %{state | controllers: controllers}
-
-            process_commands(
-              CCT.pilot_control_level_1(),
-              pcl_1_cmds,
-              state
-            )
-          end
-
-        CCT.pilot_control_level_1() ->
-          Logger.debug("bodyrates: Convert to [-1, 1] range and send to companion")
-          state
-
-        invalid_pcl ->
-          raise "Commander has PCL of #{inspect(invalid_pcl)}, which should not be possible"
-      end
+      process_commands(
+        CCT.pilot_control_level_2(),
+        pcl_2_cmds,
+        state
+      )
     end
+  end
+
+  def process_commands(pilot_control_level, goals, state)
+      when pilot_control_level == CCT.pilot_control_level_2() do
+    Logger.debug("attitude. Calculate bodyrates, then pass to companion")
+    values = state.attitude
+
+    if map_size(values) == 0 do
+      state
+    else
+      controllers = state.controllers
+      controller = Map.get(controllers, CCT.pilot_control_level_2())
+
+      {pcl_2_controller, pcl_1_cmds} =
+        apply(controller.__struct__, :update, [
+          controller,
+          goals,
+          values,
+          Map.get(state.velocity, :airspeed_mps, 0),
+          state.controller_loop_interval_ms * 1.0e-3
+        ])
+
+      controllers = Map.put(controllers, CCT.pilot_control_level_2(), pcl_2_controller)
+      Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
+      state = %{state | controllers: controllers}
+
+      process_commands(
+        CCT.pilot_control_level_1(),
+        pcl_1_cmds,
+        state
+      )
+    end
+  end
+
+  def process_commands(pilot_control_level, _goals, state)
+      when pilot_control_level == CCT.pilot_control_level_1() do
+    Logger.debug("bodyrates: Convert to [-1, 1] range and send to companion")
+    state
+  end
+
+  def process_commands(pilot_control_level, _goals, _state) do
+    raise "Commander has PCL of #{inspect(pilot_control_level)}, which should not be possible"
   end
 
   @spec get_controllers_from_config(list()) :: map()
@@ -395,6 +361,7 @@ defmodule Control.Controller do
                                                               controllers_acc ->
       controller_module = Keyword.fetch!(pcl_config, :module)
       controller_config = Keyword.fetch!(pcl_config, :controller_config)
+
       Map.put(
         controllers_acc,
         pilot_control_level,

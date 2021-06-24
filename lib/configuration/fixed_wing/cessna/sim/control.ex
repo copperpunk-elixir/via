@@ -5,6 +5,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
   def config() do
     [
       Controller: [
+        agl_ceiling_m: 150,
         default_pilot_control_level: CCT.pilot_control_level_2(),
         default_goals: %{
           CCT.pilot_control_level_2() =>
