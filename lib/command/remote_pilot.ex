@@ -71,14 +71,20 @@ defmodule Command.RemotePilot do
   @impl GenServer
   def handle_cast({Groups.command_channels_failsafe(), channel_values, _failsafe_active}, state) do
     # Logger.debug("Channel values: #{inspect(channel_values)}")
-   channel_values_watchdog = Watchdog.reset(state.channel_values_watchdog)
-    {:noreply, %{state | channel_values: channel_values, channel_values_watchdog: channel_values_watchdog}}
+    {channel_values_watchdog, channel_values} =
+      if length(channel_values) >= state.num_channels do
+        {Watchdog.reset(state.channel_values_watchdog), channel_values}
+      else
+        {state.channel_values_watchdog, state.channel_values}
+      end
+
+    {:noreply,
+     %{state | channel_values: channel_values, channel_values_watchdog: channel_values_watchdog}}
   end
 
   @impl GenServer
   def handle_info(@remote_pilot_goals_loop, state) do
-    # Logger.debug("att loop: #{dt_s}")
-    if length(state.channel_values) >= state.num_channels do
+    if !Enum.empty?(state.channel_values) do
       channel_value_map =
         Stream.zip(0..(state.num_channels - 1), state.channel_values) |> Enum.into(%{})
 
@@ -114,14 +120,15 @@ defmodule Command.RemotePilot do
               Map.put(acc, channel_name, output)
             end)
 
-          # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
-          {goals_sorter_classification, goals_sorter_time_validity_ms} =
+          # Logger.debug("rp goals: #{ViaUtils.Format.eftb_map(goals, 3)}")
+
+          {classification, time_validity_ms} =
             state.goals_sorter_classification_and_time_validity_ms
 
           ViaUtils.Comms.send_global_msg_to_group(
             __MODULE__,
-            {MessageHeaders.global_group_to_sorter(), goals_sorter_classification,
-             goals_sorter_time_validity_ms, {pilot_control_level, goals}},
+            {MessageHeaders.global_group_to_sorter(), classification, time_validity_ms,
+             {pilot_control_level, goals}},
             Groups.sorter_pilot_control_level_and_goals(),
             self()
           )
@@ -134,9 +141,6 @@ defmodule Command.RemotePilot do
               Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
             end)
 
-          # {_classification, override_time_validity_ms} =
-          # state.goals_sorter_classification_and_time_validity_ms
-
           ViaUtils.Comms.send_global_msg_to_group(
             __MODULE__,
             {Groups.remote_pilot_override_commands(), override_commands},
@@ -147,6 +151,7 @@ defmodule Command.RemotePilot do
           :ok
       end
     end
+
     {:noreply, state}
   end
 

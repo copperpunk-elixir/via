@@ -44,7 +44,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
         all_levels_channel_config: %{
           flaps_scaled: {4, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
           gear_scaled: {5, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
-          pilot_control_level: {7, {-1.0, 0, 1.0, CCT.input_inverted(), 0}},
+          pilot_control_level: {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}},
           autopilot_control_mode: {11, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
         },
         remote_pilot_override_channels: %{

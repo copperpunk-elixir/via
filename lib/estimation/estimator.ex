@@ -7,7 +7,7 @@ defmodule Estimation.Estimator do
 
   @attitude_loop :attitude_loop
   @position_velocity_loop :position_velocity_loop
-  @clear_value_current_callback :clear_value_current_callback
+  @clear_is_value_current_callback :clear_is_value_current_callback
   @imu :imu
   @gps :gps
   @airspeed :airspeed
@@ -46,22 +46,22 @@ defmodule Estimation.Estimator do
       },
       imu_watchdog:
         Watchdog.new(
-          {@clear_value_current_callback, @imu},
+          {@clear_is_value_current_callback, @imu},
           2 * LoopIntervals.imu_receive_max_ms()
         ),
       gps_watchdog:
         Watchdog.new(
-          {@clear_value_current_callback, @gps},
+          {@clear_is_value_current_callback, @gps},
           5 * LoopIntervals.gps_receive_max_ms()
         ),
       airspeed_watchdog:
         Watchdog.new(
-          {@clear_value_current_callback, @airspeed},
+          {@clear_is_value_current_callback, @airspeed},
           2 *LoopIntervals.airspeed_receive_max_ms()
         ),
       agl_watchdog:
         Watchdog.new(
-          {@clear_value_current_callback, @agl},
+          {@clear_is_value_current_callback, @agl},
           2 * LoopIntervals.rangefinder_receive_max_ms()
         )
     }
@@ -251,7 +251,7 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_info({@clear_value_current_callback, key}, state) do
+  def handle_info({@clear_is_value_current_callback, key}, state) do
     Logger.warn("clear #{inspect(key)}: #{inspect(get_in(state, [:is_value_current, key]))}")
     state = put_in(state, [:is_value_current, key], false)
     {:noreply, state}
