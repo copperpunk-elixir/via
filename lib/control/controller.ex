@@ -4,13 +4,15 @@ defmodule Control.Controller do
   require Comms.Groups, as: Groups
   require MessageSorter.Sorter
   require Command.ControlTypes, as: CCT
+  require Configuration.LoopIntervals, as: LoopIntervals
+  alias ViaUtils.Watchdog
 
   @controller_loop :controller_loop
   @goals :goals
   @attitude :attitude
   @position_velocity :position_velocity
   @remote_pilot_override_commands :remote_pilot_override_commands
-  @clear_values_callback :clear_values_callback
+  @clear_values_map_callback :clear_values_map_callback
 
   def start_link(config) do
     Logger.debug("Start Control.Controller GenServer")
@@ -19,8 +21,6 @@ defmodule Control.Controller do
 
   @impl GenServer
   def init(config) do
-    controller_loop_interval_ms = Keyword.fetch!(config, :controller_loop_interval_ms)
-
     state = %{
       default_pilot_control_level: Keyword.fetch!(config, :default_pilot_control_level),
       default_goals: Keyword.fetch!(config, :default_goals),
@@ -32,21 +32,36 @@ defmodule Control.Controller do
       velocity: %{},
       attitude: %{},
       agl_ceiling_m: Keyword.fetch!(config, :agl_ceiling_m),
-      controller_loop_interval_ms: controller_loop_interval_ms,
-      clear_goals_timer: nil,
-      clear_remote_pilot_override_commands_timer: nil,
-      clear_attitude_timer: nil,
-      clear_position_velocity_timer: nil,
+      goals_watchdog:
+        Watchdog.new(
+          {@clear_values_map_callback, @goals},
+          2 * LoopIntervals.commander_goals_publish_ms()
+        ),
+      remote_pilot_override_commands_watchdog:
+        Watchdog.new(
+          {@clear_values_map_callback, @remote_pilot_override_commands},
+          2 * LoopIntervals.remote_pilot_goals_publish_ms()
+        ),
+      attitude_watchdog:
+        Watchdog.new(
+          {@clear_values_map_callback, @attitude},
+          2 * LoopIntervals.attitude_publish_ms()
+        ),
+      position_velocity_watchdog:
+        Watchdog.new(
+          {@clear_values_map_callback, @position_velocity},
+          2 * LoopIntervals.position_velocity_publish_ms()
+        ),
       controllers: get_controllers_from_config(config)
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.commander_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.remote_pilot_override_commands(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_dt(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_dt(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity(), self())
 
-    ViaUtils.Process.start_loop(self(), controller_loop_interval_ms, @controller_loop)
+    ViaUtils.Process.start_loop(self(), LoopIntervals.controller_update_ms(), @controller_loop)
     {:ok, state}
   end
 
@@ -57,32 +72,21 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude_dt(), attitude, dt_s}, state) do
-    clear_attitude_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_attitude_timer,
-        2 * round(dt_s * 1000),
-        {@clear_values_callback, @attitude}
-      )
-
-    {:noreply, %{state | attitude: attitude, clear_attitude_timer: clear_attitude_timer}}
+  def handle_cast({Groups.estimation_attitude(), attitude}, state) do
+    attitude_watchdog = Watchdog.reset(state.attitude_watchdog)
+    {:noreply, %{state | attitude: attitude, attitude_watchdog: attitude_watchdog}}
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_position_velocity_dt(), position, velocity, dt_s}, state) do
-    clear_position_velocity_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_position_velocity_timer,
-        2 * round(dt_s * 1000),
-        {@clear_values_callback, @position_velocity}
-      )
+  def handle_cast({Groups.estimation_position_velocity(), position, velocity}, state) do
+    position_velocity_watchdog = Watchdog.reset(state.position_velocity_watchdog)
 
     {:noreply,
      %{
        state
        | position: position,
          velocity: velocity,
-         clear_position_velocity_timer: clear_position_velocity_timer
+         position_velocity_watchdog: position_velocity_watchdog
      }}
   end
 
@@ -162,41 +166,32 @@ defmodule Control.Controller do
           state
       end
 
-    clear_goals_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_goals_timer,
-        2 * state.controller_loop_interval_ms,
-        {@clear_values_callback, @goals}
-      )
+    goals_watchdog = Watchdog.reset(state.goals_watchdog)
 
     {:noreply,
      %{
        state
-       | clear_goals_timer: clear_goals_timer
+       | goals_watchdog: goals_watchdog
      }}
   end
 
   @impl GenServer
   def handle_cast(
-        {Groups.remote_pilot_override_commands(), override_commands, time_validity_ms},
+        {Groups.remote_pilot_override_commands(), override_commands},
         state
       ) do
     # Logger.debug(
     #   "Remote override (#{goals_time_validity_ms}ms) rx: #{ViaUtils.Format.eftb_map(goals, 3)}"
     # )
 
-    clear_remote_pilot_override_commands_timer =
-      ViaUtils.Process.reattach_timer(
-        state.clear_remote_pilot_override_commands_timer,
-        time_validity_ms,
-        {@clear_values_callback, @remote_pilot_override_commands}
-      )
+    remote_pilot_override_commands_watchdog =
+      Watchdog.reset(state.remote_pilot_override_commands_watchdog)
 
     {:noreply,
      %{
        state
        | remote_pilot_override_commands: override_commands,
-         clear_remote_pilot_override_commands_timer: clear_remote_pilot_override_commands_timer
+         remote_pilot_override_commands_watchdog: remote_pilot_override_commands_watchdog
      }}
   end
 
@@ -236,7 +231,7 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_info({@clear_values_callback, key}, state) do
+  def handle_info({@clear_values_map_callback, key}, state) do
     Logger.warn("clear #{inspect(key)}: #{inspect(Map.get(state, key))}")
     {:noreply, Map.put(state, key, %{})}
   end
@@ -292,7 +287,7 @@ defmodule Control.Controller do
           goals,
           values,
           velocity.airspeed_mps,
-          state.controller_loop_interval_ms * 1.0e-3
+          LoopIntervals.controller_update_ms() * 1.0e-3
         ])
 
       throttle_cmd_scaled =
@@ -330,7 +325,7 @@ defmodule Control.Controller do
           goals,
           values,
           Map.get(state.velocity, :airspeed_mps, 0),
-          state.controller_loop_interval_ms * 1.0e-3
+          LoopIntervals.controller_update_ms() * 1.0e-3
         ])
 
       controllers = Map.put(controllers, CCT.pilot_control_level_2(), pcl_2_controller)

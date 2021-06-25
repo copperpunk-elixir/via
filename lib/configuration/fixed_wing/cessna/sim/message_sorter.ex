@@ -4,6 +4,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
   require Comms.Groups, as: Groups
   require MessageSorter.Sorter, as: MSS
   require Comms.MessageHeaders
+  require Configuration.LoopIntervals, as: LoopIntervals
 
   @spec config() :: list()
   def config() do
@@ -26,28 +27,19 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
     # Logger.debug("sender: #{inspect(sender)}")
     classification_all = %{
       Sorters.heartbeat_node() => %{
-        Cluster.Heartbeat => [1, 1]
+        Cluster.Heartbeat => {[1, 1], 5 * LoopIntervals.heartbeat_publish_ms()}
       },
       Sorters.pilot_control_level_and_goals() => %{
-        Command.RemotePilot => [1, 1],
-        Navigation.Navigator => [1, 2]
+        Command.RemotePilot => {[1, 1], 5 * LoopIntervals.remote_pilot_goals_publish_ms()},
+        Navigation.Navigator => {[1, 2], 5 * LoopIntervals.navigator_goals_publish_ms()}
       }
     }
 
-    time_validity =
-      case sorter do
-        Sorters.heartbeat_node -> 500
-        Sorters.pilot_control_level_and_goals -> 300
-        _other -> 0
-      end
-
-    classification =
-      Map.get(classification_all, sorter, %{})
-      |> Map.get(sender, nil)
+    Map.get(classification_all, sorter, %{})
+    |> Map.get(sender, nil)
 
     # time_validity = Map.get(time_validity_all, sorter, 0)
     # Logger.debug("class/time: #{inspect(classification)}/#{time_validity}")
-    {classification, time_validity}
   end
 
   @spec message_sorters_for_module(atom()) :: list()
@@ -70,7 +62,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
               }
             },
             value_type: :tuple,
-            publish_value_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
+            publish_value_interval_ms: LoopIntervals.commander_goals_publish_ms(),
             global_sorter_group: Groups.sorter_pilot_control_level_and_goals()
           ]
         ]

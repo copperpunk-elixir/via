@@ -17,7 +17,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
           flaps_scaled: 0.0,
           gear_scaled: 1.0
         }},
-        controller_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium),
         controllers: %{
           CCT.pilot_control_level_3() => [
             module: ViaControllers.FixedWing.SpeedCourseAltitudeSideslip,

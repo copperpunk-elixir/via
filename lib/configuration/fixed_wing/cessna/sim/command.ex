@@ -18,9 +18,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
       ])
 
     [
-      Commander: [
-        commander_loop_interval_ms: Configuration.Generic.loop_interval_ms(:medium)
-      ],
+      Commander: [],
       RemotePilot: [
         num_channels: 12,
         control_level_dependent_channel_config: %{

@@ -4,6 +4,12 @@ defmodule Command.RemotePilot do
   require Comms.Groups, as: Groups
   require Comms.MessageHeaders, as: MessageHeaders
   require Command.ControlTypes, as: ControlTypes
+  require Configuration.LoopIntervals, as: LoopIntervals
+  alias ViaUtils.Watchdog
+
+  @remote_pilot_goals_loop :remote_pilot_goals_loop
+  @clear_values_list_callback :clear_values_list_callback
+  @channel_values :channel_values
 
   def start_link(config) do
     Logger.debug("Start Command.RemotePilot GenServer")
@@ -35,11 +41,24 @@ defmodule Command.RemotePilot do
       pilot_control_level_channel: pilot_control_level_channel,
       autopilot_control_mode_channel: autopilot_control_mode_channel,
       goals_sorter_classification_and_time_validity_ms:
-        Keyword.fetch!(config, :goals_sorter_classification_and_time_validity_ms)
+        Keyword.fetch!(config, :goals_sorter_classification_and_time_validity_ms),
+      channel_values_watchdog:
+        Watchdog.new(
+          {@clear_values_list_callback, @channel_values},
+          2 * LoopIntervals.remote_pilot_goals_publish_ms()
+        ),
+      channel_values: []
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
+
+    ViaUtils.Process.start_loop(
+      self(),
+      LoopIntervals.remote_pilot_goals_publish_ms(),
+      @remote_pilot_goals_loop
+    )
+
     {:ok, state}
   end
 
@@ -52,74 +71,89 @@ defmodule Command.RemotePilot do
   @impl GenServer
   def handle_cast({Groups.command_channels_failsafe(), channel_values, _failsafe_active}, state) do
     # Logger.debug("Channel values: #{inspect(channel_values)}")
-    channel_value_map = Stream.zip(0..(state.num_channels - 1), channel_values) |> Enum.into(%{})
+   channel_values_watchdog = Watchdog.reset(state.channel_values_watchdog)
+    {:noreply, %{state | channel_values: channel_values, channel_values_watchdog: channel_values_watchdog}}
+  end
 
-    autopilot_control_mode =
-      Map.fetch!(channel_value_map, state.autopilot_control_mode_channel)
-      |> autopilot_control_mode_from_float()
+  @impl GenServer
+  def handle_info(@remote_pilot_goals_loop, state) do
+    # Logger.debug("att loop: #{dt_s}")
+    if length(state.channel_values) >= state.num_channels do
+      channel_value_map =
+        Stream.zip(0..(state.num_channels - 1), state.channel_values) |> Enum.into(%{})
 
-    # Logger.debug("acm: #{autopilot_control_mode}")
+      autopilot_control_mode =
+        Map.fetch!(channel_value_map, state.autopilot_control_mode_channel)
+        |> autopilot_control_mode_from_float()
 
-    cond do
-      autopilot_control_mode == ControlTypes.autopilot_control_mode_controller_assist() ->
-        pilot_control_level =
-          Map.fetch!(channel_value_map, state.pilot_control_level_channel)
-          |> pilot_control_level_from_float()
+      # Logger.debug("acm: #{autopilot_control_mode}")
 
-        channels =
-          Map.fetch!(
-            state.control_level_dependent_channel_config,
-            pilot_control_level
+      cond do
+        autopilot_control_mode == ControlTypes.autopilot_control_mode_controller_assist() ->
+          pilot_control_level =
+            Map.fetch!(channel_value_map, state.pilot_control_level_channel)
+            |> pilot_control_level_from_float()
+
+          channels =
+            Map.fetch!(
+              state.control_level_dependent_channel_config,
+              pilot_control_level
+            )
+            |> Map.merge(state.all_levels_channel_config)
+
+          # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(channels)}")
+
+          goals =
+            Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
+              output =
+                get_goal_from_rx_value(
+                  Map.fetch!(channel_value_map, channel_number),
+                  channel_config
+                )
+
+              Map.put(acc, channel_name, output)
+            end)
+
+          # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
+          {goals_sorter_classification, goals_sorter_time_validity_ms} =
+            state.goals_sorter_classification_and_time_validity_ms
+
+          ViaUtils.Comms.send_global_msg_to_group(
+            __MODULE__,
+            {MessageHeaders.global_group_to_sorter(), goals_sorter_classification,
+             goals_sorter_time_validity_ms, {pilot_control_level, goals}},
+            Groups.sorter_pilot_control_level_and_goals(),
+            self()
           )
-          |> Map.merge(state.all_levels_channel_config)
 
-        # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(channels)}")
+        autopilot_control_mode == ControlTypes.autopilot_control_mode_remote_pilot_override() ->
+          override_commands =
+            Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name,
+                                                                       channel_number},
+                                                                      acc ->
+              Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
+            end)
 
-        goals =
-          Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
-            output =
-              get_goal_from_rx_value(
-                Map.fetch!(channel_value_map, channel_number),
-                channel_config
-              )
+          # {_classification, override_time_validity_ms} =
+          # state.goals_sorter_classification_and_time_validity_ms
 
-            Map.put(acc, channel_name, output)
-          end)
+          ViaUtils.Comms.send_global_msg_to_group(
+            __MODULE__,
+            {Groups.remote_pilot_override_commands(), override_commands},
+            self()
+          )
 
-        # Logger.debug("cmds: #{ViaUtils.Format.eftb_map(commands, 3)}")
-        {goals_sorter_classification, goals_sorter_time_validity_ms} =
-          state.goals_sorter_classification_and_time_validity_ms
-
-        ViaUtils.Comms.send_global_msg_to_group(
-          __MODULE__,
-          {MessageHeaders.global_group_to_sorter(),
-           goals_sorter_classification, goals_sorter_time_validity_ms,
-           {pilot_control_level, goals}},
-          Groups.sorter_pilot_control_level_and_goals(),
-          self()
-        )
-
-      autopilot_control_mode == ControlTypes.autopilot_control_mode_remote_pilot_override() ->
-        override_commands =
-          Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name, channel_number},
-                                                                    acc ->
-            Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
-          end)
-
-        {_classification, override_time_validity_ms} =
-          state.goals_sorter_classification_and_time_validity_ms
-
-        ViaUtils.Comms.send_global_msg_to_group(
-          __MODULE__,
-          {Groups.remote_pilot_override_commands(), override_commands, override_time_validity_ms},
-          self()
-        )
-
-      true ->
-        :ok
+        true ->
+          :ok
+      end
     end
-
     {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info({@clear_values_list_callback, key}, state) do
+    Logger.warn("clear #{inspect(key)}: #{inspect(Map.get(state, key))}")
+    {:noreply, Map.put(state, key, [])}
   end
 
   @spec autopilot_control_mode_from_float(float()) :: integer()
