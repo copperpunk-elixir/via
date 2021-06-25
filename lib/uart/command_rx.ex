@@ -20,7 +20,6 @@ defmodule Uart.CommandRx do
     state = %{
       uart_ref: nil,
       channel_values: [],
-      rx_module: rx_module,
       rx: apply(rx_module, :new, [])
     }
 
@@ -53,7 +52,7 @@ defmodule Uart.CommandRx do
   @impl GenServer
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("data: #{inspect(data)}")
-    {rx, channel_values} = apply(state.rx_module, :check_for_new_messages, [state.rx, :binary.bin_to_list(data)])
+    {rx, channel_values} = apply(state.rx.__struct__, :check_for_new_messages, [state.rx, :binary.bin_to_list(data)])
 
     rx =
       if !Enum.empty?(channel_values) do
@@ -63,7 +62,7 @@ defmodule Uart.CommandRx do
           self()
         )
         # Logger.debug("channels: #{ViaUtils.Format.eftb_list(channel_values, 3, ",")}")
-        apply(state.rx_module, :clear, [rx])
+        apply(rx.__struct__, :clear, [rx])
       else
         rx
       end

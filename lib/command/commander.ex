@@ -5,24 +5,26 @@ defmodule Command.Commander do
   require Comms.Sorters, as: Sorters
   require Command.ControlTypes, as: CCT
   require MessageSorter.Sorter
+  require Configuration.LoopIntervals, as: LoopIntervals
+  alias ViaUtils.Watchdog
+
 
   @commander_loop :commander_loop
-  @clear_goals_callback :clear_goals_callback
+  @clear_values_callback :clear_values_callback
+  @goals :goals
   def start_link(config) do
     Logger.debug("Start Command.Commander GenServer")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 
   @impl GenServer
-  def init(config) do
-    commander_loop_interval_ms = Keyword.fetch!(config, :commander_loop_interval_ms)
+  def init(_config) do
 
     state = %{
-      goals_store: %{},
-      goal_restrictions_store: %{},
+      goals: %{},
+      goal_restrictions: %{},
       pilot_control_level: nil,
-      commander_loop_interval_ms: commander_loop_interval_ms,
-      clear_goals_timer: nil
+      goals_watchdog: Watchdog.new({@clear_values_callback, @goals}, 2*LoopIntervals.commander_goals_publish_ms),
     }
 
     Comms.Supervisor.start_operator(__MODULE__)
@@ -30,12 +32,12 @@ defmodule Command.Commander do
     MessageSorter.Sorter.register_for_sorter_current_and_stale(
       Sorters.pilot_control_level_and_goals(),
       :value,
-      commander_loop_interval_ms
+      LoopIntervals.commander_goals_publish_ms()
     )
 
     ViaUtils.Process.start_loop(
       self(),
-      commander_loop_interval_ms,
+      LoopIntervals.commander_goals_publish_ms,
       @commander_loop
     )
 
@@ -54,35 +56,29 @@ defmodule Command.Commander do
          {pilot_control_level, goals}, _status},
         state
       ) do
-    ViaUtils.Process.detach_callback(state.clear_goals_timer)
 
-    clear_goals_timer =
-      ViaUtils.Process.attach_callback(
-        self(),
-        2 * state.commander_loop_interval_ms,
-        @clear_goals_callback
-      )
+   goals_watchdog = Watchdog.reset(state.goals_watchdog)
 
     # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals, 3)}")
     {:noreply,
      %{
        state
        | pilot_control_level: pilot_control_level,
-         goals_store: goals,
-         clear_goals_timer: clear_goals_timer
+         goals: goals,
+         goals_watchdog: goals_watchdog
      }}
   end
 
   @impl GenServer
   def handle_info(@commander_loop, state) do
     pilot_control_level = state.pilot_control_level
-    goals = state.goals_store
+    goals = state.goals
 
     if !is_nil(goals) do
       goals =
         update_goals_to_reflect_goal_restrictions(
           goals,
-          state.goal_restrictions_store,
+          state.goal_restrictions,
           pilot_control_level
         )
 
@@ -99,9 +95,9 @@ defmodule Command.Commander do
   end
 
   @impl GenServer
-  def handle_info(@clear_goals_callback, state) do
-    Logger.debug("clear goals: #{inspect(state.goals_store)}")
-    {:noreply, %{state | goals_store: %{}}}
+  def handle_info({@clear_values_callback, key}, state) do
+    Logger.debug("clear #{inspect(key)}: #{inspect(Map.get(state, key))}")
+    {:noreply, Map.put(state, key, %{})}
   end
 
   @spec update_goals_to_reflect_goal_restrictions(map(), map(), integer()) :: map()

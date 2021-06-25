@@ -3,11 +3,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
   def config() do
     [
       Estimator: [
-        attitude_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
-        position_speed_course_loop_interval_ms: Configuration.Generic.loop_interval_ms(:fast),
-        accel_gyro_rate_expected_interval_ms: 5,
-        gps_expected_interval_ms: 200,
-        range_expected_interval_ms: 100,
         min_speed_for_course: 1.0,
 
         ins_kf_type: Ekf.SevenState,

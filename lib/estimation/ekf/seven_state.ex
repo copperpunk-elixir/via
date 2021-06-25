@@ -85,6 +85,8 @@ defmodule Estimation.Ekf.SevenState do
   # away from the earth's surface.
   # Everything inside the EKF will be in NED coordinates
   # When we send a position to the outside, we convert to LLA
+
+  # The Dialyzer error persists even if the function body is empty
   @spec update_from_gps(struct(), map(), map()) :: struct()
   def update_from_gps(state, position_rrm, velocity_mps) do
     origin =
@@ -98,7 +100,6 @@ defmodule Estimation.Ekf.SevenState do
 
     dz = -position_rrm.altitude_m - origin.altitude_m
 
-    # TODO: This is the line that is givin a "no local return" warning
     z =
       Matrex.new([
         [dx],
@@ -180,7 +181,7 @@ defmodule Estimation.Ekf.SevenState do
       ekf_cov = Matrex.dot(eye_m_kh, ekf_cov)
 
       delta_yaw = k_add[7]
-      imu = Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
+      imu = Estimation.Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
       %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
     else
       Logger.debug("Established heading at #{ViaUtils.Format.eftb_deg(heading_rad, 2)}")

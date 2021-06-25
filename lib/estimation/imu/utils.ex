@@ -1,4 +1,4 @@
-defmodule Imu.Utils do
+defmodule Estimation.Imu.Utils do
   @spec rotate_yaw_rad(struct(), float()) :: struct()
   def rotate_yaw_rad(imu, delta_yaw_rad) do
     yaw = imu.yaw_rad + delta_yaw_rad
@@ -24,7 +24,7 @@ defmodule Imu.Utils do
     q1 = srcp * cy - cr * spsy
     q2 = cr * spcy + srcp * sy
     q3 = crcp * sy - sr * spcy
-    %{imu | q0: q0, q1: q1, q2: q2, q3: q3}
+    %{imu | quat: {q0, q1, q2, q3}}
   end
 
   @spec rpy_to_string(struct(), integer()) :: binary()

@@ -1,7 +1,7 @@
 defmodule Estimation.Ekf.Agl do
-  require Bitwise
   require Logger
 
+  # If this looks like I don't know what I'm doing, that's because it's true.
   defstruct [roll_rad: 0, pitch_rad: 0, zdot_mps: 0, z_m: 0, q33: 0, p00: 0, p11: 0, p22: 0, p33: 0, r: 0, time_prev_us: -1, roll_max_rad: 0, pitch_max_rad: 0]
 
   @spec new(list()) :: struct()

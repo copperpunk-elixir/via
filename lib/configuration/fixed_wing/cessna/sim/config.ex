@@ -10,7 +10,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Config do
       :Uart
     ]
 
-    IO.puts("modules: #{inspect(modules)}")
+    Logger.debug("modules: #{inspect(modules)}")
 
     Enum.reduce(modules, [], fn module, acc ->
       full_module_name = Module.concat(Configuration.FixedWing.Cessna.Sim, module)

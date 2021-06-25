@@ -3,10 +3,7 @@ defmodule Estimation.Imu.Mahony do
   @accel_mag_min 9.6
   @accel_mag_max 10.0
 
-  defstruct q0: 1.0,
-            q1: 0.0,
-            q2: 0.0,
-            q3: 0.0,
+  defstruct quat: {1.0, 0, 0, 0},
             kp: 0,
             ki: 0,
             integral_fbx: 0,
@@ -27,10 +24,7 @@ defmodule Estimation.Imu.Mahony do
     ax = dt_accel_gyro.ax_mpss
     ay = dt_accel_gyro.ay_mpss
     az = dt_accel_gyro.az_mpss
-    q0 = imu.q0
-    q1 = imu.q1
-    q2 = imu.q2
-    q3 = imu.q3
+    {q0, q1, q2, q3} = imu.quat
 
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
@@ -79,8 +73,8 @@ defmodule Estimation.Imu.Mahony do
            imu.integral_fby, imu.integral_fbz}
         end
       else
-        {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx, imu.integral_fby,
-         imu.integral_fbz}
+        {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx,
+         imu.integral_fby, imu.integral_fbz}
       end
 
     # Integrate rate of change of quaternion
@@ -112,10 +106,7 @@ defmodule Estimation.Imu.Mahony do
 
     %{
       imu
-      | q0: q0,
-        q1: q1,
-        q2: q2,
-        q3: q3,
+      | quat: {q0, q1, q2, q3},
         integral_fbx: integral_fbx,
         integral_fby: integral_fby,
         integral_fbz: integral_fbz,
