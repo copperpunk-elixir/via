@@ -13,7 +13,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
           roll_rad: 0.26,
           pitch_rad: 0.03,
           deltayaw_rad: 0,
-          throttle_scaled: 0.0,
+          thrust_scaled: 0.0,
           flaps_scaled: 0.0,
           gear_scaled: 1.0
         }},
@@ -57,7 +57,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
             ]
           ],
           CCT.pilot_control_level_2() => [
-            module: ViaControllers.FixedWing.RollPitchDeltayawThrottle,
+            module: ViaControllers.FixedWing.RollPitchDeltayawThrust,
             controller_config: [
               roll: [
                 output_min: -6.0,
@@ -83,7 +83,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
                 command_rate_max: 1.5,
                 initial_command: 0
               ],
-              throttle: [
+              thrust: [
                 output_min: 0.0,
                 output_neutral: 0.0,
                 output_max: 1.0,

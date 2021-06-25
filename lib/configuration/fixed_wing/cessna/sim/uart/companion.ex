@@ -13,13 +13,27 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart.Companion do
         port_options: [speed: 115_200],
         accel_counts_to_mpss: VC.gravity() / 8192,
         gyro_counts_to_rps: VC.deg2rad() / 16.4,
-        actuator_channels: %{
-          Act.aileron() => 0,
-          Act.elevator() => 1,
-          Act.throttle() => 2,
-          Act.rudder() => 3,
-          Act.flaps() => 4,
-          Act.gear() => 5
+        channels_1_8: %{
+          keys: [
+            Act.aileron(),
+            Act.elevator(),
+            Act.throttle(),
+            Act.rudder(),
+            Act.flaps(),
+            Act.gear(),
+            Act.aux1(),
+            Act.multiplexor()
+          ],
+          default_values: %{
+            Act.aileron() => 0,
+            Act.elevator() => 0,
+            Act.throttle() => -1.0,
+            Act.rudder() => 0,
+            Act.flaps() => -1.0,
+            Act.gear() => -1.0,
+            Act.aux1() => -1.0,
+            Act.multiplexor() => -1.0
+          }
         }
       ]
     }
