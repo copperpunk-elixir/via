@@ -13,6 +13,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart.Companion do
         port_options: [speed: 115_200],
         accel_counts_to_mpss: VC.gravity() / 8192,
         gyro_counts_to_rps: VC.deg2rad() / 16.4,
+        number_active_channels: 8,
         channels_1_8: %{
           keys: [
             Act.aileron(),
@@ -22,7 +23,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart.Companion do
             Act.flaps(),
             Act.gear(),
             Act.aux1(),
-            Act.multiplexor()
+            Act.multiplexor(),
+            Act.process_actuators()
           ],
           default_values: %{
             Act.aileron() => 0,

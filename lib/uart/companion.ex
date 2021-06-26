@@ -7,11 +7,13 @@ defmodule Uart.Companion do
   require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
   require Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
   require Ubx.VehicleCmds.ActuatorOverrideCmd_9_16, as: ActuatorOverrideCmd_9_16
+  require Command.ActuatorNames, as: Act
 
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do
-    Logger.debug("Start Uart.Companion")
-    ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config)
+    {:ok, pid} = ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config)
+    Logger.debug("Start Uart.Companion at #{inspect(pid)}")
+    {:ok, pid}
   end
 
   @impl GenServer
@@ -20,12 +22,16 @@ defmodule Uart.Companion do
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_override_commands(), self())
 
+    use_only_channels_1_8 =
+      if Keyword.fetch!(config, :number_active_channels) <= 8, do: 1, else: 0
+
     state = %{
       uart_ref: nil,
       ubx: UbxInterpreter.new(),
       accel_counts_to_mpss: Keyword.fetch!(config, :accel_counts_to_mpss),
       gyro_counts_to_rps: Keyword.fetch!(config, :gyro_counts_to_rps),
-      channels_config_1_8: Keyword.fetch!(config, :channels_1_8)
+      channels_config_1_8: Keyword.fetch!(config, :channels_1_8),
+      use_only_channels_1_8: use_only_channels_1_8
     }
 
     uart_port = Keyword.fetch!(config, :uart_port)
@@ -82,8 +88,11 @@ defmodule Uart.Companion do
       Map.split(override_commands, channels_config_1_8.keys)
 
     # Fill in missing values with default values, as defined by Companion config
-    channel_values_1_8 = Map.merge(channels_config_1_8.default_values, channel_values_1_8)
-    Logger.warn("ch 1-8: #{ViaUtils.Format.eftb_map(channel_values_1_8,3)}")
+    channel_values_1_8 =
+      Map.merge(channels_config_1_8.default_values, channel_values_1_8)
+      |> Map.put(Act.process_actuators(), state.use_only_channels_1_8)
+
+    # Logger.warn("ch 1-8: #{ViaUtils.Format.eftb_map(channel_values_1_8,3)}")
 
     ubx_message_1_8 =
       UbxInterpreter.construct_message_from_map(
@@ -99,6 +108,11 @@ defmodule Uart.Companion do
 
     if !Enum.empty?(channel_values_9_16) do
       Logger.debug("More than 8 channels. Must send 9-16 message")
+      channels_config_9_16 = state.channels_config_9_16
+
+      channel_values_9_16 =
+        Map.merge(channels_config_9_16.default_values, channel_values_9_16)
+        |> Map.put(Act.process_actuators(), 1 - state.use_only_channels_1_8)
 
       ubx_message_9_16 =
         UbxInterpreter.construct_message_from_map(
@@ -106,7 +120,7 @@ defmodule Uart.Companion do
           ActuatorOverrideCmd_9_16.id(),
           ActuatorOverrideCmd_9_16.bytes(),
           ActuatorOverrideCmd_9_16.multiplier(),
-          ActuatorOverrideCmd_9_16.keys(),
+          channels_config_9_16.keys,
           channel_values_9_16
         )
 
@@ -144,7 +158,7 @@ defmodule Uart.Companion do
         case msg_id do
           DtAccelGyro.id() ->
             values =
-              UbxInterpreter.deconstruct_message(
+              UbxInterpreter.deconstruct_message_to_map(
                 DtAccelGyro.bytes(),
                 DtAccelGyro.multipliers(),
                 DtAccelGyro.keys(),

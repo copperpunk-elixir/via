@@ -1,13 +1,12 @@
 defmodule TestHelper.Companion.Utils do
   require Logger
-  require Command.ActuatorNames, as: Act
   require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
   require Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
 
   @spec display_bodyrate_thrust_cmd(list()) :: :ok
   def display_bodyrate_thrust_cmd(payload) do
     values =
-      UbxInterpreter.deconstruct_message(
+      UbxInterpreter.deconstruct_message_to_map(
         BodyrateThrustCmd.bytes(),
         BodyrateThrustCmd.multiplier(),
         BodyrateThrustCmd.keys(),
@@ -20,21 +19,11 @@ defmodule TestHelper.Companion.Utils do
   @spec display_actuator_override_cmd_1_8(list()) :: :ok
   def display_actuator_override_cmd_1_8(payload) do
     values =
-      UbxInterpreter.deconstruct_message(
+      UbxInterpreter.deconstruct_message_to_list(
         ActuatorOverrideCmd_1_8.bytes(),
         ActuatorOverrideCmd_1_8.multiplier(),
-        [
-            Act.aileron(),
-            Act.elevator(),
-            Act.throttle(),
-            Act.rudder(),
-            Act.flaps(),
-            Act.gear(),
-            Act.aux1(),
-            Act.multiplexor()
-          ],
-        payload
+       payload
       )
-    Logger.debug("Companion rx ActuatorOverride1-8: #{ViaUtils.Format.eftb_map(values, 3)}")
+    Logger.debug("Companion rx ActuatorOverride1-8: #{ViaUtils.Format.eftb_list(values, 3)}")
   end
 end

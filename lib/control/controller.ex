@@ -202,9 +202,9 @@ defmodule Control.Controller do
     state =
       if map_size(override_commands) > 0 do
         # Send values straight to companion
-        Logger.warn(
-          "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
-        )
+        # Logger.warn(
+        #   "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
+        # )
 
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,

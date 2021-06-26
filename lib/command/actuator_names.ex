@@ -7,4 +7,5 @@ defmodule Command.ActuatorNames do
   defmacro gear, do: :gear
   defmacro multiplexor, do: :mux
   defmacro aux1, do: :aux1
+  defmacro process_actuators, do: :process_actuators
 end

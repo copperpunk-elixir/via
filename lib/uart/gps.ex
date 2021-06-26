@@ -55,7 +55,7 @@ defmodule Uart.Gps do
 
   @impl GenServer
   def handle_info({:circuits_uart, _port, data}, state) do
-    # Logger.debug("rx'd data: #{inspect(data)}")
+    Logger.debug("rx'd data: #{inspect(data)}")
     ubx =
       UbxInterpreter.check_for_new_messages_and_process(
         state.ubx,
@@ -85,7 +85,7 @@ defmodule Uart.Gps do
         case msg_id do
           Pvt.id() ->
             values =
-              UbxInterpreter.deconstruct_message(
+              UbxInterpreter.deconstruct_message_to_map(
                 Pvt.bytes(),
                 Pvt.multipliers(),
                 Pvt.keys(),
@@ -118,7 +118,7 @@ defmodule Uart.Gps do
 
           Relposned.id() ->
             values =
-              UbxInterpreter.deconstruct_message(
+              UbxInterpreter.deconstruct_message_to_map(
                 Relposned.bytes(),
                 Relposned.multipliers(),
                 Relposned.keys(),
