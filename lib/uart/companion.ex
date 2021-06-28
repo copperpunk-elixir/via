@@ -167,7 +167,7 @@ defmodule Uart.Companion do
 
             # Logger.debug("dt/accel/gyro values: #{inspect([dt, ax, ay, az, gx, gy, gz])}")
 
-            # Logger.debug("dt/accel/gyro values: #{ViaUtils.Format.eftb_list(values, 3)}")
+            # Logger.debug("dt/accel/gyro values: #{ViaUtils.Format.eftb_map(values, 3)}")
             ViaUtils.Comms.send_local_msg_to_group(
               __MODULE__,
               {Groups.dt_accel_gyro_val(), values},

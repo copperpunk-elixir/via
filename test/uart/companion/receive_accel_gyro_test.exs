@@ -9,8 +9,8 @@ defmodule Peripherals.Uart.Companion.ReceiveAccelGyroTest do
 
   test "Open Serial Port", full_config do
     # Expects Logger statements from Companion operator process_data_fn
-    config = full_config[:Uart][:Companion]
+    config = full_config[:Uart][:Companion] |> Keyword.put(:uart_port, "USB Serial")
     Uart.Companion.start_link(config)
-    Process.sleep(2000)
+    Process.sleep(200_000)
   end
 end
