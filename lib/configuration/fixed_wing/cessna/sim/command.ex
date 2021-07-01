@@ -31,13 +31,13 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           CCT.pilot_control_level_2() => %{
             roll_rad: {0, {-1.05, 0, 1.05, CCT.input_not_inverted(), 0.017}},
             pitch_rad: {1, {-0.52, 0, 0.52, CCT.input_inverted(), 0.017}},
-            throttle_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+            thrust_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
             deltayaw_rad: {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.087}}
           },
           CCT.pilot_control_level_1() => %{
             rollrate_rps: {0, {-6.28, 0, 6.28, CCT.input_not_inverted(), 0.087}},
             pitchrate_rps: {1, {-3.14, 0, 3.14, CCT.input_inverted(), 0.087}},
-            throttle_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+            thrust_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
             yawrate_rps: {3, {-3.14, 0.0, 3.14, CCT.input_not_inverted(), 0.087}}
           }
         },

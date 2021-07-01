@@ -9,9 +9,9 @@ defmodule Command.ControlTypes do
   defmacro pilot_control_level_4, do: 4
   # groundspeed_course_altitude_sideslip
   defmacro pilot_control_level_3, do: 3
-  # roll_pitch_deltayaw_throttle
+  # roll_pitch_deltayaw_thrust
   defmacro pilot_control_level_2, do: 2
-  # rollrate_pitchrate_yawrate_throttle
+  # rollrate_pitchrate_yawrate_thrust
   defmacro pilot_control_level_1, do: 1
   defmacro remote_pilot_override, do: 0
 end

@@ -7,7 +7,6 @@ defmodule Uart.Gps do
   require Ubx.Nav.Pvt, as: Pvt
   require Ubx.Nav.Relposned, as: Relposned
 
-
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config)
@@ -78,19 +77,20 @@ defmodule Uart.Gps do
         expected_antenna_distance_m,
         antenna_distance_error_threshold_m
       ) do
-    # Logger.debug("class/id: #{msg_class}/#{msg_id}")
+    # Logger.debug("class/id: #{msg_class}/#{msg_id}"
 
     case msg_class do
       Ubx.ClassDefs.nav() ->
         case msg_id do
           Pvt.id() ->
             values =
-              UbxInterpreter.deconstruct_message(
+              UbxInterpreter.deconstruct_message_to_map(
                 Pvt.bytes(),
                 Pvt.multipliers(),
                 Pvt.keys(),
                 payload
               )
+
 
             position_rrm =
               ViaUtils.Location.new_location_input_degrees(
@@ -111,14 +111,14 @@ defmodule Uart.Gps do
             if values.fix_type > 1 and values.fix_type < 5 do
               ViaUtils.Comms.send_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_position_velocity, values.itow_s, position_rrm, velocity_mps},
+                {Groups.gps_itow_position_velocity(), values.itow_s, position_rrm, velocity_mps},
                 self()
               )
             end
 
           Relposned.id() ->
             values =
-              UbxInterpreter.deconstruct_message(
+              UbxInterpreter.deconstruct_message_to_map(
                 Relposned.bytes(),
                 Relposned.multipliers(),
                 Relposned.keys(),
@@ -136,7 +136,7 @@ defmodule Uart.Gps do
 
               ViaUtils.Comms.send_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_relheading, values.itow_s, rel_heading_rad},
+                {Groups.gps_itow_relheading(), values.itow_s, rel_heading_rad},
                 self()
               )
             end

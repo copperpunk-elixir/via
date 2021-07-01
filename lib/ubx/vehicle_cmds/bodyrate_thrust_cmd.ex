@@ -3,6 +3,6 @@ defmodule Ubx.VehicleCmds.BodyrateThrustCmd do
   defmacro class, do: Ubx.ClassDefs.vehicle_cmds()
   defmacro id, do: 0x01
   defmacro bytes, do: [-2, -2, -2, 2]
-  defmacro multiplier, do: [0.1, 0.1, 0.1, 0.1]
-  defmacro keys, do: [:roll_rate_cmd_dps, :pitch_rate_cmd_dps, :yaw_rate_cmd_dps, :thrust_cmd_scaled]
+  defmacro multiplier, do: [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-4]
+  defmacro keys, do: [:rollrate_rps, :pitchrate_rps, :yawrate_rps, :thrust_scaled]
 end

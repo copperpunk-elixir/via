@@ -202,8 +202,14 @@ defmodule Control.Controller do
     state =
       if map_size(override_commands) > 0 do
         # Send values straight to companion
-        Logger.warn(
-          "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
+        # Logger.warn(
+        #   "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
+        # )
+
+        ViaUtils.Comms.send_local_msg_to_group(
+          __MODULE__,
+          {Groups.controller_override_commands(), override_commands},
+          self()
         )
 
         state
@@ -247,9 +253,9 @@ defmodule Control.Controller do
       Map.take(goals, [:groundspeed_mps, :sideslip_rad])
       |> Map.merge(Map.take(state.latch_values, [:altitude_m, :course_rad]))
 
-    Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
-
     if Enum.count(pcl_3_cmds) == 4 do
+      Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
+
       process_commands(
         CCT.pilot_control_level_3(),
         pcl_3_cmds,
@@ -262,8 +268,6 @@ defmodule Control.Controller do
 
   def process_commands(pilot_control_level, goals, state)
       when pilot_control_level == CCT.pilot_control_level_3() do
-    Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(goals, 3)}")
-
     velocity = state.velocity
 
     values =
@@ -275,9 +279,8 @@ defmodule Control.Controller do
       |> Map.merge(Map.take(state.position, [:altitude_m]))
       |> Map.merge(Map.take(state.attitude, [:yaw_rad]))
 
-    if Enum.count(values) != 5 do
-      state
-    else
+    if Enum.count(values) == 5 do
+      Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(goals, 3)}")
       controllers = state.controllers
       controller = Map.get(controllers, CCT.pilot_control_level_3())
 
@@ -290,10 +293,9 @@ defmodule Control.Controller do
           LoopIntervals.controller_update_ms() * 1.0e-3
         ])
 
-      throttle_cmd_scaled =
-        if goals.groundspeed_mps < 1.0, do: 0, else: pcl_2_cmds.throttle_scaled
+      thrust_cmd_scaled = if goals.groundspeed_mps < 1.0, do: 0, else: pcl_2_cmds.thrust_scaled
 
-      pcl_2_cmds = Map.put(pcl_2_cmds, :throttle_scaled, throttle_cmd_scaled)
+      pcl_2_cmds = Map.put(pcl_2_cmds, :thrust_scaled, thrust_cmd_scaled)
       # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
       Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
       controllers = Map.put(controllers, CCT.pilot_control_level_3(), pcl_3_controller)
@@ -305,17 +307,17 @@ defmodule Control.Controller do
         pcl_2_cmds,
         state
       )
+    else
+      state
     end
   end
 
   def process_commands(pilot_control_level, goals, state)
       when pilot_control_level == CCT.pilot_control_level_2() do
-    Logger.debug("attitude. Calculate bodyrates, then pass to companion")
     values = state.attitude
 
-    if map_size(values) == 0 do
-      state
-    else
+    if map_size(values) > 0 do
+      Logger.debug("attitude. Calculate bodyrates, then pass to companion")
       controllers = state.controllers
       controller = Map.get(controllers, CCT.pilot_control_level_2())
 
@@ -337,12 +339,21 @@ defmodule Control.Controller do
         pcl_1_cmds,
         state
       )
+    else
+      state
     end
   end
 
-  def process_commands(pilot_control_level, _goals, state)
+  def process_commands(pilot_control_level, goals, state)
       when pilot_control_level == CCT.pilot_control_level_1() do
-    Logger.debug("bodyrates: Convert to [-1, 1] range and send to companion")
+    Logger.debug("bodyrates: send to companion")
+
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      {Groups.controller_bodyrate_goals(), goals},
+      self()
+    )
+
     state
   end
 
