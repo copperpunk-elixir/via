@@ -9,7 +9,7 @@ defmodule Configuration.Generic do
 
   @spec generic_peripheral_classification(binary()) :: list()
   def generic_peripheral_classification(peripheral_type) do
-    secondary_class = :random.uniform()
+    secondary_class = :rand.uniform()
     possible_types = "abcde"
     max_value = Bitwise.<<<(1, String.length(possible_types))
     primary_class = Enum.reduce(String.graphemes(String.downcase(peripheral_type)),max_value , fn (letter, acc) ->
