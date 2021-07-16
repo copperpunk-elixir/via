@@ -27,7 +27,7 @@ defmodule Command.Commander do
       goals_watchdog: Watchdog.new({@clear_values_callback, @goals}, 2*LoopIntervals.commander_goals_publish_ms),
     }
 
-    Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
 
     MessageSorter.Sorter.register_for_sorter_current_and_stale(
       Sorters.pilot_control_level_and_goals(),

@@ -50,7 +50,7 @@ defmodule Command.RemotePilot do
       channel_values: []
     }
 
-    Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
 
     ViaUtils.Process.start_loop(

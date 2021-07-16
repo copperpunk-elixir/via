@@ -1,6 +1,7 @@
 defmodule MessageSorter.Supervisor do
   use Supervisor
   require Logger
+  require MessageSorter.Sorter
 
   def start_link(config) do
     Logger.debug("Start MessageSorter Supervisor with config: #{inspect(config)}")
@@ -9,8 +10,11 @@ defmodule MessageSorter.Supervisor do
 
   @impl Supervisor
   def init(config) do
-    children = get_all_children(config[:sorter_configs])
-      Supervisor.init(children, strategy: :one_for_one)
+    children =
+      [{Registry, [keys: :duplicate, name: MessageSorter.Sorter.registry()]}]
+      |> Kernel.++(get_all_children(config[:sorter_configs]))
+
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
   @spec get_all_children(list()) :: list()

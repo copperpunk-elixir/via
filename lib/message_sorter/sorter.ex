@@ -59,7 +59,7 @@ defmodule MessageSorter.Sorter do
       end
 
     if !is_nil(Keyword.get(config, :global_sorter_group)) do
-      Comms.Supervisor.start_operator(name)
+      ViaUtils.Comms.Supervisor.start_operator(name)
       GenServer.cast(via_tuple(name), {@join_global_sorter_group, config[:global_sorter_group]})
     end
 

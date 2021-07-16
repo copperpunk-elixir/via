@@ -20,8 +20,8 @@ defmodule MessageSorter.DiscreteLooper.AddSubsTest do
     sub2 = [name: "sub2", interval: 200]
     {:ok, pid1} = DLG.start_link(sub1)
     {:ok, pid2} = DLG.start_link(sub2)
-    DLG.join_registry(sub1[:name], registry, key, sub1[:interval])
-    DLG.join_registry(sub2[:name], registry, key, sub2[:interval])
+    DLG.join_registry(sub1[:name], registry, key, {sub1[:interval], true})
+    DLG.join_registry(sub2[:name], registry, key, {sub2[:interval], true})
     Process.sleep(200)
     registry_members = Registry.lookup(registry, key)
     looper = DiscreteLooper.update_all_members(looper, registry_members)

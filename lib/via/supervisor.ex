@@ -7,8 +7,8 @@ defmodule Via.Supervisor do
     Logger.debug("Via.Supervisor start universal modules")
     start_link()
 
-    start_supervised_process(ViaUtils.Registry, [])
-    start_supervisor(Comms, full_config[:Comms])
+    # start_supervised_process(ViaUtils.Registry, [])
+    start_supervised_process(ViaUtils.Comms.Supervisor, [])
     start_supervisor(MessageSorter, full_config[:MessageSorter])
   end
 

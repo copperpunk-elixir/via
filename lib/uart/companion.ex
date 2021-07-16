@@ -18,7 +18,7 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def init(config) do
-    Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_override_commands(), self())
 

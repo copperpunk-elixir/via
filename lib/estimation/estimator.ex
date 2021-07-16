@@ -66,7 +66,7 @@ defmodule Estimation.Estimator do
         )
     }
 
-    Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading(), self())

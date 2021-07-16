@@ -55,7 +55,7 @@ defmodule Control.Controller do
       controllers: get_controllers_from_config(config)
     }
 
-    Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.commander_goals(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.remote_pilot_override_commands(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())

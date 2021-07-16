@@ -14,7 +14,7 @@ defmodule TestHelper.DiscreteLooper.GenServer do
 
   @impl GenServer
   def handle_cast({:join_registry, registry, key, value}, state) do
-    Logger.debug("join registry: #{registry}/#{key}/#{value}: #{inspect(self())}")
+    Logger.debug("join registry: #{registry}/#{key}/#{inspect(value)}: #{inspect(self())}")
     Registry.register(registry, key, value)
     {:noreply, state}
   end
