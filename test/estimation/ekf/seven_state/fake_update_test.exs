@@ -11,7 +11,7 @@ defmodule Estimation.Ekf.SevenState.FakeUpdateTest do
     ekf_config = full_config[:Estimation][:Estimator][:kf_config]
     ekf = Estimation.Ekf.SevenState.new(ekf_config)
     position = ViaUtils.Location.new_location_input_degrees(42, -120, 123)
-    velocity = %{north: 1.0, east: 0 * 2.0, down: 0 * -3.0}
+    velocity = %{north_mps: 1.0, east_mps: 0 * 2.0, down_mps: 0 * -3.0}
 
     ekf =
       Estimation.Ekf.SevenState.update_from_gps(ekf, position, velocity)

@@ -2,7 +2,7 @@ defmodule Estimation.Ekf.Agl do
   require Logger
 
   # If this looks like I don't know what I'm doing, that's because it's true.
-  defstruct [roll_rad: 0, pitch_rad: 0, zdot_mps: 0, z_m: 0, q33: 0, p00: 0, p11: 0, p22: 0, p33: 0, r: 0, time_prev_us: -1, roll_max_rad: 0, pitch_max_rad: 0]
+  defstruct [roll_rad: 0, pitch_rad: 0, zdot_mps: 0, z_m: 0, q33: 0, p00: 0, p11: 0, p22: 0, p33: 0, r: 0, time_prev_us: nil, roll_max_rad: 0, pitch_max_rad: 0]
 
   @spec new(list()) :: struct()
   def new(config) do
@@ -31,7 +31,7 @@ defmodule Estimation.Ekf.Agl do
   @spec predict(struct(), float(), float(), float()) :: struct()
   def predict(ekf, roll_rad, pitch_rad, zdot_mps) do
     current_time_us = :os.system_time(:microsecond)
-    dt_s = if (ekf.time_prev_us < 0), do: 0, else: (current_time_us - ekf.time_prev_us)*(1.0e-6)
+    dt_s = if is_nil(ekf.time_prev_us), do: 0, else: (current_time_us - ekf.time_prev_us)*(1.0e-6)
     z_m = ekf.z_m + ekf.zdot_mps*dt_s
     # Logger.debug("zdot/zprev/z/dt: #{zdot}/#{ekf.z}/#{z}/#{dt_s}")
     p33 = ekf.p33 + ekf.p22*dt_s*dt_s + ekf.q33

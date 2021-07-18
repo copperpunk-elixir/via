@@ -100,9 +100,9 @@ defmodule Uart.Gps do
               )
 
             velocity_mps = %{
-              north: values.v_north_mps,
-              east: values.v_east_mps,
-              down: values.v_down_mps
+              north_mps: values.v_north_mps,
+              east_mps: values.v_east_mps,
+              down_mps: values.v_down_mps
             }
 
             # Logger.debug("NAVPVT itow/fix: #{values.itow_s}/#{values.fix_type}")
@@ -111,7 +111,7 @@ defmodule Uart.Gps do
             if values.fix_type > 1 and values.fix_type < 5 do
               ViaUtils.Comms.send_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_position_velocity(), values.itow_s, position_rrm, velocity_mps},
+                {Groups.gps_itow_position_velocity_val(), values.itow_s, position_rrm, velocity_mps},
                 self()
               )
             end
@@ -136,7 +136,7 @@ defmodule Uart.Gps do
 
               ViaUtils.Comms.send_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_relheading(), values.itow_s, rel_heading_rad},
+                {Groups.gps_itow_relheading_val(), values.itow_s, rel_heading_rad},
                 self()
               )
             end

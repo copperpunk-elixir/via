@@ -68,8 +68,8 @@ defmodule Estimation.Estimator do
 
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity_val(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading_val(), self())
 
     ViaUtils.Process.start_loop(
       self(),
@@ -110,7 +110,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {Groups.gps_itow_position_velocity(), _itow_s, position_rrm, velocity_mps},
+        {Groups.gps_itow_position_velocity_val(), _itow_s, position_rrm, velocity_mps},
         state
       ) do
     ins_kf =
@@ -133,7 +133,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {Groups.gps_itow_relheading(), _itow_ms, rel_heading_rad},
+        {Groups.gps_itow_relheading_val(), _itow_ms, rel_heading_rad},
         state
       ) do
     # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
@@ -176,8 +176,8 @@ defmodule Estimation.Estimator do
         # If the velocity is below a threshold, we use yaw instead
         {groundspeed_mps, course_rad} =
           ViaUtils.Motion.get_speed_course_for_velocity(
-            velocity_mps.north,
-            velocity_mps.east,
+            velocity_mps.north_mps,
+            velocity_mps.east_mps,
             state.min_speed_for_course,
             Map.get(state.attitude_rad, :yaw_rad, 0)
           )

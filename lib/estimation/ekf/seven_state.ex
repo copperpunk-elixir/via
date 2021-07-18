@@ -89,25 +89,26 @@ defmodule Estimation.Ekf.SevenState do
   # The Dialyzer error persists even if the function body is empty
   @spec update_from_gps(struct(), map(), map()) :: struct()
   def update_from_gps(state, position_rrm, velocity_mps) do
+    altitude_m = -position_rrm.altitude_m
     origin =
       if is_nil(state.origin) do
-        position_rrm |> Map.put(:altitude_m, -position_rrm.altitude_m)
+        position_rrm |> Map.put(:altitude_m, altitude_m)
       else
         state.origin
       end
 
     {dx, dy} = ViaUtils.Location.dx_dy_between_points(origin, position_rrm)
 
-    dz = -position_rrm.altitude_m - origin.altitude_m
+    dz = altitude_m - origin.altitude_m
 
     z =
       Matrex.new([
         [dx],
         [dy],
         [dz],
-        [velocity_mps.north],
-        [velocity_mps.east],
-        [velocity_mps.down]
+        [velocity_mps.north_mps],
+        [velocity_mps.east_mps],
+        [velocity_mps.down_mps]
       ])
 
     # IO.puts("dz: #{inspect(dz)}")
@@ -289,7 +290,7 @@ defmodule Estimation.Ekf.SevenState do
   @spec velocity_mps(struct()) :: map()
   def velocity_mps(state) do
     ekf_state = state.ekf_state
-    %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
+    %{north_mps: ekf_state[4], east_mps: ekf_state[5], down_mps: ekf_state[6]}
   end
 
   @spec position_rrm_velocity_mps(struct()) :: tuple()
@@ -304,7 +305,7 @@ defmodule Estimation.Ekf.SevenState do
         |> Map.put(:altitude_m, -ekf_state[3])
       end
 
-    velocity_mps = %{north: ekf_state[4], east: ekf_state[5], down: ekf_state[6]}
+    velocity_mps = %{north_mps: ekf_state[4], east_mps: ekf_state[5], down_mps: ekf_state[6]}
     {position_rrm, velocity_mps}
   end
 
