@@ -62,7 +62,10 @@ defmodule Via.MixProject do
       {:dsm_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/dsm-parser"},
       {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"},
       {:via_controllers,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers/"}
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers/"},
+      {:xplane_integration,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/xplane-integration/"},
+
     ]
   end
 

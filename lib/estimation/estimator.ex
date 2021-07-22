@@ -113,6 +113,7 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_position_velocity_val(), _itow_s, position_rrm, velocity_mps},
         state
       ) do
+        Logger.warn("rx gps")
     ins_kf =
       apply(state.ins_kf.__struct__, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
 
@@ -149,7 +150,7 @@ defmodule Estimation.Estimator do
       if state.is_value_current.imu do
         imu = state.ins_kf.imu
         attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
-
+        Logger.warn("att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_attitude, attitude_rad},
@@ -183,7 +184,7 @@ defmodule Estimation.Estimator do
           )
 
         # Logger.debug("course/yaw: #{Common.Utils.eftb_deg(course,1)}/#{Common.Utils.eftb_deg(Map.get(state.attitude, :yaw, 0),2)}")
-        vertical_velocity_mps = -velocity_mps.down
+        vertical_velocity_mps = -velocity_mps.down_mps
         attitude_rad = state.attitude_rad
         # Update AGL
         roll_rad = Map.get(attitude_rad, :roll_rad, 0)

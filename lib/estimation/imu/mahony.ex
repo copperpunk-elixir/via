@@ -1,7 +1,7 @@
 defmodule Estimation.Imu.Mahony do
   require Logger
-  @accel_mag_min 9.6
-  @accel_mag_max 10.0
+  @accel_mag_min 9.0
+  @accel_mag_max 10.8
 
   defstruct quat: {1.0, 0, 0, 0},
             kp: 0,
@@ -40,7 +40,8 @@ defmodule Estimation.Imu.Mahony do
 
         # Only use the accel to correct if the accel values are within range
         if accel_mag_in_range do
-          # Logger.debug("good accel mag: #{accel_mag}")
+          Logger.debug("good accel mag")
+
           # Estimated direction of gravity and vector perpendicular to magnetic flux
           halfvx = q1 * q3 - q0 * q2
           halfvy = q0 * q1 + q2 * q3
@@ -121,12 +122,16 @@ defmodule Estimation.Imu.Mahony do
     # We will eventually have logic to select kp and ki based on the acceleration values
     # i.e., if accel is primarily due to gravity (mag ~= 1.0g), we can have a larger gain
     accel_mag = :math.sqrt(ax * ax + ay * ay + az * az)
+    Logger.debug("accel: #{ViaUtils.Format.eftb_map(%{ax: ax, ay: ay, az: az}, 3)}")
+    Logger.info("accel mag: #{ViaUtils.Format.eftb(accel_mag, 5)}")
 
     if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
       # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
-      ax = -ax / accel_mag
-      ay = -ay / accel_mag
-      az = -az / accel_mag
+      # Use reciprocal for division
+      accel_mag = 1 / accel_mag
+      ax = -ax * accel_mag
+      ay = -ay * accel_mag
+      az = -az * accel_mag
       {ax, ay, az, kp, ki, true}
     else
       {0, 0, 0, 0, 0, false}

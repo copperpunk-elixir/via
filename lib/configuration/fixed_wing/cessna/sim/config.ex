@@ -6,7 +6,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Config do
       :Control,
       :MessageSorter,
       :Estimation,
-      :Uart
+      :Uart,
+      :Simulation
     ]
 
     Logger.debug("modules: #{inspect(modules)}")
