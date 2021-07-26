@@ -18,6 +18,7 @@ defmodule Comms.Groups do
   defmacro remote_pilot_override_commands, do: :remote_pilot_override_commands
   defmacro roll_pitch_yawrate_thrust_cmd, do: :rp_ydot_t_cmd
   defmacro rollrate_pitchrate_yawrate_thrust_cmd, do: :rdot_pdot_y_dot_t_cmd
+  defmacro simulation_update_actuators, do: :simulation_update_actuators
   defmacro sorter_pilot_control_level_and_goals, do: :sorter_pcl_and_goals
   defmacro speed_course_altitude_sideslip_cmd, do: :scas_cmd
   defmacro speed_courserate_altituderate_sideslip_cmd, do: :s_cdot_adot_s_cmd

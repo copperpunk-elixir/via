@@ -8,15 +8,15 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
         agl_ceiling_m: 150,
         default_pilot_control_level: CCT.pilot_control_level_2(),
         default_goals: %{
-          CCT.pilot_control_level_2() =>
-          %{
-          roll_rad: 0.26,
-          pitch_rad: 0.03,
-          deltayaw_rad: 0,
-          thrust_scaled: 0.0,
-          flaps_scaled: 0.0,
-          gear_scaled: 1.0
-        }},
+          CCT.pilot_control_level_2() => %{
+            roll_rad: 0.26,
+            pitch_rad: 0.03,
+            deltayaw_rad: 0,
+            thrust_scaled: 0.0,
+            flaps_scaled: 0.0,
+            gear_scaled: 1.0
+          }
+        },
         controllers: %{
           CCT.pilot_control_level_3() => [
             module: ViaControllers.FixedWing.SpeedCourseAltitudeSideslip,
@@ -48,11 +48,13 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
               roll_course: [
                 kp: 0.25,
                 ki: 0.0,
-                integrator_range: 0.052,
-                integrator_airspeed_min: 5.0,
+                kd: 0,
+                ff_multiplier: 0,
                 output_min: -0.78,
                 output_max: 0.78,
-                output_neutral: 0.0
+                output_neutral: 0.0,
+                integrator_range: 0.052,
+                integrator_airspeed_min_mps: 5.0
               ]
             ]
           ],

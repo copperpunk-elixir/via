@@ -9,11 +9,10 @@ defmodule Control.Supervisor do
 
   @impl Supervisor
   def init(config) do
-    children =
-      [
-        {Control.Controller, config[:Controller]}
-      ]
+    children = [
+      {Control.Controller, config[:Controller]}
+    ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
-
 end

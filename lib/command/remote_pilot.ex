@@ -136,9 +136,17 @@ defmodule Command.RemotePilot do
         autopilot_control_mode == ControlTypes.autopilot_control_mode_remote_pilot_override() ->
           override_commands =
             Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name,
-                                                                       channel_number},
+                                                                       {channel_number,
+                                                                        one_or_two_sided}},
                                                                       acc ->
-              Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
+              command =
+                if one_or_two_sided == :two_sided do
+                  Map.fetch!(channel_value_map, channel_number)
+                else
+                  2.0 * Map.fetch!(channel_value_map, channel_number) - 1.0
+                end
+
+              Map.put(acc, channel_name, command)
             end)
 
           ViaUtils.Comms.send_global_msg_to_group(

@@ -297,9 +297,9 @@ defmodule Control.Controller do
 
       pcl_2_cmds = Map.put(pcl_2_cmds, :thrust_scaled, thrust_cmd_scaled)
       # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
-      Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
+      # Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
       controllers = Map.put(controllers, CCT.pilot_control_level_3(), pcl_3_controller)
-      Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
+      # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
       state = %{state | controllers: controllers}
 
       process_commands(
@@ -317,7 +317,7 @@ defmodule Control.Controller do
     values = state.attitude
 
     if map_size(values) > 0 do
-      Logger.debug("attitude. Calculate bodyrates, then pass to companion")
+      # Logger.debug("attitude. Calculate bodyrates, then pass to companion: #{ViaUtils.Format.eftb_map(goals, 3)}")
       controllers = state.controllers
       controller = Map.get(controllers, CCT.pilot_control_level_2())
 
@@ -331,7 +331,7 @@ defmodule Control.Controller do
         ])
 
       controllers = Map.put(controllers, CCT.pilot_control_level_2(), pcl_2_controller)
-      Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
+      # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
       state = %{state | controllers: controllers}
 
       process_commands(
@@ -346,7 +346,7 @@ defmodule Control.Controller do
 
   def process_commands(pilot_control_level, goals, state)
       when pilot_control_level == CCT.pilot_control_level_1() do
-    Logger.debug("bodyrates: send to companion")
+    # Logger.debug("bodyrates: send to companion: #{ViaUtils.Format.eftb_map(goals, 3)}")
 
     ViaUtils.Comms.send_local_msg_to_group(
       __MODULE__,

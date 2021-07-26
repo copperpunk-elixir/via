@@ -18,4 +18,7 @@ defmodule Configuration.LoopIntervals do
 
   # CLUSTER
   defmacro heartbeat_publish_ms, do: 100
+
+  # SIMULATION
+  defmacro actuator_output_ms, do: 20
 end

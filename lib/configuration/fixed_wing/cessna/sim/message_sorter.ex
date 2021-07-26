@@ -57,7 +57,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
                 pitch_rad: 0.03,
                 deltayaw_rad: 0,
                 thrust_scaled: 0.0,
-                flaps_scaled: -1.0,
+                flaps_scaled: 0.0,
                 gear_scaled: 1.0
               }
             },

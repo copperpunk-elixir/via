@@ -94,6 +94,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast({Groups.dt_accel_gyro_val(), values}, state) do
+    # Logger.debug("dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
     ins_kf = apply(state.ins_kf.__struct__, :predict, [state.ins_kf, values])
     imu_watchdog = Watchdog.reset(state.imu_watchdog)
     is_value_current = Map.put(state.is_value_current, :imu, true)
@@ -113,7 +114,7 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_position_velocity_val(), _itow_s, position_rrm, velocity_mps},
         state
       ) do
-        Logger.warn("rx gps")
+        # Logger.warn("rx gps")
     ins_kf =
       apply(state.ins_kf.__struct__, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
 
@@ -137,7 +138,7 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_relheading_val(), _itow_ms, rel_heading_rad},
         state
       ) do
-    # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
+    Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
     ins_kf = apply(state.ins_kf.__struct__, :update_from_heading, [state.ins_kf, rel_heading_rad])
 
     {:noreply, %{state | ins_kf: ins_kf}}
@@ -150,7 +151,7 @@ defmodule Estimation.Estimator do
       if state.is_value_current.imu do
         imu = state.ins_kf.imu
         attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
-        Logger.warn("att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
+        Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_attitude, attitude_rad},
