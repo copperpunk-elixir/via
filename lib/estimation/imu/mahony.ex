@@ -1,7 +1,10 @@
 defmodule Estimation.Imu.Mahony do
   require Logger
-  @accel_mag_min 9.75
-  @accel_mag_max 9.85
+  require ViaUtils.Constants, as: VC
+  # @accel_mag_min 9.0
+  # @accel_mag_max 10.0
+  @accel_xy_mag_max 1.0
+  @accel_z_delta_mag_max 0.2
 
   defstruct quat: {1.0, 0, 0, 0},
             kp: 0,
@@ -29,7 +32,7 @@ defmodule Estimation.Imu.Mahony do
     {gx, gy, gz, integral_fbx, integral_fby, integral_fbz} =
       if ax != 0 or ay != 0 or az != 0 do
         # Normalise accelerometer measurement
-        {ax_norm, ay_norm, az_norm, kp, ki, accel_mag_in_range} =
+        {ax, ay, az, kp, ki, accel_mag_in_range} =
           normalized_accel_and_in_range(
             ax,
             ay,
@@ -43,35 +46,39 @@ defmodule Estimation.Imu.Mahony do
           # Logger.debug("good accel mag")
 
           # Estimated direction of gravity and vector perpendicular to magnetic flux
-          halfvx = q1 * q3 - q0 * q2
-          halfvy = q0 * q1 + q2 * q3
-          halfvz = q0 * q0 - 0.5 + q3 * q3
+          vx = 2.0 * (q1 * q3 - q0 * q2)
+          vy = 2.0 * (q0 * q1 + q2 * q3)
+          vz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3
 
           # Error is sum of cross product between estimated and measured direction of gravity
-          halfex = ay_norm * halfvz - az_norm * halfvy
-          halfey = az_norm * halfvx - ax_norm * halfvz
-          halfez = ax_norm * halfvy - ay_norm * halfvx
+          ex = ay * vz - az * vy
+          ey = az * vx - ax * vz
+          ez = ax * vy - ay * vx
 
           # Compute and apply integral feedback if enabled
           {integral_fbx, integral_fby, integral_fbz} =
             if ki > 0 do
               # integral error scaled by Ki
-              integral_fbx = imu.integral_fbx + ki * halfex * dt_s
-              integral_fby = imu.integral_fby + ki * halfey * dt_s
-              integral_fbz = imu.integral_fbz + ki * halfez * dt_s
+              integral_fbx = imu.integral_fbx + ex
+              integral_fby = imu.integral_fby + ey
+              integral_fbz = imu.integral_fbz + ez
               {integral_fbx, integral_fby, integral_fbz}
             else
               {0, 0, 0}
             end
 
           # Apply proportional feedback
-          gx = dt_accel_gyro.gx_rps + kp * halfex + integral_fbx
-          gy = dt_accel_gyro.gy_rps + kp * halfey + integral_fby
-          gz = dt_accel_gyro.gz_rps + kp * halfez + integral_fbz
+          gx = dt_accel_gyro.gx_rps + kp * ex + ki * integral_fbx
+          gy = dt_accel_gyro.gy_rps + kp * ey + ki * integral_fby
+          gz = dt_accel_gyro.gz_rps + kp * ez + ki * integral_fbz
+
+          Logger.error(
+            "dt gx pre/post: #{ViaUtils.Format.eftb(dt_s, 4)}: #{ViaUtils.Format.eftb_deg(dt_accel_gyro.gx_rps, 1)}/#{ViaUtils.Format.eftb_deg(gx, 1)}"
+          )
+
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
-          {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx,
-           imu.integral_fby, imu.integral_fbz}
+          {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, 0, 0, 0}
         end
       else
         {dt_accel_gyro.gx_rps, dt_accel_gyro.gy_rps, dt_accel_gyro.gz_rps, imu.integral_fbx,
@@ -80,18 +87,15 @@ defmodule Estimation.Imu.Mahony do
 
     # Integrate rate of change of quaternion
     # pre-multiply common factors
-    gx = gx * 0.5 * dt_s
-    gy = gy * 0.5 * dt_s
-    gz = gz * 0.5 * dt_s
+    pa = q1
+    pb = q2
+    pc = q3
+    half_dt_s = dt_s * 0.5
 
-    qa = q0
-    qb = q1
-    qc = q2
-
-    q0 = q0 + (-qb * gx - qc * gy - q3 * gz)
-    q1 = q1 + (qa * gx + qc * gz - q3 * gy)
-    q2 = q2 + (qa * gy - qb * gz + q3 * gx)
-    q3 = q3 + (qa * gz + qb * gy - qc * gx)
+    q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * half_dt_s
+    q1 = pa + (q0 * gx + pb * gz - pc * gy) * half_dt_s
+    q2 = pb + (q0 * gy - pa * gz + pc * gx) * half_dt_s
+    q3 = pc + (q0 * gz + pa * gy - pb * gx) * half_dt_s
 
     # Normalise quaternion
     q_mag_inv = 1 / :math.sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
@@ -128,9 +132,11 @@ defmodule Estimation.Imu.Mahony do
     accel_mag = :math.sqrt(ax * ax + ay * ay + az * az)
     # Logger.debug("accel: #{ViaUtils.Format.eftb_map(%{ax: ax, ay: ay, az: az}, 3)}")
     # Logger.info("accel mag: #{ViaUtils.Format.eftb(accel_mag, 5)}")
+    z_minus_gravity_abs = abs(az + VC.gravity())
 
-    if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
-      Logger.error("good accel")
+    if z_minus_gravity_abs < @accel_z_delta_mag_max and abs(ax) < @accel_xy_mag_max and
+         abs(ay) < @accel_xy_mag_max do
+      # Logger.error("good accel")
       # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
       # Use reciprocal for division
       accel_mag = 1 / accel_mag
