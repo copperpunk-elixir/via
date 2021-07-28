@@ -25,7 +25,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
           CCT.pilot_control_level_4() => %{
             course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.017}},
             altitude_rate_mps: {1, {-1.0, 0, 2.0, CCT.input_inverted(), 0.05}},
-            groundspeed_mps: {2, {0, 15.0, 30.0, CCT.input_not_inverted(), 0}},
+            groundspeed_mps: {2, {0, 32.5, 65.0, CCT.input_not_inverted(), 0}},
             sideslip_rad: {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.017}}
           },
           CCT.pilot_control_level_2() => %{

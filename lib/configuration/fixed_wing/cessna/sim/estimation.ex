@@ -20,7 +20,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
           gpsyaw_std: 0.02,
 
           # Mahony
-          imu_kp: 1.0,
+          imu_kp: 0.1,
           imu_ki: 0
         ],
 

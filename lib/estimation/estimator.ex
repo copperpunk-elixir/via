@@ -138,7 +138,7 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_relheading_val(), _itow_ms, rel_heading_rad},
         state
       ) do
-    Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
+    # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
     ins_kf = apply(state.ins_kf.__struct__, :update_from_heading, [state.ins_kf, rel_heading_rad])
 
     {:noreply, %{state | ins_kf: ins_kf}}
