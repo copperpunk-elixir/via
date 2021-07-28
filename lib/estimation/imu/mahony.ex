@@ -72,9 +72,9 @@ defmodule Estimation.Imu.Mahony do
           gy = dt_accel_gyro.gy_rps + kp * ey + ki * integral_fby
           gz = dt_accel_gyro.gz_rps + kp * ez + ki * integral_fbz
 
-          Logger.error(
-            "dt gx pre/post: #{ViaUtils.Format.eftb(dt_s, 4)}: #{ViaUtils.Format.eftb_deg(dt_accel_gyro.gx_rps, 1)}/#{ViaUtils.Format.eftb_deg(gx, 1)}"
-          )
+          # Logger.error(
+          #   "dt gx pre/post: #{ViaUtils.Format.eftb(dt_s, 4)}: #{ViaUtils.Format.eftb_deg(dt_accel_gyro.gx_rps, 1)}/#{ViaUtils.Format.eftb_deg(gx, 1)}"
+          # )
 
           {gx, gy, gz, integral_fbx, integral_fby, integral_fbz}
         else
