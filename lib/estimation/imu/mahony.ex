@@ -1,7 +1,7 @@
 defmodule Estimation.Imu.Mahony do
   require Logger
-  @accel_mag_min 9.0
-  @accel_mag_max 10.8
+  @accel_mag_min 9.75
+  @accel_mag_max 9.85
 
   defstruct quat: {1.0, 0, 0, 0},
             kp: 0,
@@ -102,7 +102,11 @@ defmodule Estimation.Imu.Mahony do
 
     roll_rad = :math.atan2(2.0 * (q0 * q1 + q2 * q3), 1.0 - 2.0 * (q1 * q1 + q2 * q2))
     pitch_rad = :math.asin(2.0 * (q0 * q2 - q3 * q1))
-    yaw_rad = :math.atan2(2.0 * (q0 * q3 + q1 * q2), 1.0 - 2.0 * (q2 * q2 + q3 * q3))
+
+    yaw_rad =
+      :math.atan2(2.0 * (q0 * q3 + q1 * q2), 1.0 - 2.0 * (q2 * q2 + q3 * q3))
+      |> ViaUtils.Math.constrain_angle_to_compass()
+
     # IO.puts("rpy: #{ViaUtils.Format.eftb_list([roll_rad, pitch_rad, yaw_rad], 3,",")}")
 
     %{
@@ -126,6 +130,7 @@ defmodule Estimation.Imu.Mahony do
     # Logger.info("accel mag: #{ViaUtils.Format.eftb(accel_mag, 5)}")
 
     if accel_mag > @accel_mag_min and accel_mag < @accel_mag_max do
+      Logger.error("good accel")
       # WE MUST TAKE THE OPPOSITE SIGN OF THE ACCELERATION FOR THESE EQUATIONS TO WORK
       # Use reciprocal for division
       accel_mag = 1 / accel_mag

@@ -90,6 +90,7 @@ defmodule Estimation.Ekf.SevenState do
   @spec update_from_gps(struct(), map(), map()) :: struct()
   def update_from_gps(state, position_rrm, velocity_mps) do
     altitude_m = -position_rrm.altitude_m
+
     origin =
       if is_nil(state.origin) do
         position_rrm |> Map.put(:altitude_m, altitude_m)
@@ -155,7 +156,8 @@ defmodule Estimation.Ekf.SevenState do
   @spec update_from_heading(struct(), float()) :: struct()
   def update_from_heading(state, heading_rad) do
     if state.heading_established do
-      delta_z = ViaUtils.Math.constrain_angle_to_compass(heading_rad - state.ekf_state[7])
+      delta_z =
+        ViaUtils.Motion.turn_left_or_right_for_correction(heading_rad - state.ekf_state[7])
 
       ekf_cov = state.ekf_cov
       r_heading = state.r_heading
@@ -183,6 +185,7 @@ defmodule Estimation.Ekf.SevenState do
 
       delta_yaw = k_add[7]
       imu = Estimation.Imu.Utils.rotate_yaw_rad(state.imu, delta_yaw)
+
       %{state | imu: imu, ekf_state: ekf_state, ekf_cov: ekf_cov}
     else
       Logger.debug("Established heading at #{ViaUtils.Format.eftb_deg(heading_rad, 2)}")
