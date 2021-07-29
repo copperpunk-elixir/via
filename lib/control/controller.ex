@@ -136,7 +136,6 @@ defmodule Control.Controller do
           latch_values = state.latch_values
           current_time = :erlang.monotonic_time(:millisecond)
           dt_s = (current_time - latch_values.command_time_prev_ms) * 1.0e-3
-          Logger
 
           latch_course_rad =
             (latch_values.course_rad + goals.course_rate_rps * dt_s)
@@ -254,7 +253,7 @@ defmodule Control.Controller do
       |> Map.merge(Map.take(state.latch_values, [:altitude_m, :course_rad]))
 
     if Enum.count(pcl_3_cmds) == 4 do
-      Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
+      # Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
 
       process_commands(
         CCT.pilot_control_level_3(),
@@ -281,6 +280,7 @@ defmodule Control.Controller do
 
     if Enum.count(values) == 5 do
       Logger.debug("SCA cmds: #{ViaUtils.Format.eftb_map(goals, 3)}")
+      Logger.debug("SCA vals: #{ViaUtils.Format.eftb_map(values, 3)}")
       controllers = state.controllers
       controller = Map.get(controllers, CCT.pilot_control_level_3())
 

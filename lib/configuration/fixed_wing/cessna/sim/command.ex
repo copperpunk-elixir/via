@@ -23,10 +23,10 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
         num_channels: 12,
         control_level_dependent_channel_config: %{
           CCT.pilot_control_level_4() => %{
-            course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.017}},
-            altitude_rate_mps: {1, {-1.0, 0, 2.0, CCT.input_inverted(), 0.05}},
+            course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
+            altitude_rate_mps: {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
             groundspeed_mps: {2, {0, 32.5, 65.0, CCT.input_not_inverted(), 0}},
-            sideslip_rad: {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.017}}
+            sideslip_rad: {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.052}}
           },
           CCT.pilot_control_level_2() => %{
             roll_rad: {0, {-1.05, 0, 1.05, CCT.input_not_inverted(), 0.017}},

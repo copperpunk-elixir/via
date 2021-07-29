@@ -22,20 +22,20 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
             module: ViaControllers.FixedWing.SpeedCourseAltitudeSideslip,
             controller_config: [
               tecs_energy: [
-                ki: 0.25,
+                ki: 0.1,
                 kd: 0,
-                altitude_kp: 1.0,
-                energy_rate_scalar: 0.004,
-                integrator_range: 100,
-                feed_forward_speed_max_mps: 60.0,
+                altitude_kp: 0.5,
+                energy_rate_scalar: 0.002,
+                integrator_range: 300,
+                feed_forward_speed_max_mps: 65.0,
                 output_min: 0.0,
                 output_max: 1.0,
                 output_neutral: 0.0
               ],
               tecs_balance: [
-                ki: 0.1,
+                ki: 0.02,
                 kd: 0.0,
-                altitude_kp: 0.75,
+                altitude_kp: 0.25,
                 balance_rate_scalar: 0.5,
                 time_constant: 2.0,
                 integrator_range: 0.4,
@@ -46,10 +46,9 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
                 output_neutral: 0.0
               ],
               roll_course: [
-                kp: 0.25,
-                ki: 0.0,
+                kp: 0.3,
+                ki: 0.1,
                 kd: 0,
-                ff_multiplier: 0,
                 output_min: -0.78,
                 output_max: 0.78,
                 output_neutral: 0.0,
