@@ -19,7 +19,7 @@ defmodule Uart.Companion do
   @impl GenServer
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_goals(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_override_commands(), self())
 
     use_only_channels_1_8 =
@@ -63,8 +63,8 @@ defmodule Uart.Companion do
   end
 
   @impl GenServer
-  def handle_cast({Groups.controller_bodyrate_goals(), bodyrate_goals}, state) do
-    Logger.debug("comp rx goals: #{ViaUtils.Format.eftb_map(bodyrate_goals, 3)}")
+  def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
+    Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
@@ -73,10 +73,16 @@ defmodule Uart.Companion do
         BodyrateThrustCmd.bytes(),
         BodyrateThrustCmd.multiplier(),
         BodyrateThrustCmd.keys(),
-        bodyrate_goals
+        bodyrate_commands
       )
 
     Circuits.UART.write(state.uart_ref, ubx_message)
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_cast({Groups.all_levels_commands(), all_levels_commands}, state) do
+    Logger.debug("comp rx all_levels cmds: #{ViaUtils.Format.eftb_map(all_levels_commands, 3)}")
     {:noreply, state}
   end
 

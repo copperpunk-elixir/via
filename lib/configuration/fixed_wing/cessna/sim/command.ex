@@ -20,8 +20,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
     [
       Commander: [],
       RemotePilot: [
-        num_channels: 12,
-        control_level_dependent_channel_config: %{
+        num_channels: 10,
+        pilot_control_level_channel_config: %{
           CCT.pilot_control_level_4() => %{
             course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
             altitude_rate_mps: {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
@@ -43,17 +43,17 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
         },
         all_levels_channel_config: %{
           flaps_scaled: {4, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
-          gear_scaled: {5, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
-          pilot_control_level: {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}},
-          autopilot_control_mode: {11, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
+          gear_scaled: {9, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
+          pilot_control_level: {5, {-1.0, 0, 1.0, CCT.input_not_inverted(), 0}},
+          autopilot_control_mode: {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
         },
         remote_pilot_override_channels: %{
-          Act.aileron() => {0, :two_sided},
-          Act.elevator() => {1, :two_sided},
-          Act.throttle() => {2, :one_sided},
-          Act.rudder() => {3, :two_sided},
-          Act.flaps() => {4, :one_sided},
-          Act.gear() => {5, :one_sided}
+          Act.aileron() => 0,
+          Act.elevator() => 1,
+          Act.throttle() => 2,
+          Act.rudder() => 3,
+          Act.flaps() => 4,
+          Act.gear() => 9
         },
         goals_sorter_classification_and_time_validity_ms:
           remote_pilot_goals_sorter_classification_and_time_validity_ms

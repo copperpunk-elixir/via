@@ -34,8 +34,8 @@ defmodule Command.RemotePilot do
 
     state = %{
       num_channels: Keyword.fetch!(config, :num_channels),
-      control_level_dependent_channel_config:
-        Keyword.fetch!(config, :control_level_dependent_channel_config),
+      pilot_control_level_channel_config:
+        Keyword.fetch!(config, :pilot_control_level_channel_config),
       all_levels_channel_config: all_levels_channel_config,
       remote_pilot_override_channels: Keyword.fetch!(config, :remote_pilot_override_channels),
       pilot_control_level_channel: pilot_control_level_channel,
@@ -51,7 +51,7 @@ defmodule Command.RemotePilot do
     }
 
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.command_channels_failsafe(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.command_channels(), self())
 
     ViaUtils.Process.start_loop(
       self(),
@@ -69,7 +69,7 @@ defmodule Command.RemotePilot do
   end
 
   @impl GenServer
-  def handle_cast({Groups.command_channels_failsafe(), channel_values, _failsafe_active}, state) do
+  def handle_cast({Groups.command_channels(), channel_values}, state) do
     # Logger.debug("Channel values: #{inspect(channel_values)}")
     {channel_values_watchdog, channel_values} =
       if length(channel_values) >= state.num_channels do
@@ -100,30 +100,27 @@ defmodule Command.RemotePilot do
             Map.fetch!(channel_value_map, state.pilot_control_level_channel)
             |> pilot_control_level_from_float()
 
-          channels =
+          pcl_channels =
             Map.fetch!(
-              state.control_level_dependent_channel_config,
+              state.pilot_control_level_channel_config,
               pilot_control_level
             )
-            |> Map.merge(state.all_levels_channel_config)
 
           # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(channels)}")
 
-          goals =
-            Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
-              output =
-                get_goal_from_rx_value(
-                  Map.fetch!(channel_value_map, channel_number),
-                  channel_config
-                )
-
-              Map.put(acc, channel_name, output)
-            end)
-
           # Logger.debug("rp goals: #{ViaUtils.Format.eftb_map(goals, 3)}")
+          pcl_goals = get_goals_for_channels(pcl_channels, channel_value_map)
+
+          all_levels_goals =
+            get_goals_for_channels(state.all_levels_channel_config, channel_value_map)
 
           {classification, time_validity_ms} =
             state.goals_sorter_classification_and_time_validity_ms
+
+          goals = %{
+            pcl: pcl_goals,
+            all: all_levels_goals
+          }
 
           ViaUtils.Comms.send_global_msg_to_group(
             __MODULE__,
@@ -136,17 +133,9 @@ defmodule Command.RemotePilot do
         autopilot_control_mode == ControlTypes.autopilot_control_mode_remote_pilot_override() ->
           override_commands =
             Enum.reduce(state.remote_pilot_override_channels, %{}, fn {channel_name,
-                                                                       {channel_number,
-                                                                        one_or_two_sided}},
+                                                                       channel_number},
                                                                       acc ->
-              command =
-                if one_or_two_sided == :two_sided do
-                  Map.fetch!(channel_value_map, channel_number)
-                else
-                  2.0 * Map.fetch!(channel_value_map, channel_number) - 1.0
-                end
-
-              Map.put(acc, channel_name, command)
+              Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
             end)
 
           ViaUtils.Comms.send_global_msg_to_group(
@@ -167,6 +156,19 @@ defmodule Command.RemotePilot do
   def handle_info({@clear_values_list_callback, key}, state) do
     Logger.warn("clear #{inspect(key)}: #{inspect(Map.get(state, key))}")
     {:noreply, Map.put(state, key, [])}
+  end
+
+  @spec get_goals_for_channels(map(), map()) :: map()
+  def get_goals_for_channels(channels, channel_value_map) do
+    Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
+      output =
+        get_goal_from_rx_value(
+          Map.fetch!(channel_value_map, channel_number),
+          channel_config
+        )
+
+      Map.put(acc, channel_name, output)
+    end)
   end
 
   @spec autopilot_control_mode_from_float(float()) :: integer()

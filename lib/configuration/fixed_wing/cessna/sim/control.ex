@@ -7,12 +7,14 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
       Controller: [
         agl_ceiling_m: 150,
         default_pilot_control_level: CCT.pilot_control_level_2(),
-        default_goals: %{
-          CCT.pilot_control_level_2() => %{
+        default_commands: %{
+          pcl: %{
             roll_rad: 0.26,
             pitch_rad: 0.03,
             deltayaw_rad: 0,
-            thrust_scaled: 0.0,
+            thrust_scaled: 0.0
+          },
+          all: %{
             flaps_scaled: 0.0,
             gear_scaled: 1.0
           }
@@ -35,7 +37,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Control do
               tecs_balance: [
                 ki: 0.02,
                 kd: 0.0,
-                altitude_kp: 0.25,
+                altitude_kp: 0.5,
                 balance_rate_scalar: 0.5,
                 time_constant: 2.0,
                 integrator_range: 0.4,

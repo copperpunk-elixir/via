@@ -53,16 +53,20 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
             default_value: {
               CCT.pilot_control_level_2(),
               %{
-                roll_rad: 0.26,
-                pitch_rad: 0.03,
-                deltayaw_rad: 0,
-                thrust_scaled: 0.0,
-                flaps_scaled: 0.0,
-                gear_scaled: 1.0
+                pcl: %{
+                  roll_rad: 0.26,
+                  pitch_rad: 0.03,
+                  deltayaw_rad: 0,
+                  thrust_scaled: 0.0
+                },
+                all: %{
+                  flaps_scaled: 0.0,
+                  gear_scaled: 1.0
+                }
               }
             },
             value_type: :tuple,
-            publish_value_interval_ms: LoopIntervals.commander_goals_publish_ms(),
+            publish_value_interval_ms: LoopIntervals.commands_publish_ms(),
             global_sorter_group: Groups.sorter_pilot_control_level_and_goals()
           ]
         ]

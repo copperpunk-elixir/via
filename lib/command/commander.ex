@@ -24,7 +24,7 @@ defmodule Command.Commander do
       goals: %{},
       goal_restrictions: %{},
       pilot_control_level: nil,
-      goals_watchdog: Watchdog.new({@clear_values_callback, @goals}, 2*LoopIntervals.commander_goals_publish_ms),
+      goals_watchdog: Watchdog.new({@clear_values_callback, @goals}, 2*LoopIntervals.commands_publish_ms),
     }
 
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
@@ -32,12 +32,12 @@ defmodule Command.Commander do
     MessageSorter.Sorter.register_for_sorter_current_and_stale(
       Sorters.pilot_control_level_and_goals(),
       :value,
-      LoopIntervals.commander_goals_publish_ms()
+      LoopIntervals.commands_publish_ms()
     )
 
     ViaUtils.Process.start_loop(
       self(),
-      LoopIntervals.commander_goals_publish_ms,
+      LoopIntervals.commands_publish_ms,
       @commander_loop
     )
 
@@ -59,7 +59,8 @@ defmodule Command.Commander do
 
    goals_watchdog = Watchdog.reset(state.goals_watchdog)
 
-    # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals, 3)}")
+    # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals.pcl, 3)}")
+    # Logger.debug("Goals sorter rx (all): #{ViaUtils.Format.eftb_map(goals.all, 3)}")
     {:noreply,
      %{
        state
@@ -74,8 +75,8 @@ defmodule Command.Commander do
     pilot_control_level = state.pilot_control_level
     goals = state.goals
 
-    if !is_nil(goals) do
-      goals =
+    if !Enum.empty?(goals) do
+      commands =
         update_goals_to_reflect_goal_restrictions(
           goals,
           state.goal_restrictions,
@@ -84,7 +85,7 @@ defmodule Command.Commander do
 
       ViaUtils.Comms.send_local_msg_to_group(
         __MODULE__,
-        {Groups.commander_goals(), pilot_control_level, goals},
+        {Groups.commands(), pilot_control_level, commands},
         self()
       )
 

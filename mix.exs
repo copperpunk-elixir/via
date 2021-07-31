@@ -65,7 +65,7 @@ defmodule Via.MixProject do
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers/"},
       {:xplane_integration,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/xplane-integration/"},
-
+      {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
     ]
   end
 

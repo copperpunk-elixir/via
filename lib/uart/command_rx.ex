@@ -58,7 +58,7 @@ defmodule Uart.CommandRx do
       if !Enum.empty?(channel_values) do
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.command_channels_failsafe, channel_values, false},
+          {Groups.command_channels, channel_values, false},
           self()
         )
         # Logger.debug("channels: #{ViaUtils.Format.eftb_list(channel_values, 3, ",")}")

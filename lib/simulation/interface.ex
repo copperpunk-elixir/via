@@ -27,7 +27,8 @@ defmodule Simulation.Interface do
           ViaControllers.Pid.new(Keyword.fetch!(controller_config, :pitchrate_elevator)),
         yawrate_rudder: ViaControllers.Pid.new(Keyword.fetch!(controller_config, :yawrate_rudder))
       },
-      bodyrate_goals: %{},
+      bodyrate_commands: %{},
+      all_levels_commands: %{},
       override_commands: %{},
       airspeed_mps: 0,
       actuator_output: %{},
@@ -50,7 +51,8 @@ defmodule Simulation.Interface do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_goals())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.all_levels_commands())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_override_commands())
 
     ViaUtils.Process.start_loop(self(), LoopIntervals.actuator_output_ms(), @actuator_loop)
@@ -66,16 +68,16 @@ defmodule Simulation.Interface do
     {pid_controllers, actuator_output} =
       cond do
         is_value_current.override_commands ->
-          {reset_all_pid_integrators(state.pid_controllers), state.override_commands}
+          {reset_all_pid_integrators(state.pid_controllers), %{}}
 
         is_value_current.imu ->
-          bodyrate_goals = state.bodyrate_goals
+          bodyrate_commands = state.bodyrate_commands
 
-          if !Enum.empty?(bodyrate_goals) do
+          if !Enum.empty?(bodyrate_commands) do
             {pid_controllers, controller_output} =
               update_aileron_elevator_rudder_controllers(
                 state.pid_controllers,
-                bodyrate_goals,
+                bodyrate_commands,
                 values,
                 state.airspeed_mps
               )
@@ -83,7 +85,7 @@ defmodule Simulation.Interface do
             actuator_output =
               Map.merge(
                 controller_output,
-                Map.drop(bodyrate_goals, [:rollrate_rps, :pitchrate_rps, :yawrate_rps])
+                Map.drop(bodyrate_commands, [:rollrate_rps, :pitchrate_rps, :yawrate_rps])
               )
 
             {pid_controllers, actuator_output}
@@ -97,6 +99,7 @@ defmodule Simulation.Interface do
 
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
     # Logger.debug("rpy: #{elapsed_time}: #{Estimation.Imu.Utils.rpy_to_string(ins_kf.imu, 2)}")
+    actuator_output = Map.merge(actuator_output, state.all_levels_commands)
     is_value_current = Map.put(state.is_value_current, :imu, true)
 
     {:noreply,
@@ -116,12 +119,21 @@ defmodule Simulation.Interface do
   end
 
   @impl GenServer
-  def handle_cast({Groups.controller_bodyrate_goals(), bodyrate_goals}, state) do
+  def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
     # Need to calculate
-    # Logger.debug("Sim.Int rx goals: #{ViaUtils.Format.eftb_map(bodyrate_goals, 3)}")
+    # Logger.debug("Sim.Int rx br commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
-    {:noreply, %{state | bodyrate_goals: bodyrate_goals}}
+    {:noreply, %{state | bodyrate_commands: bodyrate_commands}}
   end
+
+  @impl GenServer
+  def handle_cast({Groups.all_levels_commands(), all_levels_commands}, state) do
+    # Need to calculate
+    # Logger.debug("Sim.Int rx AL commands: #{ViaUtils.Format.eftb_map(all_levels_commands, 3)}")
+
+    {:noreply, %{state | all_levels_commands: all_levels_commands}}
+  end
+
 
   @impl GenServer
   def handle_cast({Groups.controller_override_commands(), override_commands}, state) do
@@ -141,11 +153,17 @@ defmodule Simulation.Interface do
 
   @impl GenServer
   def handle_info(@actuator_loop, state) do
-    actuator_output = state.actuator_output
+    {actuator_output, is_override} =
+      if state.is_value_current.override_commands do
+        {state.override_commands, true}
+      else
+        {state.actuator_output, false}
+      end
+
     # Logger.warn("sim int act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
 
     unless(Enum.empty?(actuator_output)) do
-      send_actuator_output(actuator_output)
+      send_actuator_output(actuator_output, is_override)
     end
 
     {:noreply, state}
@@ -158,11 +176,11 @@ defmodule Simulation.Interface do
     {:noreply, state}
   end
 
-  @spec send_actuator_output(map()) :: atom()
-  def send_actuator_output(actuator_output) do
+  @spec send_actuator_output(map(), boolean()) :: atom()
+  def send_actuator_output(actuator_output, is_override) do
     ViaUtils.Comms.send_local_msg_to_group(
       __MODULE__,
-      {Groups.simulation_update_actuators(), actuator_output},
+      {Groups.simulation_update_actuators(), actuator_output, is_override},
       self()
     )
   end
@@ -170,7 +188,7 @@ defmodule Simulation.Interface do
   @spec update_aileron_elevator_rudder_controllers(map(), map(), map(), number()) :: tuple()
   def update_aileron_elevator_rudder_controllers(
         controllers,
-        bodyrate_goals,
+        bodyrate_commands,
         dt_accel_gyro_vals,
         airspeed_mps
       ) do
@@ -179,7 +197,7 @@ defmodule Simulation.Interface do
     {aileron_controller, aileron_output} =
       ViaControllers.Pid.update(
         controllers.rollrate_aileron,
-        bodyrate_goals.rollrate_rps,
+        bodyrate_commands.rollrate_rps,
         dt_accel_gyro_vals.gx_rps,
         airspeed_mps,
         dt_s
@@ -188,17 +206,17 @@ defmodule Simulation.Interface do
     {elevator_controller, elevator_output} =
       ViaControllers.Pid.update(
         controllers.pitchrate_elevator,
-        bodyrate_goals.pitchrate_rps,
+        bodyrate_commands.pitchrate_rps,
         dt_accel_gyro_vals.gy_rps,
         airspeed_mps,
         dt_s
       )
 
-    # Logger.info("pr cmd/val/out: #{ViaUtils.Format.eftb(bodyrate_goals.pitchrate_rps,3)}/#{ViaUtils.Format.eftb(dt_accel_gyro_vals.gy_rps,3)}/#{ViaUtils.Format.eftb(elevator_output,3)}")
+    # Logger.info("pr cmd/val/out: #{ViaUtils.Format.eftb(bodyrate_commands.pitchrate_rps,3)}/#{ViaUtils.Format.eftb(dt_accel_gyro_vals.gy_rps,3)}/#{ViaUtils.Format.eftb(elevator_output,3)}")
     {rudder_controller, rudder_output} =
       ViaControllers.Pid.update(
         controllers.yawrate_rudder,
-        bodyrate_goals.yawrate_rps,
+        bodyrate_commands.yawrate_rps,
         dt_accel_gyro_vals.gz_rps,
         airspeed_mps,
         dt_s

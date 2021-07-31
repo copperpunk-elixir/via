@@ -1,10 +1,11 @@
 defmodule Comms.Groups do
   defmacro airspeed_val, do: :airspeed_val
+  defmacro all_levels_commands, do: :all_levels_commands
   defmacro autopilot_control_mode, do: :autopilot_control_mode
-  defmacro controller_bodyrate_goals, do: :controller_bodyrate_goals
+  defmacro controller_bodyrate_commands, do: :controller_bodyrate_commands
   defmacro controller_override_commands, do: :controller_override_commands
-  defmacro command_channels_failsafe, do: :command_channels_failsafe
-  defmacro commander_goals, do: :commander_goals
+  defmacro command_channels, do: :command_channels
+  defmacro commands, do: :commands
   defmacro downward_tof_distance_val, do: :downward_tof_distance_val
   defmacro dt_accel_gyro_val, do: :dt_accel_gyro_val
   defmacro estimation_attitude, do: {:estimation_values, :attitude}
@@ -14,6 +15,8 @@ defmodule Comms.Groups do
 
   defmacro gps_itow_position_velocity_val, do: :gps_pos_vel_val
   defmacro gps_itow_relheading_val, do: :gps_relhdg_val
+
+  defmacro independent_goals, do: :independent_goals
   defmacro message_sorter_value, do: :message_sorter_value
   defmacro remote_pilot_override_commands, do: :remote_pilot_override_commands
   defmacro roll_pitch_yawrate_thrust_cmd, do: :rp_ydot_t_cmd

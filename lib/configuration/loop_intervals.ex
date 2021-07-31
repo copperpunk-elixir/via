@@ -11,7 +11,7 @@ defmodule Configuration.LoopIntervals do
   defmacro controller_update_ms, do: 20
 
   # GOALS
-  defmacro commander_goals_publish_ms, do: 20
+  defmacro commands_publish_ms, do: 20
 
   defmacro navigator_goals_publish_ms, do: 40
   defmacro remote_pilot_goals_publish_ms, do: 20
@@ -21,4 +21,7 @@ defmodule Configuration.LoopIntervals do
 
   # SIMULATION
   defmacro actuator_output_ms, do: 20
+
+  # JOYSTICK
+  defmacro joystick_channels_publish_ms, do: 20
 end
