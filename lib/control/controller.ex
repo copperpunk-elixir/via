@@ -92,12 +92,12 @@ defmodule Control.Controller do
 
   @impl GenServer
   def handle_cast({Groups.commands(), pilot_control_level, commands}, state) do
-#     Logger.debug(
-#       "Ctrl cmds rx: #{pilot_control_level}/#{state.pilot_control_level}: #{ViaUtils.Format.eftb_map(commands.pcl, 3)}"
-#     )
-# Logger.debug(
-#       "Ctrl cmds rx (all): #{ViaUtils.Format.eftb_map(commands.all, 3)}"
-#     )
+    #     Logger.debug(
+    #       "Ctrl cmds rx: #{pilot_control_level}/#{state.pilot_control_level}: #{ViaUtils.Format.eftb_map(commands.pcl, 3)}"
+    #     )
+    # Logger.debug(
+    #       "Ctrl cmds rx (all): #{ViaUtils.Format.eftb_map(commands.all, 3)}"
+    #     )
     state =
       cond do
         pilot_control_level != CCT.pilot_control_level_4() ->
@@ -238,13 +238,17 @@ defmodule Control.Controller do
     {:noreply, Map.put(state, key, %{})}
   end
 
-  @spec process_commands_and_update_state(integer(), map(), map()) :: map()
-  def process_commands_and_update_state(_pilot_control_level, commands, state) when map_size(commands) == 0 do
-    state
+  def process_commands_and_update_state(pilot_control_level, commands, state) do
+    case pilot_control_level do
+      CCT.pilot_control_level_4() -> process_pcl_4_commands(commands, state)
+      CCT.pilot_control_level_3() -> process_pcl_3_commands(commands, state)
+      CCT.pilot_control_level_2() -> process_pcl_2_commands(commands, state)
+      CCT.pilot_control_level_1() -> process_pcl_1_commands(commands, state)
+      other -> raise "Unknown pilot_control_level: #{inspect(other)}"
+    end
   end
 
-  def process_commands_and_update_state(pilot_control_level, commands, state)
-      when pilot_control_level == CCT.pilot_control_level_4() do
+  def process_pcl_4_commands(commands, state) do
     Logger.debug("pcl4 goals: #{ViaUtils.Format.eftb_map(commands, 3)}")
 
     pcl_3_cmds =
@@ -254,18 +258,13 @@ defmodule Control.Controller do
     if Enum.count(pcl_3_cmds) >= 4 do
       # Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
 
-      process_commands_and_update_state(
-        CCT.pilot_control_level_3(),
-        pcl_3_cmds,
-        state
-      )
+      process_pcl_3_commands(pcl_3_cmds, state)
     else
       state
     end
   end
 
-  def process_commands_and_update_state(pilot_control_level, pcl_commands, state)
-      when pilot_control_level == CCT.pilot_control_level_3() do
+  def process_pcl_3_commands(pcl_commands, state) do
     velocity = state.velocity
 
     values =
@@ -302,18 +301,13 @@ defmodule Control.Controller do
       # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
       state = %{state | controllers: controllers}
 
-      process_commands_and_update_state(
-        CCT.pilot_control_level_2(),
-        pcl_2_cmds,
-        state
-      )
+      process_pcl_2_commands(pcl_2_cmds, state)
     else
       state
     end
   end
 
-  def process_commands_and_update_state(pilot_control_level, pcl_commands, state)
-      when pilot_control_level == CCT.pilot_control_level_2() do
+  def process_pcl_2_commands(pcl_commands, state) do
     values = state.attitude
 
     if map_size(values) > 0 do
@@ -337,18 +331,13 @@ defmodule Control.Controller do
       # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
       state = %{state | controllers: controllers}
 
-      process_commands_and_update_state(
-        CCT.pilot_control_level_1(),
-        pcl_1_cmds,
-        state
-      )
+      process_pcl_1_commands(pcl_1_cmds, state)
     else
       state
     end
   end
 
-  def process_commands_and_update_state(pilot_control_level, pcl_commands, state)
-      when pilot_control_level == CCT.pilot_control_level_1() do
+  def process_pcl_1_commands(pcl_commands, state) do
     # Logger.debug("bodyrates: send to companion: #{ViaUtils.Format.eftb_map(pcm_commands, 3)}")
 
     ViaUtils.Comms.send_local_msg_to_group(
@@ -358,10 +347,6 @@ defmodule Control.Controller do
     )
 
     state
-  end
-
-  def process_commands_and_update_state(pilot_control_level, _pcl_commands, _state) do
-    raise "Commander has PCL of #{inspect(pilot_control_level)}, which should not be possible"
   end
 
   @spec send_all_levels_commands(map()) :: atom()

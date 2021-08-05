@@ -4,10 +4,11 @@ defmodule Configuration.FixedWing.Cessna.Sim.Config do
   def config() do
     modules = [
       :Control,
-      :MessageSorter,
+      :Display,
       :Estimation,
-      :Uart,
-      :Simulation
+      :MessageSorter,
+      :Simulation,
+      :Uart
     ]
 
     Logger.debug("modules: #{inspect(modules)}")
