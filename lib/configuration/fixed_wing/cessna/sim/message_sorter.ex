@@ -53,13 +53,13 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
             default_value: {
               CCT.pilot_control_level_2(),
               %{
-                pcl: %{
+                current_pcl: %{
                   roll_rad: 0.26,
                   pitch_rad: 0.03,
                   deltayaw_rad: 0,
                   thrust_scaled: 0.0
                 },
-                all: %{
+                any_pcl: %{
                   flaps_scaled: 0.0,
                   gear_scaled: 1.0
                 }

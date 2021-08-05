@@ -81,8 +81,8 @@ defmodule Uart.Companion do
   end
 
   @impl GenServer
-  def handle_cast({Groups.all_levels_commands(), all_levels_commands}, state) do
-    Logger.debug("comp rx all_levels cmds: #{ViaUtils.Format.eftb_map(all_levels_commands, 3)}")
+  def handle_cast({Groups.commands_for_any_pilot_control_level(), any_pcl_commands}, state) do
+    Logger.debug("comp rx any_pcl_cmds: #{ViaUtils.Format.eftb_map(any_pcl_commands, 3)}")
     {:noreply, state}
   end
 

@@ -2,7 +2,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
   @spec config() :: list()
   def config() do
     gcs_scene = Display.Scenic.Gcs.FixedWing
-    planner_scene = #Display.Scenic.Planner
+    planner_scene = nil #Display.Scenic.Planner
 
     gcs_config = %{
       name: :gcs,

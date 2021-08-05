@@ -22,6 +22,8 @@ defmodule Simulation.Xplane.JoystickUsbTest do
     config = full_config[:Simulation]
     Simulation.Supervisor.start_link(config)
 
+    config = full_config[:Display]
+    Display.Supervisor.start_link(config)
     # TEG.start_link()
     Process.sleep(200_000)
   end

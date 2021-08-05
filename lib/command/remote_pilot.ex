@@ -18,25 +18,25 @@ defmodule Command.RemotePilot do
 
   @impl GenServer
   def init(config) do
-    all_levels_channel_config = Keyword.fetch!(config, :all_levels_channel_config)
+    any_pcl_channel_config = Keyword.fetch!(config, :any_pcl_channel_config)
 
     pilot_control_level_channel =
-      Map.fetch!(all_levels_channel_config, :pilot_control_level) |> elem(0)
+      Map.fetch!(any_pcl_channel_config, :pilot_control_level) |> elem(0)
 
     autopilot_control_mode_channel =
-      Map.fetch!(all_levels_channel_config, :autopilot_control_mode) |> elem(0)
+      Map.fetch!(any_pcl_channel_config, :autopilot_control_mode) |> elem(0)
 
-    all_levels_channel_config =
-      Map.drop(all_levels_channel_config, [
+    any_pcl_channel_config =
+      Map.drop(any_pcl_channel_config, [
         :pilot_control_level,
         :autopilot_control_mode
       ])
 
     state = %{
       num_channels: Keyword.fetch!(config, :num_channels),
-      pilot_control_level_channel_config:
-        Keyword.fetch!(config, :pilot_control_level_channel_config),
-      all_levels_channel_config: all_levels_channel_config,
+      current_pcl_channel_config:
+        Keyword.fetch!(config, :current_pcl_channel_config),
+      any_pcl_channel_config: any_pcl_channel_config,
       remote_pilot_override_channels: Keyword.fetch!(config, :remote_pilot_override_channels),
       pilot_control_level_channel: pilot_control_level_channel,
       autopilot_control_mode_channel: autopilot_control_mode_channel,
@@ -102,24 +102,24 @@ defmodule Command.RemotePilot do
 
           pcl_channels =
             Map.fetch!(
-              state.pilot_control_level_channel_config,
+              state.current_pcl_channel_config,
               pilot_control_level
             )
 
           # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(channels)}")
 
           # Logger.debug("rp goals: #{ViaUtils.Format.eftb_map(goals, 3)}")
-          pcl_goals = get_goals_for_channels(pcl_channels, channel_value_map)
+          current_pcl_goals = get_goals_for_channels(pcl_channels, channel_value_map)
 
-          all_levels_goals =
-            get_goals_for_channels(state.all_levels_channel_config, channel_value_map)
+          any_pcl_goals =
+            get_goals_for_channels(state.any_pcl_channel_config, channel_value_map)
 
           {classification, time_validity_ms} =
             state.goals_sorter_classification_and_time_validity_ms
 
           goals = %{
-            pcl: pcl_goals,
-            all: all_levels_goals
+            current_pcl: current_pcl_goals,
+            any_pcl: any_pcl_goals
           }
 
           ViaUtils.Comms.send_global_msg_to_group(

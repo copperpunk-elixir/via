@@ -28,7 +28,7 @@ defmodule Simulation.Interface do
         yawrate_rudder: ViaControllers.Pid.new(Keyword.fetch!(controller_config, :yawrate_rudder))
       },
       bodyrate_commands: %{},
-      all_levels_commands: %{},
+      any_pcl_commands: %{},
       override_commands: %{},
       airspeed_mps: 0,
       actuator_output: %{},
@@ -52,7 +52,7 @@ defmodule Simulation.Interface do
     ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.all_levels_commands())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.commands_for_any_pilot_control_level())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_override_commands())
 
     ViaUtils.Process.start_loop(self(), LoopIntervals.actuator_output_ms(), @actuator_loop)
@@ -99,7 +99,7 @@ defmodule Simulation.Interface do
 
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
     # Logger.debug("rpy: #{elapsed_time}: #{Estimation.Imu.Utils.rpy_to_string(ins_kf.imu, 2)}")
-    actuator_output = Map.merge(actuator_output, state.all_levels_commands)
+    actuator_output = Map.merge(actuator_output, state.any_pcl_commands)
     is_value_current = Map.put(state.is_value_current, :imu, true)
 
     {:noreply,
@@ -127,11 +127,11 @@ defmodule Simulation.Interface do
   end
 
   @impl GenServer
-  def handle_cast({Groups.all_levels_commands(), all_levels_commands}, state) do
+  def handle_cast({Groups.commands_for_any_pilot_control_level(), any_pcl_commands}, state) do
     # Need to calculate
-    # Logger.debug("Sim.Int rx AL commands: #{ViaUtils.Format.eftb_map(all_levels_commands, 3)}")
+    # Logger.debug("Sim.Int rx AL commands: #{ViaUtils.Format.eftb_map(any_pcl_commands, 3)}")
 
-    {:noreply, %{state | all_levels_commands: all_levels_commands}}
+    {:noreply, %{state | any_pcl_commands: any_pcl_commands}}
   end
 
 

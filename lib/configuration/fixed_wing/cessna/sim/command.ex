@@ -21,7 +21,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
       Commander: [],
       RemotePilot: [
         num_channels: 10,
-        pilot_control_level_channel_config: %{
+        current_pcl_channel_config: %{
           CCT.pilot_control_level_4() => %{
             course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
             altitude_rate_mps: {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
@@ -41,7 +41,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Command do
             yawrate_rps: {3, {-3.14, 0.0, 3.14, CCT.input_not_inverted(), 0.087}}
           }
         },
-        all_levels_channel_config: %{
+        any_pcl_channel_config: %{
           flaps_scaled: {4, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
           gear_scaled: {9, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
           pilot_control_level: {5, {-1.0, 0, 1.0, CCT.input_not_inverted(), 0}},

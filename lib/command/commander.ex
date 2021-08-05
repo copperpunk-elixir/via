@@ -59,8 +59,8 @@ defmodule Command.Commander do
 
    goals_watchdog = Watchdog.reset(state.goals_watchdog)
 
-    # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals.pcl, 3)}")
-    # Logger.debug("Goals sorter rx (all): #{ViaUtils.Format.eftb_map(goals.all, 3)}")
+    # Logger.debug("Goals sorter rx: #{pilot_control_level}: #{ViaUtils.Format.eftb_map(goals.current_pcl, 3)}")
+    # Logger.debug("Goals sorter rx (all): #{ViaUtils.Format.eftb_map(goals.any_pcl, 3)}")
     {:noreply,
      %{
        state
@@ -85,7 +85,7 @@ defmodule Command.Commander do
 
       ViaUtils.Comms.send_local_msg_to_group(
         __MODULE__,
-        {Groups.commands(), pilot_control_level, commands},
+        {Groups.current_commands_for_pilot_control_level(), pilot_control_level, commands},
         self()
       )
 
