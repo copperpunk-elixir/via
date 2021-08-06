@@ -220,6 +220,7 @@ defmodule Estimation.Estimator do
         position =
           Map.take(position_rrm, [:latitude_rad, :longitude_rad, :altitude_m])
           |> Map.put(:ground_altitude_m, ground_altitude_m)
+          |> Map.put(:agl_m, agl_m)
 
         velocity = %{
           groundspeed_mps: groundspeed_mps,

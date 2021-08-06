@@ -6,7 +6,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
 
     gcs_config = %{
       name: :gcs,
-      size: {800, 700},
+      size: {900, 800},
       default_scene: {gcs_scene, nil},
       drivers: [
         %{

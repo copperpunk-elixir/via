@@ -234,7 +234,7 @@ defmodule Control.Controller do
             {pilot_control_level, commands}
           end
 
-        Logger.debug("ctrl loop. pcl/cmds: #{inspect(pilot_control_level)}/#{inspect(commands)}")
+        # Logger.debug("ctrl loop. pcl/cmds: #{inspect(pilot_control_level)}/#{inspect(commands)}")
 
         any_pcl_commands = Map.get(commands, :any_pcl, %{})
 
@@ -248,11 +248,9 @@ defmodule Control.Controller do
             process_pcl_3_commands(Map.put(state, :commands, commands))
 
           CCT.pilot_control_level_2() ->
-            Logger.warn("pcl 2: #{inspect(commands)}")
             process_pcl_2_commands(Map.put(state, :commands, commands))
 
           CCT.pilot_control_level_1() ->
-            Logger.warn("pcl 1: #{inspect(commands)}")
             process_pcl_1_commands(Map.put(state, :commands, commands))
 
           other ->
@@ -273,7 +271,7 @@ defmodule Control.Controller do
   def process_pcl_4_commands(state) do
     commands = state.commands
     pcl_4_commands = Map.get(commands, CCT.pilot_control_level_4(), %{})
-    Logger.debug("pcl4 goals: #{ViaUtils.Format.eftb_map(pcl_4_commands, 3)}")
+    # Logger.debug("pcl4 goals: #{ViaUtils.Format.eftb_map(pcl_4_commands, 3)}")
 
     pcl_3_cmds =
       Map.take(pcl_4_commands, [:groundspeed_mps, :sideslip_rad])
@@ -304,8 +302,8 @@ defmodule Control.Controller do
       |> Map.merge(Map.take(state.attitude, [:yaw_rad]))
 
     if Enum.count(values) == 5 do
-      Logger.debug("SCA cmds (pcl): #{ViaUtils.Format.eftb_map(pcl_3_commands, 3)}")
-      Logger.debug("SCA vals: #{ViaUtils.Format.eftb_map(values, 3)}")
+      # Logger.debug("SCA cmds (pcl): #{ViaUtils.Format.eftb_map(pcl_3_commands, 3)}")
+      # Logger.debug("SCA vals: #{ViaUtils.Format.eftb_map(values, 3)}")
       controllers = state.controllers
       controller = Map.get(controllers, CCT.pilot_control_level_3())
 
@@ -340,7 +338,7 @@ defmodule Control.Controller do
 
   def process_pcl_2_commands(state) do
     commands = state.commands
-    pcl_2_commands = get_in(state.commands, [CCT.pilot_control_level_2(), :current_pcl])
+    pcl_2_commands = Map.get(state.commands, CCT.pilot_control_level_2(), %{})
 
     values = state.attitude
 
@@ -378,8 +376,8 @@ defmodule Control.Controller do
 
   def process_pcl_1_commands(state) do
     # Logger.debug("bodyrates: send to companion: #{ViaUtils.Format.eftb_map(get_in(state, [:commands, 1, :current_pcl]), 3)}")
-    Logger.debug("proc pcl 1: #{inspect(state.commands)}")
-    pcl_1_commands = get_in(state.commands, [CCT.pilot_control_level_1(), :current_pcl])
+    # Logger.debug("proc pcl 1: #{inspect(state.commands)}")
+    pcl_1_commands = Map.get(state.commands, CCT.pilot_control_level_1(), %{})
 
     ViaUtils.Comms.send_local_msg_to_group(
       __MODULE__,

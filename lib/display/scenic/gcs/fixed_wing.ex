@@ -38,7 +38,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
     # col = vp_width / 12
     label_value_width = 300
     label_value_height = 50
-    goals_width = 400
+    goals_width = 500
     goals_height = 50
     battery_width = 400
     battery_height = 40
@@ -107,7 +107,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
         width: goals_width,
         height: 2 * goals_height,
         offset_x: goals_offset_x,
-        offset_y: offset_y_origin,
+        offset_y: offset_y,
         spacer_y: spacer_y,
         labels: ["speed", "course", "altitude", "sideslip"],
         ids: [:speed_3_cmd, :course_cmd, :altitude_cmd, :sideslip_3_cmd],
@@ -202,7 +202,8 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
     # subscribe to the simulated temperature sensor
     ViaUtils.Comms.start_operator(__MODULE__)
-    # ViaUtils.Comms.join_group(__MODULE__, {:telemetry, :pvat})
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
     ViaUtils.Comms.join_group(__MODULE__, Groups.current_pilot_control_level_and_commands())
     # ViaUtils.Comms.join_group(__MODULE__, :tx_battery)
     # ViaUtils.Comms.join_group(__MODULE__, :cluster_status)
@@ -217,29 +218,40 @@ defmodule Display.Scenic.Gcs.FixedWing do
   # --------------------------------------------------------
   # receive PV updates from the vehicle
   @impl true
-  def handle_cast({{:telemetry, :pvat}, position, velocity, attitude}, state) do
+  def handle_cast({Groups.estimation_attitude(), attitude}, state) do
     # Logger.debug("position: #{ViaUtils.LatLonAlt.to_string(position)}")
-    roll = Map.get(attitude, :roll, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
-    pitch = Map.get(attitude, :pitch, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+    roll = Map.get(attitude, :roll_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+    pitch = Map.get(attitude, :pitch_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
 
     yaw =
-      Map.get(attitude, :yaw, 0)
+      Map.get(attitude, :yaw_rad, 0)
       |> ViaUtils.Math.constrain_angle_to_compass()
       |> ViaUtils.Math.rad2deg()
       |> ViaUtils.Format.eftb(1)
 
-    lat = Map.get(position, :latitude, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
-    lon = Map.get(position, :longitude, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
-    alt = Map.get(position, :altitude, 0) |> ViaUtils.Format.eftb(2)
-    agl = Map.get(position, :agl, 0) |> ViaUtils.Format.eftb(2)
+    graph =
+      state.graph
+      |> Scenic.Graph.modify(:roll, &text(&1, roll <> @degrees))
+      |> Scenic.Graph.modify(:pitch, &text(&1, pitch <> @degrees))
+      |> Scenic.Graph.modify(:yaw, &text(&1, yaw <> @degrees))
+    {:noreply, %{state | graph: graph}, push: graph}
+  end
+
+  @impl true
+  def handle_cast({Groups.estimation_position_velocity(), position, velocity}, state) do
+
+    lat = Map.get(position, :latitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
+    lon = Map.get(position, :longitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
+    alt = Map.get(position, :altitude_m, 0) |> ViaUtils.Format.eftb(2)
+    agl = Map.get(position, :agl_m, 0) |> ViaUtils.Format.eftb(2)
 
     # v_down = ViaUtils.Format.eftb(velocity.down,1)
-    airspeed = Map.get(velocity, :airspeed, 0) |> ViaUtils.Format.eftb(1)
+    airspeed = Map.get(velocity, :airspeed_mps, 0) |> ViaUtils.Format.eftb(1)
     # Logger.debug("disp #{airspeed}")
-    speed = Map.get(velocity, :speed, 0) |> ViaUtils.Format.eftb(1)
+    speed = Map.get(velocity, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)
 
     course =
-      Map.get(velocity, :course, 0)
+      Map.get(velocity, :course_rad, 0)
       |> ViaUtils.Math.constrain_angle_to_compass()
       |> ViaUtils.Math.rad2deg()
       |> ViaUtils.Format.eftb(1)
@@ -252,22 +264,19 @@ defmodule Display.Scenic.Gcs.FixedWing do
       |> Scenic.Graph.modify(:airspeed, &text(&1, airspeed <> @mps))
       |> Scenic.Graph.modify(:speed, &text(&1, speed <> @mps))
       |> Scenic.Graph.modify(:course, &text(&1, course <> @degrees))
-      |> Scenic.Graph.modify(:roll, &text(&1, roll <> @degrees))
-      |> Scenic.Graph.modify(:pitch, &text(&1, pitch <> @degrees))
-      |> Scenic.Graph.modify(:yaw, &text(&1, yaw <> @degrees))
 
     {:noreply, %{state | graph: graph}, push: graph}
   end
 
   def handle_cast({Groups.current_pilot_control_level_and_commands(), pcl, all_cmds}, state) do
-    Logger.debug("gcs rx #{pcl}/#{inspect(all_cmds)}")
+    # Logger.debug("gcs rx #{pcl}/#{inspect(all_cmds)}")
     graph = state.graph
+
     graph =
       if pcl < CCT.pilot_control_level_1() do
         clear_text_values(graph, [:rollrate_cmd, :pitchrate_cmd, :yawrate_cmd, :throttle_cmd])
       else
-        cmds = Map.get(all_cmds, CCT.pilot_control_level_1(), %{current_pcl: %{}, any_pcl: %{}})
-        cmds = Map.merge(cmds.current_pcl, cmds.any_pcl)
+        cmds = Map.get(all_cmds, CCT.pilot_control_level_1(), %{})
 
         rollrate =
           Map.get(cmds, :rollrate_rps, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
@@ -287,65 +296,70 @@ defmodule Display.Scenic.Gcs.FixedWing do
         |> Scenic.Graph.modify(:throttle_cmd, &text(&1, throttle <> @pct))
       end
 
-    if pcl < CCT.pilot_control_level_2() do
-      clear_text_values(graph, [:roll_cmd, :pitch_cmd, :deltayaw_cmd, :thrust_cmd])
-    else
-        cmds = Map.get(all_cmds, CCT.pilot_control_level_2(), %{current_pcl: %{}, any_pcl: %{}})
-        cmds = Map.merge(cmds.current_pcl, cmds.any_pcl)
+    graph =
+      if pcl < CCT.pilot_control_level_2() do
+        clear_text_values(graph, [:roll_cmd, :pitch_cmd, :deltayaw_cmd, :thrust_cmd])
+      else
+        cmds = Map.get(all_cmds, CCT.pilot_control_level_2(), %{})
 
-      roll = Map.get(cmds, :roll_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
-      pitch = Map.get(cmds, :pitch_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
+        roll = Map.get(cmds, :roll_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
+        pitch = Map.get(cmds, :pitch_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
 
-      deltayaw =
-        Map.get(cmds, :deltayaw_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
+        deltayaw =
+          Map.get(cmds, :deltayaw_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(0)
 
-      thrust = (Map.get(cmds, :thrust_scaled, 0) * 100) |> ViaUtils.Format.eftb(0)
+        thrust = (Map.get(cmds, :thrust_scaled, 0) * 100) |> ViaUtils.Format.eftb(0)
 
-      graph
-      |> Scenic.Graph.modify(:roll_cmd, &text(&1, roll <> @degrees))
-      |> Scenic.Graph.modify(:pitch_cmd, &text(&1, pitch <> @degrees))
-      |> Scenic.Graph.modify(:deltayaw_cmd, &text(&1, deltayaw <> @degrees))
-      |> Scenic.Graph.modify(:thrust_cmd, &text(&1, thrust <> @pct))
-    end
+        graph
+        |> Scenic.Graph.modify(:roll_cmd, &text(&1, roll <> @degrees))
+        |> Scenic.Graph.modify(:pitch_cmd, &text(&1, pitch <> @degrees))
+        |> Scenic.Graph.modify(:deltayaw_cmd, &text(&1, deltayaw <> @degrees))
+        |> Scenic.Graph.modify(:thrust_cmd, &text(&1, thrust <> @pct))
+      end
 
-    if pcl < CCT.pilot_control_level_3() do
-      clear_text_values(graph, [:speed_cmd, :course_cmd, :altitude_cmd, :sideslip_cmd])
-    else
-      cmds = Map.get(all_cmds, CCT.pilot_control_level_3(), %{})
-      speed = Map.get(cmds, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)
-      course = Map.get(cmds, :course_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
-      altitude = Map.get(cmds, :altitude_m, 0) |> ViaUtils.Format.eftb(1)
+    graph =
+      if pcl < CCT.pilot_control_level_3() do
+        clear_text_values(graph, [:speed_3_cmd, :course_cmd, :altitude_cmd, :sideslip_3_cmd])
+      else
+        cmds = Map.get(all_cmds, CCT.pilot_control_level_3(), %{})
+        speed = Map.get(cmds, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)
 
-      sideslip =
-        Map.get(cmds, :sideslip_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+        course =
+          Map.get(cmds, :course_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
 
-      graph
-      |> Scenic.Graph.modify(:speed_3_cmd, &text(&1, speed <> @mps))
-      |> Scenic.Graph.modify(:course_cmd, &text(&1, course <> @degrees))
-      |> Scenic.Graph.modify(:altitude_cmd, &text(&1, altitude <> @meters))
-      |> Scenic.Graph.modify(:sideslip_4_cmd, &text(&1, sideslip <> @degrees))
-    end
+        altitude = Map.get(cmds, :altitude_m, 0) |> ViaUtils.Format.eftb(1)
 
-    if pcl < CCT.pilot_control_level_4() do
-      clear_text_values(graph, [:speed_cmd, :course_cmd, :altitude_cmd, :sideslip_cmd])
-    else
-      cmds = Map.get(all_cmds, CCT.pilot_control_level_4(), %{})
-      speed = Map.get(cmds, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)
+        sideslip =
+          Map.get(cmds, :sideslip_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
 
-      course_rate =
-        Map.get(cmds, :course_rate_rps, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+        graph
+        |> Scenic.Graph.modify(:speed_3_cmd, &text(&1, speed <> @mps))
+        |> Scenic.Graph.modify(:course_cmd, &text(&1, course <> @degrees))
+        |> Scenic.Graph.modify(:altitude_cmd, &text(&1, altitude <> @meters))
+        |> Scenic.Graph.modify(:sideslip_3_cmd, &text(&1, sideslip <> @degrees))
+      end
 
-      altitude_rate = Map.get(cmds, :altitude_rate_mps, 0) |> ViaUtils.Format.eftb(1)
+    graph =
+      if pcl < CCT.pilot_control_level_4() do
+        clear_text_values(graph, [:speed_4_cmd, :course_rate_cmd, :altitude_rate_cmd, :sideslip_4_cmd])
+      else
+        cmds = Map.get(all_cmds, CCT.pilot_control_level_4(), %{})
+        speed = Map.get(cmds, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)
 
-      sideslip =
-        Map.get(cmds, :sideslip_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+        course_rate =
+          Map.get(cmds, :course_rate_rps, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
 
-      graph
-      |> Scenic.Graph.modify(:speed_4_cmd, &text(&1, speed <> @mps))
-      |> Scenic.Graph.modify(:course_rate_cmd, &text(&1, course_rate <> @dps))
-      |> Scenic.Graph.modify(:altitude_rate_cmd, &text(&1, altitude_rate <> @mps))
-      |> Scenic.Graph.modify(:sideslip_4_cmd, &text(&1, sideslip <> @degrees))
-    end
+        altitude_rate = Map.get(cmds, :altitude_rate_mps, 0) |> ViaUtils.Format.eftb(1)
+
+        sideslip =
+          Map.get(cmds, :sideslip_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(1)
+
+        graph
+        |> Scenic.Graph.modify(:speed_4_cmd, &text(&1, speed <> @mps))
+        |> Scenic.Graph.modify(:course_rate_cmd, &text(&1, course_rate <> @dps))
+        |> Scenic.Graph.modify(:altitude_rate_cmd, &text(&1, altitude_rate <> @mps))
+        |> Scenic.Graph.modify(:sideslip_4_cmd, &text(&1, sideslip <> @degrees))
+      end
 
     graph = update_pilot_control_level(pcl, graph)
     {:noreply, %{state | graph: graph}, push: graph}
