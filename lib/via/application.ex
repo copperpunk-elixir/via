@@ -3,17 +3,35 @@ defmodule Via.Application do
   require Logger
 
   def start(_type, _args) do
-    vehicle_type = Configuration.Utils.get_vehicle_type()
-    model_type = Configuration.Utils.get_model_type()
-    node_type = Configuration.Utils.get_node_type()
     prepare_environment()
 
-    full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
-    Via.Supervisor.start_universal_modules(full_config)
-    Enum.each(full_config, fn {module, config} ->
-      supervisor_module = Module.concat(module, Supervisor)
-      apply(supervisor_module, :start_link, [config])
-    end)
+    unless Mix.env() == :test do
+      vehicle_type = System.get_env("vehicle_type")
+      model_type = System.get_env("model_type")
+      node_type = System.get_env("node_type")
+      Logger.debug("vehicle_type: #{vehicle_type}")
+      Logger.debug("model_type: #{model_type}")
+      Logger.debug("node_type: #{node_type}")
+
+      {vehicle_type, model_type, node_type} =
+        if is_nil(vehicle_type) or is_nil(model_type) or is_nil(node_type) do
+          Logger.warn("Args not present. Must get from mounted USB device.")
+          vehicle_type = Configuration.Utils.get_vehicle_type()
+          model_type = Configuration.Utils.get_model_type()
+          node_type = Configuration.Utils.get_node_type()
+          {vehicle_type, model_type, node_type}
+        else
+          {vehicle_type, model_type, node_type}
+        end
+
+      full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
+      Via.Supervisor.start_universal_modules(full_config)
+
+      Enum.each(full_config, fn {module, config} ->
+        supervisor_module = Module.concat(module, Supervisor)
+        apply(supervisor_module, :start_link, [config])
+      end)
+    end
 
     {:ok, self()}
   end
@@ -38,51 +56,4 @@ defmodule Via.Application do
     RingLogger.attach()
     # end
   end
-
-  # @spec get_modules_for_node(binary()) :: list()
-  # def get_modules_for_node(node_type) do
-  #   [node_type, _metadata] = Configuration.Utils.split_safely(node_type, "_")
-
-  #   case node_type do
-  #     "gcs" ->
-  #       [Display.Scenic, Peripherals.Uart, Gcs]
-
-  #     "sim" ->
-  #       [
-  #         Estimation,
-  #         Peripherals.Uart
-  #       ]
-
-  #     "server" ->
-  #       [Simulation, Peripherals.Uart, Display.Scenic]
-
-  #     "all" ->
-  #       [
-  #         Pids,
-  #         Control,
-  #         Estimation,
-  #         Health,
-  #         Navigation,
-  #         Command,
-  #         Peripherals.Uart,
-  #         Peripherals.Gpio,
-  #         Peripherals.I2c,
-  #         Peripherals.Leds
-  #       ]
-
-  #     _vehicle ->
-  #       [
-  #         Pids,
-  #         Control,
-  #         Estimation,
-  #         Health,
-  #         Navigation,
-  #         Command,
-  #         Peripherals.Uart,
-  #         Peripherals.Gpio,
-  #         Peripherals.I2c,
-  #         Peripherals.Leds
-  #       ]
-  #   end
-  # end
 end

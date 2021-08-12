@@ -22,7 +22,7 @@ defmodule Via.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      # mod: {, []},
+      mod: {Via.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -31,7 +31,7 @@ defmodule Via.MixProject do
   defp deps do
     [
       # Dependencies for all targets
-      {:nerves, "~> 1.7.0", runtime: false},
+      {:nerves, "~> 1.7.11", runtime: false},
       {:shoehorn, "~> 0.7.0"},
       {:ring_logger, "~> 0.8.1"},
       {:toolshed, "~> 0.2.13"},
@@ -56,15 +56,12 @@ defmodule Via.MixProject do
       {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
       {:matrex, "~> 0.6.8"},
       # COPPERPUNK packages
-      {:ubx_interpreter,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
-      {:frsky_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/frsky-parser"},
-      {:dsm_parser, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/dsm-parser"},
-      {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"},
-      {:via_controllers,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers/"},
-      {:xplane_integration,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/xplane-integration/"},
+      {:ubx_interpreter, "~> 0.1.0"},
+      {:frsky_parser, "~> 0.1.0"},
+      {:dsm_parser, "~> 0.1.0"},
+      {:via_utils, "~> 0.1.0"},
+      {:via_controllers, "~> 0.1.0"},
+      {:xplane_integration,"~> 0.1.0"},
       {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
     ]
   end

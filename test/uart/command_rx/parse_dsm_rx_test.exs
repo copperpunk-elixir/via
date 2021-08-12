@@ -9,8 +9,8 @@ defmodule Uart.CommandRx.ParseDsmRxTest do
 
   test "Open Serial Port" do
     # Expects comments from Gps operator
-    config = Configuration.FixedWing.Cessna.Sim.Uart.get_dsm_rx_config("CP2104")
-    Uart.CommandRx.start_link(config)
+    config = Configuration.FixedWing.Cessna.Sim.Uart.config(["DsmRx_CP2104"])
+    Uart.CommandRx.start_link(config[:CommandRx])
 
     Process.sleep(200000)
   end

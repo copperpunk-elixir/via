@@ -151,7 +151,7 @@ defmodule Estimation.Estimator do
       if state.is_value_current.imu do
         imu = state.ins_kf.imu
         attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
-        Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
+        # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_attitude, attitude_rad},
