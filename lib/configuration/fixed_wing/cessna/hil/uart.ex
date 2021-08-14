@@ -1,16 +1,16 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Uart do
+defmodule Configuration.FixedWing.Cessna.Hil.Uart do
   require Logger
 
   @spec config() :: list()
   def config() do
-    peripherals = ["FrskyRx_CP2104"]
+    peripherals = ["Gps_u-blox", "Companion_Pico", "FrskyRx_CP2104"]
     config(peripherals)
   end
 
   @spec config(list()) :: list()
   def config(peripherals) do
     # Logger.warn("uart node type: #{node_type}")
-    # peripherals = Configuration.Utils.get_uart_peripherals("Sim")
+    # peripherals = Configuration.Utils.get_uart_peripherals("Hil")
     Logger.debug("peripherals: #{inspect(peripherals)}")
 
     Enum.reduce(peripherals, [], fn peripheral, acc ->

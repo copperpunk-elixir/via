@@ -24,7 +24,7 @@ defmodule Via.Application do
           {vehicle_type, model_type, node_type}
         end
 
-      full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
+      full_config = Configuration.Utils.config(vehicle_type, model_type, node_type)
       Via.Supervisor.start_universal_modules(full_config)
 
       Enum.each(full_config, fn {module, config} ->
@@ -39,15 +39,15 @@ defmodule Via.Application do
   @spec start_test(binary(), binary(), binary()) :: keyword()
   def start_test(vehicle_type, model_type, node_type) do
     prepare_environment()
-    full_config = Configuration.Utils.full_config(vehicle_type, model_type, node_type)
+    full_config = Configuration.Utils.config(vehicle_type, model_type, node_type)
     # Logger.debug("full_config: #{inspect(full_config)}")
     Via.Supervisor.start_universal_modules(full_config)
     full_config
   end
 
-  @spec start_test() :: keyword()
-  def start_test() do
-    start_test("FixedWing", "Cessna", "Sim")
+  @spec start_test(binary()) :: keyword()
+  def start_test(node_type \\ "Sim") do
+    start_test("FixedWing", "Cessna", node_type)
   end
 
   @spec prepare_environment() :: atom()

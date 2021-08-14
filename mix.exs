@@ -59,10 +59,11 @@ defmodule Via.MixProject do
       {:ubx_interpreter, "~> 0.1.0"},
       {:frsky_parser, "~> 0.1.0"},
       {:dsm_parser, "~> 0.1.0"},
-      {:via_utils, "~> 0.1.0"},
+      {:via_utils, "~> 0.1.1"},
       {:via_controllers, "~> 0.1.0"},
-      {:xplane_integration,"~> 0.1.0"},
+      {:xplane_integration,"~> 0.1.1"},
       {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
+      {:via_estimation, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-estimation/"},
     ]
   end
 

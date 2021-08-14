@@ -19,10 +19,10 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def init(config) do
-    ins_kf_module = Module.concat(Estimation, Keyword.fetch!(config, :ins_kf_type))
+    ins_kf_module = Keyword.fetch!(config, :ins_kf_type)
     ins_kf = apply(ins_kf_module, :new, [Keyword.fetch!(config, :ins_kf_config)])
 
-    agl_kf_module = Module.concat(Estimation, Keyword.fetch!(config, :agl_kf_type))
+    agl_kf_module = Keyword.fetch!(config, :agl_kf_type)
     agl_kf = apply(agl_kf_module, :new, [Keyword.fetch!(config, :agl_kf_config)])
 
     state = %{
@@ -99,7 +99,7 @@ defmodule Estimation.Estimator do
     imu_watchdog = Watchdog.reset(state.imu_watchdog)
     is_value_current = Map.put(state.is_value_current, :imu, true)
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
-    # Logger.debug("rpy: #{elapsed_time}: #{Estimation.Imu.Utils.rpy_to_string(ins_kf.imu, 2)}")
+    # Logger.debug("rpy: #{elapsed_time}: #{ViaUtils.imu_rpy_to_string(ins_kf.imu, 2)}")
     {:noreply,
      %{
        state
@@ -120,7 +120,7 @@ defmodule Estimation.Estimator do
 
     gps_watchdog = Watchdog.reset(state.gps_watchdog)
     is_value_current = Map.put(state.is_value_current, :gps, true)
-    # {position, velocity} = Estimation.SevenStateEkf.position_rrm_velocity_mps(kf)
+    # {position, velocity} = apply(ins_kf.__struct__, :position_rrm_velocity_mps, [kf])
     # Logger.debug("new position: #{ViaUtils.Location.to_string(position)}")
     # Logger.debug("new velocity: #{ViaUtils.Format.eftb_map(velocity, 1)}")
 

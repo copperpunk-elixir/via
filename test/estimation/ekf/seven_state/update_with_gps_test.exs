@@ -3,7 +3,7 @@ defmodule Estimation.Ekf.SevenState.UpdateWithGpsTest do
   require Logger
 
   setup do
-    full_config = Via.Application.start_test()
+    full_config = Via.Application.start_test("Hil")
     {:ok, full_config}
   end
 

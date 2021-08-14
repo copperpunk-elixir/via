@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Uart.PwmReader do
+defmodule Configuration.FixedWing.Cessna.Hil.Uart.PwmReader do
   require Logger
   @spec module_key_and_config(binary()) :: tuple()
   def module_key_and_config(uart_port) do

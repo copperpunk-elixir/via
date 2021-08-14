@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
+defmodule Configuration.FixedWing.Cessna.Hil.Estimation do
   @spec config() :: list()
   def config() do
     [

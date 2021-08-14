@@ -1,16 +1,41 @@
 defmodule Configuration.Utils do
   require Logger
 
-  @spec full_config(binary(), binary(), binary()) :: keyword()
-  def full_config(vehicle_type, model_type, node_type) do
+  @spec config(binary(), binary(), binary(), list()) :: keyword()
+  def config(vehicle_type, model_type, node_type, modules \\ []) do
     config_module = Module.concat([Configuration, vehicle_type, model_type, node_type, Config])
     Logger.debug("config mod: #{config_module}")
-    apply(config_module, :config, [])
+    Logger.debug("modules (if override): #{inspect(modules)}")
+    config(config_module, modules)
   end
 
-  @spec full_config_sim() :: keyword()
-  def full_config_sim() do
-    full_config("FixedWing", "Cessna", "Sim")
+  @spec config(module(), list()) :: list()
+  def config(config_module, modules \\ []) do
+    modules = if Enum.empty?(modules), do: apply(config_module, :modules, []), else: modules
+    Logger.debug("modules: #{inspect(modules)}")
+
+    root_module_name =
+      Module.split(config_module)
+      |> Enum.drop(-1)
+      |> Module.concat()
+
+    Enum.reduce(modules, [], fn module, acc ->
+      full_module_name = Module.concat(root_module_name, module)
+      single_config = apply(full_module_name, :config, [])
+      # IO.puts("config for module #{inspect(module)}: #{inspect(single_config)}")
+      # IO.puts("full config so far: #{inspect(acc)}")
+      Keyword.put(acc, module, single_config)
+    end)
+  end
+
+  @spec config_sim() :: keyword()
+  def config_sim() do
+    config("FixedWing", "Cessna", "Sim")
+  end
+
+  @spec config_hil() :: keyword()
+  def config_hil() do
+    config("FixedWing", "Cessna", "Hil")
   end
 
   @spec single_config(atom(), binary(), binary(), binary()) :: keyword()

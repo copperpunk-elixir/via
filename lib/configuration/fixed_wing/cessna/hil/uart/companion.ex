@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Uart.Companion do
+defmodule Configuration.FixedWing.Cessna.Hil.Uart.Companion do
   require Logger
   require ViaUtils.Constants, as: VC
   require Command.ActuatorNames, as: Act
