@@ -63,7 +63,7 @@ defmodule Via.MixProject do
       {:via_controllers, "~> 0.1.0"},
       {:xplane_integration,"~> 0.1.1"},
       {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
-      {:via_estimation, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-estimation/"},
+      {:via_estimation, "~> 0.1.0"}
     ]
   end
 

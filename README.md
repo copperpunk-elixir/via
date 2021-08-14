@@ -1,9 +1,8 @@
 # Via
 
-Welcome! You are looking at the open source version of an Elixir-based autopilot that was developed by COPPERPUNK. The only difference between this and the other version is that hopefully this one is better. In order to make that the case, we started over. This means the documentation is basically non-existent and the features are fewer (for now). If you would like to read about the older version (code name `Gristle`), you can check out our blog : https://www.copperpunk.com/blog/categories/gristle.
+Welcome! You are looking at the open source version of an Elixir-based autopilot that is being developed by COPPERPUNK. The only difference between this and the previous version is that hopefully this one is better. In order to make that the case, we started over. This means the documentation is basically non-existent and the features are fewer (for now). If you would like to read about the older version (code name `Gristle`), you can check out our blog : https://www.copperpunk.com/blog/categories/gristle.
 
-If you are reading this, then you're probably already aware of what Via is all about. At some point there will actually be words to describe it, but right now we're just working on making a version of the software available to the public. Stay tuned.
-
+Via is not ready for developer collaboration just yet. Things are still changing quite a bit, so we wouldn't want anyone to waste their time writing code that will be obsolete in a week. However, we would love for people to start using the software. [This document](docs/why_via.md) outlines a few reasons why Via might be worth your time.
 ## Simulation
 Via integrates with X-Plane in order to create a software-in-the-loop (SIL) testing environment. Instructions on how to run Via in conjunction with X-Plane can be found [here](docs/user/xplane_sim.md).
 Integration with RealFlight will follow soon.

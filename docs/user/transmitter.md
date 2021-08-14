@@ -1,11 +1,6 @@
-# Joystick Setup
-A Frsky transmitter can be connected directly to the computer running Via without the need for additional hardware by following these steps:
-* Turn on the transmitter
-* Connect to the computer via mini-USB cable
-* Select "USB Joystick (HID)" mode on the transmitter (see picture)
-<p align="center"><img src="../resources/frsky_joystick.jpeg" width="50%"></p>
-<br>
-<br>
+# Transmitter Setup
+
+If you have not set up your transmitter before, please first visit [FrSky](frsky.md) or [Spektrum](spektrum.md) pages to learn how to connect the transmitter to your computer.
 
 # X-Plane Channel Ouput
 Via uses 4 different "Pilot Control Levels" which affect the type of commands that are used, and 3 different "Autopilot Control Modes" that determine the source of the commands. They will not be discussed here, because there is another section of documentation that describes the command flow.<br>
