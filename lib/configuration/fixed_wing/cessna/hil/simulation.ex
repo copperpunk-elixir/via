@@ -1,14 +1,8 @@
 defmodule Configuration.FixedWing.Cessna.Hil.Simulation do
   require Comms.Groups, as: Groups
-  require Configuration.LoopIntervals, as: LoopIntervals
   @spec config() :: list()
   def config do
     [
-      ViaJoystick: [
-        num_channels: 10,
-        subscriber_groups: [Groups.command_channels()],
-        publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
-      ],
       XplaneIntegration: [
         receive: [
           port: 49002,

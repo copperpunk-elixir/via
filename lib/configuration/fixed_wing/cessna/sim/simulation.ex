@@ -4,11 +4,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
   @spec config() :: list()
   def config do
     [
-      ViaJoystick: [
-        num_channels: 10,
-        subscriber_groups: [Groups.command_channels()],
-        publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
-      ],
       XplaneIntegration: [
         receive: [
           port: 49002,
@@ -65,6 +60,16 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
             integrator_airspeed_min_mps: 5.0
           ]
         ]
+      ]
+    ]
+  end
+
+  def joystick() do
+    [
+      ViaJoystick: [
+        num_channels: 10,
+        subscriber_groups: [Groups.command_channels()],
+        publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
       ]
     ]
   end

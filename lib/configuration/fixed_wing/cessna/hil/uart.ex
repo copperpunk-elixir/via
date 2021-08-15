@@ -3,7 +3,7 @@ defmodule Configuration.FixedWing.Cessna.Hil.Uart do
 
   @spec config() :: list()
   def config() do
-    peripherals = ["Gps_u-blox", "Companion_Pico", "FrskyRx_CP2104"]
+    peripherals = ["FrskyRx_CP2104"]
     config(peripherals)
   end
 

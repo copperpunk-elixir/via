@@ -34,8 +34,7 @@ defmodule Command.RemotePilot do
 
     state = %{
       num_channels: Keyword.fetch!(config, :num_channels),
-      current_pcl_channel_config:
-        Keyword.fetch!(config, :current_pcl_channel_config),
+      current_pcl_channel_config: Keyword.fetch!(config, :current_pcl_channel_config),
       any_pcl_channel_config: any_pcl_channel_config,
       remote_pilot_override_channels: Keyword.fetch!(config, :remote_pilot_override_channels),
       pilot_control_level_channel: pilot_control_level_channel,
@@ -111,8 +110,7 @@ defmodule Command.RemotePilot do
           # Logger.debug("rp goals: #{ViaUtils.Format.eftb_map(goals, 3)}")
           current_pcl_goals = get_goals_for_channels(pcl_channels, channel_value_map)
 
-          any_pcl_goals =
-            get_goals_for_channels(state.any_pcl_channel_config, channel_value_map)
+          any_pcl_goals = get_goals_for_channels(state.any_pcl_channel_config, channel_value_map)
 
           {classification, time_validity_ms} =
             state.goals_sorter_classification_and_time_validity_ms
