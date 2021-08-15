@@ -1,6 +1,6 @@
 # Transmitter Setup
 
-If you have not set up your transmitter before, please first visit [FrSky](frsky.md) or [Spektrum](spektrum.md) pages to learn how to connect the transmitter to your computer.
+If you have not set up your transmitter before, please first visit the [FrSky](frsky.md) or [Spektrum](spektrum.md) pages to learn how to connect the transmitter to your computer.
 
 # X-Plane Channel Ouput
 Via uses 4 different "Pilot Control Levels" which affect the type of commands that are used, and 3 different "Autopilot Control Modes" that determine the source of the commands. They will not be discussed here, because there is another section of documentation that describes the command flow.<br>
