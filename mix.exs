@@ -29,7 +29,7 @@ defmodule Via.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    [
+    deps = [
       # Dependencies for all targets
       {:nerves, "~> 1.7.11", runtime: false},
       {:shoehorn, "~> 0.7.0"},
@@ -61,10 +61,12 @@ defmodule Via.MixProject do
       {:dsm_parser, "~> 0.1.1"},
       {:via_utils, "~> 0.1.1"},
       {:via_controllers, "~> 0.1.0"},
-      {:xplane_integration,"~> 0.1.1"},
-      {:via_joystick, "~>0.1.0"},
+      {:xplane_integration, "~> 0.1.1"},
+      # {:via_joystick, "~>0.1.0"},
       {:via_estimation, "~> 0.1.0"}
     ]
+
+    if :os.type() == {:unix, :linux}, do: deps ++ [{:via_joystick, "~>0.1.0"}], else: deps
   end
 
   def release do
