@@ -45,7 +45,7 @@ defmodule Via.Application do
   @spec start_sim() :: atom()
   def start_sim() do
     input_type =
-      System.get_env("input", "")
+      System.get_env("input", "joystick")
       |> String.downcase()
 
     case input_type do
@@ -61,8 +61,8 @@ defmodule Via.Application do
       "dsm" ->
         start_sim_dsm(get_usb_converter_name())
 
-      true ->
-        raise "Input must be Joystick, FrSky, or Dsm (case-insensitive). Please try again."
+      other ->
+        raise "#{inspect(other)} not recognized. Input must be Joystick, FrSky, or Dsm (case-insensitive). Please try again."
     end
   end
 

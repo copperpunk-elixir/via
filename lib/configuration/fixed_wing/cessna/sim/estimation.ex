@@ -29,7 +29,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
         ],
         agl_kf_type: ViaEstimation.Ekf.Agl,
         agl_kf_config: [
-          # 3deg^2
           q_att_sq: 0.00274,
           q_zdot_sq: 0.25,
           q_z_sq: 0.1,

@@ -140,65 +140,65 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
-    cluster_status_offset_x = vp_width - cluster_status_side - 40
-    cluster_status_offset_y = vp_height - cluster_status_side - 20
+    # cluster_status_offset_x = vp_width - cluster_status_side - 40
+    # cluster_status_offset_y = vp_height - cluster_status_side - 20
 
-    {graph, _offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_rectangle_to_graph(graph, %{
-        id: :cluster_status,
-        width: cluster_status_side,
-        height: cluster_status_side,
-        offset_x: cluster_status_offset_x,
-        offset_y: cluster_status_offset_y,
-        fill: :red
-      })
+    # {graph, _offset_x, _offset_y} =
+    #   Display.Scenic.Gcs.Utils.add_rectangle_to_graph(graph, %{
+    #     id: :cluster_status,
+    #     width: cluster_status_side,
+    #     height: cluster_status_side,
+    #     offset_x: cluster_status_offset_x,
+    #     offset_y: cluster_status_offset_y,
+    #     fill: :red
+    #   })
 
-    # Save Log
-    {graph, _offset_x, button_offset_y} =
-      Display.Scenic.Gcs.Utils.add_save_log_to_graph(graph, %{
-        button_id: :save_log,
-        text_id: :save_log_filename,
-        button_width: 100,
-        button_height: 35,
-        offset_x: 10,
-        offset_y: vp_height - 100,
-        font_size: @font_size,
-        text_width: 400
-      })
+    # # Save Log
+    # {graph, _offset_x, button_offset_y} =
+    #   Display.Scenic.Gcs.Utils.add_save_log_to_graph(graph, %{
+    #     button_id: :save_log,
+    #     text_id: :save_log_filename,
+    #     button_width: 100,
+    #     button_height: 35,
+    #     offset_x: 10,
+    #     offset_y: vp_height - 100,
+    #     font_size: @font_size,
+    #     text_width: 400
+    #   })
 
-    {graph, _offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_peripheral_control_to_graph(graph, %{
-        allow_id: {:peri_ctrl, :allow},
-        deny_id: {:peri_ctrl, :deny},
-        button_width: 150,
-        button_height: 35,
-        offset_x: 10,
-        offset_y: button_offset_y + 10,
-        font_size: @font_size,
-        text_width: 400
-      })
+    # {graph, _offset_x, _offset_y} =
+    #   Display.Scenic.Gcs.Utils.add_peripheral_control_to_graph(graph, %{
+    #     allow_id: {:peri_ctrl, :allow},
+    #     deny_id: {:peri_ctrl, :deny},
+    #     button_width: 150,
+    #     button_height: 35,
+    #     offset_x: 10,
+    #     offset_y: button_offset_y + 10,
+    #     font_size: @font_size,
+    #     text_width: 400
+    #   })
 
-    batteries = ["cluster", "motor"]
+    # batteries = ["cluster", "motor"]
 
-    {graph, _offset_x, _offset_y} =
-      Enum.reduce(batteries, {graph, goals_offset_x, offset_y}, fn battery,
-                                                                   {graph, off_x, off_y} ->
-        ids = [{battery, :V}, {battery, :I}, {battery, :mAh}]
-        # battery_str = Atom.to_string(battery)
-        labels = [battery <> " V", battery <> " I", battery <> " mAh"]
+    # {graph, _offset_x, _offset_y} =
+    #   Enum.reduce(batteries, {graph, goals_offset_x, offset_y}, fn battery,
+    #                                                                {graph, off_x, off_y} ->
+    #     ids = [{battery, :V}, {battery, :I}, {battery, :mAh}]
+    #     # battery_str = Atom.to_string(battery)
+    #     labels = [battery <> " V", battery <> " I", battery <> " mAh"]
 
-        Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
-          id: {:battery, battery},
-          width: battery_width,
-          height: 2 * battery_height,
-          offset_x: off_x,
-          offset_y: off_y,
-          spacer_y: spacer_y,
-          labels: labels,
-          ids: ids,
-          font_size: @battery_font_size
-        })
-      end)
+    #     Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
+    #       id: {:battery, battery},
+    #       width: battery_width,
+    #       height: 2 * battery_height,
+    #       offset_x: off_x,
+    #       offset_y: off_y,
+    #       spacer_y: spacer_y,
+    #       labels: labels,
+    #       ids: ids,
+    #       font_size: @battery_font_size
+    #     })
+    #   end)
 
     # subscribe to the simulated temperature sensor
     ViaUtils.Comms.start_operator(__MODULE__)

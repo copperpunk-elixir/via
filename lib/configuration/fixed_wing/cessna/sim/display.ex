@@ -2,15 +2,23 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
   @spec config() :: list()
   def config() do
     gcs_scene = Display.Scenic.Gcs.FixedWing
-    planner_scene = nil #Display.Scenic.Planner
+    # Display.Scenic.Planner
+    planner_scene = nil
+
+    driver_module =
+      if Mix.target() == :host do
+        Scenic.Driver.Glfw
+      else
+        Scenic.Driver.Nerves.Rpi
+      end
 
     gcs_config = %{
       name: :gcs,
-      size: {900, 800},
+      size: {1024, 600},
       default_scene: {gcs_scene, nil},
       drivers: [
         %{
-          module: Scenic.Driver.Glfw,
+          module: driver_module,
           name: :gcs_driver,
           opts: [resizeable: false, title: "gcs"]
         }
@@ -24,7 +32,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
       default_scene: {planner_scene, nil},
       drivers: [
         %{
-          module: Scenic.Driver.Glfw,
+          module: driver_module,
           name: :planner_driver,
           opts: [resizeable: false, title: "planner"]
         }

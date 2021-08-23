@@ -37,9 +37,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
 
     Map.get(classification_all, sorter, %{})
     |> Map.get(sender, nil)
-
-    # time_validity = Map.get(time_validity_all, sorter, 0)
-    # Logger.debug("class/time: #{inspect(classification)}/#{time_validity}")
   end
 
   @spec message_sorters_for_module(atom()) :: list()

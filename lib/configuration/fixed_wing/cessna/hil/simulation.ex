@@ -20,7 +20,6 @@ defmodule Configuration.FixedWing.Cessna.Hil.Simulation do
         send: [
           source_port: 49003,
           destination_port: 49000,
-          destination_ip: {192, 168, 7, 197}
         ]
       ],
       Interface: [

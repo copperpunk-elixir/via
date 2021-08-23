@@ -41,11 +41,11 @@ defmodule Via.MixProject do
       {:nerves_pack, "~> 0.4.0", targets: @all_targets},
 
       # Dependencies for specific targets
-      {:nerves_system_rpi, "~> 1.13", runtime: false, targets: :rpi},
-      {:nerves_system_rpi0, "~> 1.13", runtime: false, targets: :rpi0},
-      {:nerves_system_rpi3, "~> 1.13", runtime: false, targets: :rpi3},
-      {:nerves_system_rpi3a, "~> 1.13", runtime: false, targets: :rpi3a},
-      {:nerves_system_rpi4, "~> 1.13", runtime: false, targets: :rpi4},
+      {:nerves_system_rpi, "~> 1.16.2", runtime: false, targets: :rpi},
+      {:nerves_system_rpi0, "~> 1.16.2", runtime: false, targets: :rpi0},
+      {:nerves_system_rpi3, "~> 1.16.2", runtime: false, targets: :rpi3},
+      {:nerves_system_rpi3a, "~> 1.16.2", runtime: false, targets: :rpi3a},
+      {:nerves_system_rpi4, "~> 1.16.2", runtime: false, targets: :rpi4},
       # Scenic dependencies
       {:scenic, "~> 0.10.3"},
       {:scenic_driver_glfw, "~> 0.10.1", targets: :host},
@@ -54,18 +54,18 @@ defmodule Via.MixProject do
       {:vintage_net, "~> 0.9.2", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.9.1", targets: @all_targets},
       {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
-      {:matrex, "~> 0.6.8"},
       # COPPERPUNK packages
       {:ubx_interpreter, "~> 0.1.0"},
       {:frsky_parser, "~> 0.1.0"},
       {:dsm_parser, "~> 0.1.1"},
       {:via_utils, "~> 0.1.1"},
       {:via_controllers, "~> 0.1.0"},
-      {:xplane_integration, "~> 0.1.1"},
-      # {:via_joystick, "~>0.1.0"},
+      {:xplane_integration, "~> 0.1.2"},
       {:via_estimation, "~> 0.1.0"}
     ]
 
+    # via_joystick only works on Linux machines
+    # Need to see what :os.type shows for R.Pi
     if :os.type() == {:unix, :linux}, do: deps ++ [{:via_joystick, "~>0.1.0"}], else: deps
   end
 
