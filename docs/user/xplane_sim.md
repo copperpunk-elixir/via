@@ -6,7 +6,7 @@ Via uses off-the-shelf software for its simulation environments. Someday we will
 1.  [Transmitter setup](transmitter.md).
 2.  [Install X-Plane](https://www.x-plane.com/desktop/try-it/) (the demo version is fine, and it doesn't need to be on the same computer as Via).
 3.  Modify X-Plane settings to output data via UDP. <p align="center"><img src="../resources/xplane_data_output.jpg" width="70%"></p>
-    In case you don't like looking at pictures, the following messages must have the "Network via UDP" box checked:
+    In case you don't like looking at pictures, the following messages must have the **Network via UDP** box checked:
     *   3: Speeds
     *   16: Angular Velocities
     *   17: Pitch, roll, & headings
