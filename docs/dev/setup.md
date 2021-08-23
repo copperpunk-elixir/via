@@ -5,14 +5,15 @@ We use Ubuntu 20.04 for most our development. However, we occasionally find ours
 Please follow these instructions: https://hexdocs.pm/nerves/installation.html
 
 ## Step 2: Install Scenic Dependencies (for use with ground station)
-NOTE: At some point we will transition to Phoenix LiveView for our ground station software so that it can be used on any machine with a browser. However, we will be sticking with Scenic the foreseeable future.<br>
+NOTE: At some point we will transition to Phoenix LiveView for our ground station software so that it can be used on any machine with a browser. Until then we will be sticking with Scenic.<br>
 Please follow these instructions: https://github.com/boydm/scenic/blob/master/guides/install_dependencies.md
 
 ## Step 3: Fork Via repository
-All stable code lives on the `main` branch, and that is where we typically work. When we are developing large new features or performing significant refactors, we will create a single branch that will be deleted once its code is merged. Be sure to consult the team before starting on a new task.
+All stable code lives on the `main` branch, and that is where we typically work. When we are developing large new features or performing significant refactors, we will create a single branch that will be deleted once its code is merged.
+> There will be much more to come regarding collaboration strategies.
 
 ## Step 4: Ensure that the code compiles
-In a terminal, navigate to the `via` directory and execute the command 
+In a terminal, navigate to the `via` directory and execute the following:
 ```
 MIX_ENV=test iex -S mix
 ```
