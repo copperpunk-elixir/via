@@ -37,7 +37,6 @@ defmodule Estimation.Estimator do
       airspeed_mps: 0.0,
       ins_kf: ins_kf,
       agl_kf: agl_kf,
-      start_time: :erlang.monotonic_time(:microsecond),
       is_value_current: %{
         imu: false,
         gps: false,
@@ -57,7 +56,7 @@ defmodule Estimation.Estimator do
       airspeed_watchdog:
         Watchdog.new(
           {@clear_is_value_current_callback, @airspeed},
-          2 *LoopIntervals.airspeed_receive_max_ms()
+          2 * LoopIntervals.airspeed_receive_max_ms()
         ),
       agl_watchdog:
         Watchdog.new(
@@ -79,7 +78,7 @@ defmodule Estimation.Estimator do
 
     ViaUtils.Process.start_loop(
       self(),
-      LoopIntervals.position_velocity_publish_ms,
+      LoopIntervals.position_velocity_publish_ms(),
       @position_velocity_loop
     )
 
@@ -95,7 +94,10 @@ defmodule Estimation.Estimator do
   @impl GenServer
   def handle_cast({Groups.dt_accel_gyro_val(), values}, state) do
     # Logger.debug("dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
+    # start_time = :erlang.monotonic_time(:nanosecond)
     ins_kf = apply(state.ins_kf.__struct__, :predict, [state.ins_kf, values])
+    # end_time = :erlang.monotonic_time(:nanosecond)
+    # Logger.debug("pdt: #{ViaUtils.Format.eftb((end_time - start_time) * 1.0e-6, 3)}ms")
     imu_watchdog = Watchdog.reset(state.imu_watchdog)
     is_value_current = Map.put(state.is_value_current, :imu, true)
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
@@ -114,9 +116,14 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_position_velocity_val(), _itow_s, position_rrm, velocity_mps},
         state
       ) do
-        # Logger.warn("rx gps")
+    # Logger.warn("rx gps")
+    # start_time = :erlang.monotonic_time(:nanosecond)
+
     ins_kf =
       apply(state.ins_kf.__struct__, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
+
+    # end_time = :erlang.monotonic_time(:nanosecond)
+    # Logger.debug("gpsdt: #{ViaUtils.Format.eftb((end_time - start_time) * 1.0e-6, 3)}ms")
 
     gps_watchdog = Watchdog.reset(state.gps_watchdog)
     is_value_current = Map.put(state.is_value_current, :gps, true)
@@ -139,7 +146,10 @@ defmodule Estimation.Estimator do
         state
       ) do
     # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
+    # start_time = :erlang.monotonic_time(:nanosecond)
     ins_kf = apply(state.ins_kf.__struct__, :update_from_heading, [state.ins_kf, rel_heading_rad])
+    # end_time = :erlang.monotonic_time(:nanosecond)
+    # Logger.debug("hdgdt: #{ViaUtils.Format.eftb((end_time - start_time) * 1.0e-6, 3)}ms")
 
     {:noreply, %{state | ins_kf: ins_kf}}
   end
@@ -154,13 +164,13 @@ defmodule Estimation.Estimator do
         # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_attitude, attitude_rad},
+          {Groups.estimation_attitude(), attitude_rad},
           self()
         )
 
         %{state | attitude_rad: attitude_rad}
       else
-        Logger.debug("IMU is not current.")
+        # Logger.debug("IMU is not current.")
         state
       end
 
@@ -246,7 +256,7 @@ defmodule Estimation.Estimator do
             ground_altitude_m: ground_altitude_m
         }
       else
-        Logger.debug("GPS is not current")
+        # Logger.debug("GPS is not current")
         state
       end
 

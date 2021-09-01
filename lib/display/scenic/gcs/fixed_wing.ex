@@ -20,6 +20,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
   # @height 50
   # @labels {"", "", ""}
   @rect_border 6
+  @ip_address_loop :ip_address_loop
 
   @moduledoc """
   This version of `Sensor` illustrates using spec functions to
@@ -30,7 +31,8 @@ defmodule Display.Scenic.Gcs.FixedWing do
   # ============================================================================
   @impl true
   def init(_, opts) do
-    # Logger.debug("Sensor.init: #{inspect(opts)}")
+    Logger.debug("Sensor.init: #{inspect(opts)}")
+
     {:ok, %Scenic.ViewPort.Status{size: {vp_width, vp_height}}} =
       opts[:viewport]
       |> Scenic.ViewPort.info()
@@ -42,6 +44,8 @@ defmodule Display.Scenic.Gcs.FixedWing do
     goals_height = 50
     battery_width = 400
     battery_height = 40
+    ip_width = 300
+    ip_height = 40
     cluster_status_side = 100
     # build the graph
     offset_x_origin = 10
@@ -140,6 +144,19 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
+    {graph, _offset_x, offset_y} =
+      Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
+        id: :ip_address_row,
+        width: ip_width,
+        height: 2 * ip_height,
+        offset_x: goals_offset_x,
+        offset_y: offset_y,
+        spacer_y: spacer_y,
+        labels: ["IP address"],
+        ids: [:ip_address],
+        font_size: @font_size
+      })
+
     # cluster_status_offset_x = vp_width - cluster_status_side - 40
     # cluster_status_offset_y = vp_height - cluster_status_side - 20
 
@@ -205,14 +222,42 @@ defmodule Display.Scenic.Gcs.FixedWing do
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
     ViaUtils.Comms.join_group(__MODULE__, Groups.current_pilot_control_level_and_commands())
+
+    ip_address_timer = ViaUtils.Process.start_loop(
+      self(),
+      1000,
+      @ip_address_loop
+    )
+
     # ViaUtils.Comms.join_group(__MODULE__, :tx_battery)
     # ViaUtils.Comms.join_group(__MODULE__, :cluster_status)
     state = %{
       graph: graph,
-      save_log_file: ""
+      save_log_file: "",
+      ip_address_timer: ip_address_timer
     }
 
     {:ok, state, push: graph}
+  end
+
+  def handle_info(@ip_address_loop, state) do
+    Logger.debug("ip loop")
+    ip_address_string =
+      if Via.Application.is_target() do
+        ip_address = Network.Connection.get_ip_address_eth0()
+        if is_nil(ip_address), do: "", else: VintageNet.IP.ip_to_string(ip_address)
+      else
+        ""
+      end
+
+    graph = Scenic.Graph.modify(state.graph, :ip_address, &text(&1, ip_address_string))
+    ip_address_timer =
+      if ip_address_string != "" do
+        ViaUtils.Process.stop_loop(state.ip_address_timer)
+      else
+        state.ip_address_timer
+      end
+    {:noreply, %{state | graph: graph, ip_address_timer: ip_address_timer}, push: graph}
   end
 
   # --------------------------------------------------------
@@ -234,14 +279,18 @@ defmodule Display.Scenic.Gcs.FixedWing do
       |> Scenic.Graph.modify(:roll, &text(&1, roll <> @degrees))
       |> Scenic.Graph.modify(:pitch, &text(&1, pitch <> @degrees))
       |> Scenic.Graph.modify(:yaw, &text(&1, yaw <> @degrees))
+
     {:noreply, %{state | graph: graph}, push: graph}
   end
 
   @impl true
   def handle_cast({Groups.estimation_position_velocity(), position, velocity}, state) do
+    lat =
+      Map.get(position, :latitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
 
-    lat = Map.get(position, :latitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
-    lon = Map.get(position, :longitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
+    lon =
+      Map.get(position, :longitude_rad, 0) |> ViaUtils.Math.rad2deg() |> ViaUtils.Format.eftb(5)
+
     alt = Map.get(position, :altitude_m, 0) |> ViaUtils.Format.eftb(2)
     agl = Map.get(position, :agl_m, 0) |> ViaUtils.Format.eftb(2)
 
@@ -341,7 +390,12 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
     graph =
       if pcl < CCT.pilot_control_level_4() do
-        clear_text_values(graph, [:speed_4_cmd, :course_rate_cmd, :altitude_rate_cmd, :sideslip_4_cmd])
+        clear_text_values(graph, [
+          :speed_4_cmd,
+          :course_rate_cmd,
+          :altitude_rate_cmd,
+          :sideslip_4_cmd
+        ])
       else
         cmds = Map.get(all_cmds, CCT.pilot_control_level_4(), %{})
         speed = Map.get(cmds, :groundspeed_mps, 0) |> ViaUtils.Format.eftb(1)

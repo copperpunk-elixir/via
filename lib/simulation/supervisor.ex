@@ -16,16 +16,16 @@ defmodule Simulation.Supervisor do
   @impl Supervisor
   def init(config) do
     # {interface_config, _config} = Keyword.pop!(config, :Interface)
-    children = Enum.reduce(config, [], fn {module_name, module_config}, acc ->
-      # Logger.debug("mod name/config: #{module_name}/#{inspect(module_config)}")
-      if module_name == :Interface do
-        acc ++ [{Simulation.Interface, module_config}]
-      else
+    children =
+      Enum.reduce(config, [], fn {module_name, module_config}, acc ->
+        # Logger.debug("mod name/config: #{module_name}/#{inspect(module_config)}")
+        # if module_name == :Interface do
+        # acc ++ [{Simulation.Interface, module_config}]
+        # else
         acc ++ [{Module.concat([module_name]), module_config}]
-      end
-      # apply(Module.concat([module_name]), :start_link, [module_config])
-    end)
-
+        # end
+        # apply(Module.concat([module_name]), :start_link, [module_config])
+      end)
 
     # children = [{Simulation.Interface, interface_config}]
     Supervisor.init(children, strategy: :one_for_one)

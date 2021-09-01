@@ -24,4 +24,7 @@ defmodule Configuration.LoopIntervals do
 
   # JOYSTICK
   defmacro joystick_channels_publish_ms, do: 20
+
+  # KEYBOARD
+  defmacro keyboard_channels_publish_ms, do: 20
 end

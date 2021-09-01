@@ -1,4 +1,5 @@
 defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
+  require Configuration.LoopIntervals, as: LoopIntervals
   @spec config() :: list()
   def config() do
     [
@@ -17,6 +18,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
           gpsvel_xy_std: 0.088,
           gpsvel_z_std: 0.31,
           gpsyaw_std: 0.02,
+          expected_imu_dt_s: LoopIntervals.imu_receive_max_ms*(1.0e-3),
 
           # Mahony
           imu_config: [

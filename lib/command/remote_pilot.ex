@@ -105,7 +105,7 @@ defmodule Command.RemotePilot do
               pilot_control_level
             )
 
-          # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(channels)}")
+          # Logger.debug("pcl/channels: #{pilot_control_level}/#{inspect(pcl_channels)}")
 
           # Logger.debug("rp goals: #{ViaUtils.Format.eftb_map(goals, 3)}")
           current_pcl_goals = get_goals_for_channels(pcl_channels, channel_value_map)
@@ -119,6 +119,8 @@ defmodule Command.RemotePilot do
             current_pcl: current_pcl_goals,
             any_pcl: any_pcl_goals
           }
+          # Logger.debug("cvmap: #{ViaUtils.Format.eftb_map(channel_value_map, 3)}")
+          # Logger.debug("pcl_goals: #{ViaUtils.Format.eftb_map(current_pcl_goals, 3)}")
 
           ViaUtils.Comms.send_global_msg_to_group(
             __MODULE__,
@@ -156,7 +158,7 @@ defmodule Command.RemotePilot do
     {:noreply, Map.put(state, key, [])}
   end
 
-  @spec get_goals_for_channels(map(), map()) :: map()
+  @spec     get_goals_for_channels(map(), map()) :: map()
   def get_goals_for_channels(channels, channel_value_map) do
     Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
       output =
@@ -189,13 +191,15 @@ defmodule Command.RemotePilot do
 
   @spec get_goal_from_rx_value(number(), tuple()) :: number()
   def get_goal_from_rx_value(value, {output_min, output_mid, output_max, multiplier, deadband}) do
-    value = ViaUtils.Math.apply_deadband(value, deadband)
+    # value = ViaUtils.Math.apply_deadband(value, deadband)
     unscaled_value = multiplier * value
 
     if unscaled_value > 0 do
       output_mid + unscaled_value * (output_max - output_mid)
+      |> ViaUtils.Math.apply_deadband( deadband)
     else
       output_mid + unscaled_value * (output_mid - output_min)
+      |> ViaUtils.Math.apply_deadband( deadband)
     end
   end
 end

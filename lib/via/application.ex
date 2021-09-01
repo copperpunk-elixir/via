@@ -5,14 +5,21 @@ defmodule Via.Application do
   def start(_type, _args) do
     prepare_environment()
 
-    unless Mix.env() == :test do
-      node_type = System.get_env("node")
-
-      if is_nil(node_type) or node_type == "Sim" do
+    cond do
+      is_target() ->
         start_sim()
-      else
-        start_real_vehicle()
-      end
+
+      Via.Application.get_mix_env() != "test" ->
+        node_type = System.get_env("node")
+
+        if is_nil(node_type) or node_type == "Sim" do
+          start_sim()
+        else
+          start_real_vehicle()
+        end
+
+      true ->
+        :ok
     end
 
     {:ok, self()}
@@ -45,12 +52,15 @@ defmodule Via.Application do
   @spec start_sim() :: atom()
   def start_sim() do
     input_type =
-      System.get_env("input", "joystick")
+      System.get_env("input", "keyboard")
       |> String.downcase()
 
     case input_type do
       "" ->
         raise "Input not specified. Please add system argument input="
+
+      "keyboard" ->
+        start_sim_keyboard()
 
       "joystick" ->
         start_sim_joystick()
@@ -62,7 +72,7 @@ defmodule Via.Application do
         start_sim_dsm(get_usb_converter_name())
 
       other ->
-        raise "#{inspect(other)} not recognized. Input must be Joystick, FrSky, or Dsm (case-insensitive). Please try again."
+        raise "#{inspect(other)} not recognized. Input must be Joystick, Keyboard, FrSky, or Dsm (case-insensitive). Please try again."
     end
   end
 
@@ -73,6 +83,18 @@ defmodule Via.Application do
     simulation_config =
       full_config[:Simulation]
       |> Kernel.++(Configuration.FixedWing.Cessna.Sim.Simulation.joystick())
+
+    full_config = Keyword.put(full_config, :Simulation, simulation_config)
+    start_with_config(full_config)
+  end
+
+  @spec start_sim_keyboard() :: atom()
+  def start_sim_keyboard() do
+    full_config = Configuration.Utils.config("FixedWing", "Cessna", "Sim")
+
+    simulation_config =
+      full_config[:Simulation]
+      |> Kernel.++(Configuration.FixedWing.Cessna.Sim.Simulation.keyboard())
 
     full_config = Keyword.put(full_config, :Simulation, simulation_config)
     start_with_config(full_config)
@@ -142,5 +164,16 @@ defmodule Via.Application do
     # if Common.Utils.is_target?() do
     RingLogger.attach()
     # end
+  end
+
+  @spec is_target() :: boolean()
+  def is_target() do
+    String.contains?(File.cwd!(), "/srv/erlang")
+  end
+
+  @spec get_mix_env() :: binary()
+  def get_mix_env() do
+    System.get_env()
+    |> Map.get("MIX_ENV", "")
   end
 end

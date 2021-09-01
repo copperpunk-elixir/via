@@ -38,7 +38,7 @@ defmodule Via.MixProject do
 
       # Dependencies for all targets except :host
       {:nerves_runtime, "~> 0.11.3", targets: @all_targets},
-      {:nerves_pack, "~> 0.4.0", targets: @all_targets},
+      {:nerves_pack, "~> 0.4.2", targets: @all_targets},
 
       # Dependencies for specific targets
       {:nerves_system_rpi, "~> 1.16.2", runtime: false, targets: :rpi},
@@ -47,26 +47,37 @@ defmodule Via.MixProject do
       {:nerves_system_rpi3a, "~> 1.16.2", runtime: false, targets: :rpi3a},
       {:nerves_system_rpi4, "~> 1.16.2", runtime: false, targets: :rpi4},
       # Scenic dependencies
-      {:scenic, "~> 0.10.3"},
+      {:scenic, "~> 0.10.5"},
       {:scenic_driver_glfw, "~> 0.10.1", targets: :host},
+      {:scenic_driver_nerves_rpi, "0.10.0", targets: @all_targets},
       {:scenic_sensor, "~> 0.7"},
       {:circuits_uart, "~> 1.4.2"},
-      {:vintage_net, "~> 0.9.2", targets: @all_targets},
-      {:vintage_net_wifi, "~> 0.9.1", targets: @all_targets},
-      {:vintage_net_ethernet, "~> 0.9.0", targets: @all_targets},
+      {:vintage_net, "~> 0.10.5", targets: @all_targets},
+      {:vintage_net_wifi, "~> 0.10.5", targets: @all_targets},
+      {:vintage_net_ethernet, "~> 0.10.2", targets: @all_targets},
       # COPPERPUNK packages
       {:ubx_interpreter, "~> 0.1.0"},
       {:frsky_parser, "~> 0.1.0"},
       {:dsm_parser, "~> 0.1.1"},
       {:via_utils, "~> 0.1.1"},
-      {:via_controllers, "~> 0.1.0"},
+      {:via_controllers, "~> 0.1.1"},
       {:xplane_integration, "~> 0.1.2"},
-      {:via_estimation, "~> 0.1.0"}
+      # {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
+      {:via_estimation, "~> 0.1.1"},
+      {:via_input_event,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event/"}
     ]
 
     # via_joystick only works on Linux machines
     # Need to see what :os.type shows for R.Pi
-    if :os.type() == {:unix, :linux}, do: deps ++ [{:via_joystick, "~>0.1.0"}], else: deps
+    if :os.type() == {:unix, :linux} and Mix.target == :host,
+      do:
+        deps ++
+          [
+            {:via_joystick,
+             path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"}
+          ],
+      else: deps
   end
 
   def release do

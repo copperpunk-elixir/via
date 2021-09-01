@@ -6,14 +6,14 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
     planner_scene = nil
 
     driver_module =
-      if Mix.target() == :host do
-        Scenic.Driver.Glfw
-      else
+      if Via.Application.is_target() do
         Scenic.Driver.Nerves.Rpi
+      else
+        Scenic.Driver.Glfw
       end
 
     gcs_config = %{
-      name: :gcs,
+      name: :main_viewport,
       size: {1024, 600},
       default_scene: {gcs_scene, nil},
       drivers: [
