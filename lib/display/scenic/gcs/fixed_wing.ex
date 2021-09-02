@@ -31,7 +31,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
   # ============================================================================
   @impl true
   def init(_, opts) do
-    Logger.debug("Sensor.init: #{inspect(opts)}")
+    # Logger.debug("Sensor.init: #{inspect(opts)}")
 
     {:ok, %Scenic.ViewPort.Status{size: {vp_width, vp_height}}} =
       opts[:viewport]
@@ -247,7 +247,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
         ip_address = Network.Connection.get_ip_address_eth0()
         if is_nil(ip_address), do: "", else: VintageNet.IP.ip_to_string(ip_address)
       else
-        ""
+        "Check IP in terminal."
       end
 
     graph = Scenic.Graph.modify(state.graph, :ip_address, &text(&1, ip_address_string))

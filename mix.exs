@@ -29,7 +29,7 @@ defmodule Via.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    deps = [
+    [
       # Dependencies for all targets
       {:nerves, "~> 1.7.11", runtime: false},
       {:shoehorn, "~> 0.7.0"},
@@ -62,22 +62,9 @@ defmodule Via.MixProject do
       {:via_utils, "~> 0.1.1"},
       {:via_controllers, "~> 0.1.1"},
       {:xplane_integration, "~> 0.1.2"},
-      # {:via_joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"},
       {:via_estimation, "~> 0.1.1"},
-      {:via_input_event,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event/"}
+      {:via_input_event, "~> 0.1.0"}
     ]
-
-    # via_joystick only works on Linux machines
-    # Need to see what :os.type shows for R.Pi
-    if :os.type() == {:unix, :linux} and Mix.target == :host,
-      do:
-        deps ++
-          [
-            {:via_joystick,
-             path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-joystick/"}
-          ],
-      else: deps
   end
 
   def release do

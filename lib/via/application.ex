@@ -59,11 +59,14 @@ defmodule Via.Application do
       "" ->
         raise "Input not specified. Please add system argument input="
 
+      "any" ->
+        start_sim(:any)
+
       "keyboard" ->
-        start_sim_keyboard()
+        start_sim(:keyboard)
 
       "joystick" ->
-        start_sim_joystick()
+        start_sim(:joystick)
 
       "frsky" ->
         start_sim_frsky(get_usb_converter_name())
@@ -76,25 +79,15 @@ defmodule Via.Application do
     end
   end
 
-  @spec start_sim_joystick() :: atom()
-  def start_sim_joystick() do
+  @spec start_sim(atom()) :: atom()
+  def start_sim(remote_control_interface) do
     full_config = Configuration.Utils.config("FixedWing", "Cessna", "Sim")
 
     simulation_config =
       full_config[:Simulation]
-      |> Kernel.++(Configuration.FixedWing.Cessna.Sim.Simulation.joystick())
-
-    full_config = Keyword.put(full_config, :Simulation, simulation_config)
-    start_with_config(full_config)
-  end
-
-  @spec start_sim_keyboard() :: atom()
-  def start_sim_keyboard() do
-    full_config = Configuration.Utils.config("FixedWing", "Cessna", "Sim")
-
-    simulation_config =
-      full_config[:Simulation]
-      |> Kernel.++(Configuration.FixedWing.Cessna.Sim.Simulation.keyboard())
+      |> Kernel.++(
+        apply(Configuration.FixedWing.Cessna.Sim.Simulation, remote_control_interface, [])
+      )
 
     full_config = Keyword.put(full_config, :Simulation, simulation_config)
     start_with_config(full_config)

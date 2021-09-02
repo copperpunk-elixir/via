@@ -68,13 +68,49 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
     ]
   end
 
+  def any() do
+    joystick() ++ keyboard()
+  end
+
+  # def joystick() do
+  #   [
+  #     ViaJoystick: [
+  #       num_channels: 10,
+  #       subscriber_groups: [Groups.command_channels()],
+  #       publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
+  #     ]
+  #   ]
+  # end
+
   def joystick() do
     [
-      ViaJoystick: [
-        num_channels: 10,
-        subscriber_groups: [Groups.command_channels()],
-        publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
-      ]
+      {ViaInputEvent.FrskyJoystick,
+       [
+         channel_map: %{
+           :abs_x => 0,
+           :abs_y => 1,
+           :abs_z => 2,
+           :abs_rx => 3,
+           :abs_ry => 4,
+           :abs_rz => 5,
+           :abs_throttle => 6,
+           :btn_b => 9
+         },
+         default_values: %{
+           0 => 0,
+           1 => 0,
+           2 => 0,
+           3 => 0,
+           4 => -1,
+           5 => -1,
+           6 => 0,
+           7 => 0,
+           8 => 0,
+           9 => 1
+         },
+         subscriber_groups: [Groups.command_channels()],
+         publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
+       ]}
     ]
   end
 
@@ -124,19 +160,22 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
              {:pcl, :set, [1]},
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
-             {:yaw_axis, :set, [0]}
+             {:yaw_axis, :set, [0]},
+             {:thrust_axis, :set_value_for_output, :pcl_hold}
            ],
            key_2: [
              {:pcl, :set, [2]},
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
-             {:yaw_axis, :set, [0]}
+             {:yaw_axis, :set, [0]},
+             {:thrust_axis, :set_value_for_output, :pcl_hold}
            ],
            key_4: [
              {:pcl, :set, [4]},
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
-             {:yaw_axis, :set, [0]}
+             {:yaw_axis, :set, [0]},
+             {:thrust_axis, :set_value_for_output, :pcl_hold}
            ],
            key_f: [{:flaps, :increment, []}],
            key_g: [{:gear, :toggle, []}],
