@@ -72,16 +72,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
     joystick() ++ keyboard()
   end
 
-  # def joystick() do
-  #   [
-  #     ViaJoystick: [
-  #       num_channels: 10,
-  #       subscriber_groups: [Groups.command_channels()],
-  #       publish_joystick_loop_interval_ms: LoopIntervals.joystick_channels_publish_ms()
-  #     ]
-  #   ]
-  # end
-
   def joystick() do
     [
       {ViaInputEvent.FrskyJoystick,
