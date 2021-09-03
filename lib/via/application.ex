@@ -5,11 +5,15 @@ defmodule Via.Application do
   def start(_type, _args) do
     prepare_environment()
 
+    Logger.warn("Via.Application.Start")
+
     cond do
       is_target() ->
+        Logger.warn("Sim environment. Start sim.")
         start_sim()
 
-      Via.Application.get_mix_env() != "test" ->
+      Mix.env() != :test ->
+        Logger.debug("Non-sim environment. Start vehicle.")
         node_type = System.get_env("node")
 
         if is_nil(node_type) or node_type == "Sim" do
@@ -52,7 +56,7 @@ defmodule Via.Application do
   @spec start_sim() :: atom()
   def start_sim() do
     input_type =
-      System.get_env("input", "keyboard")
+      System.get_env("input", "rx")
       |> String.downcase()
 
     case input_type do
@@ -68,14 +72,11 @@ defmodule Via.Application do
       "joystick" ->
         start_sim(:joystick)
 
-      "frsky" ->
-        start_sim_frsky(get_usb_converter_name())
-
-      "dsm" ->
-        start_sim_dsm(get_usb_converter_name())
+      "rx" ->
+        start_sim_rx(get_usb_converter_name())
 
       other ->
-        raise "#{inspect(other)} not recognized. Input must be Joystick, Keyboard, FrSky, or Dsm (case-insensitive). Please try again."
+        raise "#{inspect(other)} not recognized. Input must be Joystick, Keyboard, Any, or Rx (case-insensitive). Please try again."
     end
   end
 
@@ -93,20 +94,9 @@ defmodule Via.Application do
     start_with_config(full_config)
   end
 
-  @spec start_sim_frsky(binary()) :: atom()
-  def start_sim_frsky(usb_converter \\ "CP2104") do
-    uart_config = Configuration.FixedWing.Cessna.Sim.Uart.config(["FrskyRx_" <> usb_converter])
-
-    full_config =
-      Configuration.Utils.config("FixedWing", "Cessna", "Sim")
-      |> Keyword.put(:Uart, uart_config)
-
-    start_with_config(full_config)
-  end
-
-  @spec start_sim_dsm(binary()) :: atom()
-  def start_sim_dsm(usb_converter \\ "CP2104") do
-    uart_config = Configuration.FixedWing.Cessna.Sim.Uart.config(["DsmRx_" <> usb_converter])
+  @spec start_sim_rx(binary()) :: atom()
+  def start_sim_rx(usb_converter \\ "CP2104") do
+    uart_config = Configuration.FixedWing.Cessna.Sim.Uart.config(["CommandRx_" <> usb_converter])
 
     full_config =
       Configuration.Utils.config("FixedWing", "Cessna", "Sim")
@@ -140,7 +130,7 @@ defmodule Via.Application do
 
   @spec start_test(binary(), binary(), binary()) :: keyword()
   def start_test(vehicle_type, model_type, node_type) do
-    prepare_environment()
+    # prepare_environment()
     full_config = Configuration.Utils.config(vehicle_type, model_type, node_type)
     # Logger.debug("full_config: #{inspect(full_config)}")
     Via.Supervisor.start_universal_modules(full_config)

@@ -3,7 +3,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
 
   @spec config() :: list()
   def config() do
-    peripherals = ["FrskyRx_CP2104"]
+    peripherals = ["CommandRx_CP2104"]
     config(peripherals)
   end
 
@@ -12,14 +12,15 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
     Logger.debug("peripherals: #{inspect(peripherals)}")
 
     Enum.reduce(peripherals, [], fn peripheral, acc ->
-      [device, port] = String.split(peripheral, "_")
-      {module_key, module_config} = get_module_key_and_config(device, port)
+      [module, port] = String.split(peripheral, "_")
+      module_config = get_config(module, port)
+      module_key = Module.concat([module])
       Keyword.put(acc, module_key, module_config)
     end)
   end
 
-  @spec get_module_key_and_config(binary(), binary()) :: tuple()
-  def get_module_key_and_config(device, port) do
+  @spec get_config(binary(), binary()) :: tuple()
+  def get_config(module, port) do
     # Logger.debug("port: #{port}")
     uart_port =
       case port do
@@ -30,7 +31,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Uart do
         _usb -> port
       end
 
-    config_module = Module.concat(__MODULE__, device)
-    apply(config_module, :module_key_and_config, [uart_port])
+    config_module = Module.concat(__MODULE__, module)
+    apply(config_module, :config, [uart_port])
   end
 end
