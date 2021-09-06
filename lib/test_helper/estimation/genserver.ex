@@ -1,7 +1,7 @@
 defmodule TestHelper.Estimation.GenServer do
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
 
   def start_link() do
     Logger.debug("Start #{__MODULE__}")

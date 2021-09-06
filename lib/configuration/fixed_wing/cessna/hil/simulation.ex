@@ -1,5 +1,5 @@
 defmodule Configuration.FixedWing.Cessna.Hil.Simulation do
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   @spec config() :: list()
   def config do
     [

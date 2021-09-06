@@ -59,11 +59,12 @@ defmodule Via.MixProject do
       {:ubx_interpreter, "~> 0.1.0"},
       {:frsky_parser, "~> 0.1.0"},
       {:dsm_parser, "~> 0.1.1"},
-      {:via_utils, "~> 0.1.1"},
+      {:via_utils, "~> 0.1.4"},
       {:via_controllers, "~> 0.1.1"},
       {:xplane_integration, "~> 0.1.2"},
       {:via_estimation, "~> 0.1.1"},
-      {:via_input_event, "~> 0.1.0"}
+      {:via_input_event, "~> 0.1.0"},
+      {:realflight_integration,  path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/realflight-integration"}
     ]
   end
 

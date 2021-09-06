@@ -2,7 +2,7 @@ defmodule Uart.Gps do
   use GenServer
   use Bitwise
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Ubx.ClassDefs
   require Ubx.Nav.Pvt, as: Pvt
   require Ubx.Nav.Relposned, as: Relposned

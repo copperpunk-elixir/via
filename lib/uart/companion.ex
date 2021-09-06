@@ -1,7 +1,7 @@
 defmodule Uart.Companion do
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Ubx.ClassDefs
   require Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
   require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd

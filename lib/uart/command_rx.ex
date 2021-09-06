@@ -2,7 +2,7 @@ defmodule Uart.CommandRx do
   use Bitwise
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
 
   @protocol_id_loop :protocol_id_loop
   @protocol_id_loop_interval_ms 10
@@ -170,7 +170,6 @@ defmodule Uart.CommandRx do
       apply(rx.__struct__, :check_for_new_messages, [rx, :binary.bin_to_list(data)])
 
     if !Enum.empty?(channel_values) do
-      # Valid payload
       Logger.debug("Valid payload found for #{rx.__struct__}")
       {rx, true}
     else

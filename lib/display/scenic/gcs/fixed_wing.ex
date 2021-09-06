@@ -1,7 +1,7 @@
 defmodule Display.Scenic.Gcs.FixedWing do
   use Scenic.Scene
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Command.ControlTypes, as: CCT
 
   import Scenic.Primitives

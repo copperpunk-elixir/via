@@ -1,7 +1,7 @@
 defmodule Command.RemotePilot do
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Comms.MessageHeaders, as: MessageHeaders
   require Command.ControlTypes, as: ControlTypes
   require Configuration.LoopIntervals, as: LoopIntervals

@@ -1,7 +1,7 @@
 defmodule Command.Commander do
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Comms.Sorters, as: Sorters
   require Command.ControlTypes, as: CCT
   require MessageSorter.Sorter

@@ -56,12 +56,15 @@ defmodule Via.Application do
   @spec start_sim() :: atom()
   def start_sim() do
     input_type =
-      System.get_env("input", "rx")
+      System.get_env("input", "none")
       |> String.downcase()
 
     case input_type do
       "" ->
         raise "Input not specified. Please add system argument input="
+
+      "none" ->
+        start_sim(:none)
 
       "any" ->
         start_sim(:any)
@@ -132,7 +135,7 @@ defmodule Via.Application do
   def start_test(vehicle_type, model_type, node_type) do
     # prepare_environment()
     full_config = Configuration.Utils.config(vehicle_type, model_type, node_type)
-    # Logger.debug("full_config: #{inspect(full_config)}")
+    Logger.debug("full_config: #{inspect(full_config)}")
     Via.Supervisor.start_universal_modules(full_config)
     full_config
   end

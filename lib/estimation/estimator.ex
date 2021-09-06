@@ -1,7 +1,7 @@
 defmodule Estimation.Estimator do
   use GenServer
   require Logger
-  require Comms.Groups, as: Groups
+  require ViaUtils.Comms.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaUtils.Watchdog
 
@@ -46,7 +46,7 @@ defmodule Estimation.Estimator do
       imu_watchdog:
         Watchdog.new(
           {@clear_is_value_current_callback, @imu},
-          2 * LoopIntervals.imu_receive_max_ms()
+          4 * LoopIntervals.imu_receive_max_ms()
         ),
       gps_watchdog:
         Watchdog.new(
@@ -265,7 +265,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_info({@clear_is_value_current_callback, key}, state) do
-    Logger.warn("clear #{inspect(key)}: #{inspect(get_in(state, [:is_value_current, key]))}")
+    Logger.warn("#{inspect(__MODULE__)} clear #{inspect(key)}: #{inspect(get_in(state, [:is_value_current, key]))}")
     state = put_in(state, [:is_value_current, key], false)
     {:noreply, state}
   end
