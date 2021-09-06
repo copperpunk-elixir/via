@@ -56,15 +56,34 @@ defmodule Via.MixProject do
       {:vintage_net_wifi, "~> 0.10.5", targets: @all_targets},
       {:vintage_net_ethernet, "~> 0.10.2", targets: @all_targets},
       # COPPERPUNK packages
-      {:ubx_interpreter, "~> 0.1.0"},
-      {:frsky_parser, "~> 0.1.0"},
-      {:dsm_parser, "~> 0.1.1"},
-      {:via_utils, "~> 0.1.4"},
-      {:via_controllers, "~> 0.1.1"},
-      {:xplane_integration, "~> 0.1.2"},
-      {:via_estimation, "~> 0.1.1"},
-      {:via_input_event, "~> 0.1.0"},
-      {:realflight_integration,  path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/realflight-integration"}
+      # ~> 0.1.0"},
+      {:ubx_interpreter,
+       git: "https://github.com/copperpunk-elixir/ubx-interpreter.git", tag: "v0.1.0-alpha.1"},
+      # "~> 0.1.0"},
+      {:frsky_parser,
+       git: "https://github.com/copperpunk-elixir/frsky-parser.git", tag: "v0.1.0-alpha"},
+      # "~> 0.1.1"},
+      {:dsm_parser,
+       git: "https://github.com/copperpunk-elixir/dsm-parser.git", tag: "v0.1.1-alpha"},
+      # "~> 0.1.4"},
+      {:via_utils,
+       git: "https://github.com/copperpunk-elixir/via-utils.git", tag: "v0.1.4-alpha"},
+      # ~> 0.1.1"},
+      {:via_controllers,
+       git: "https://github.com/copperpunk-elixir/via-controllers.git", tag: "v0.1.1-alpha.1"},
+      # "~> 0.1.2"},
+      {:xplane_integration,
+       git: "https://github.com/copperpunk-elixir/xplane-integration.git", tag: "v0.1.3-alpha.1"},
+      # "~> 0.1.1"},
+      {:realflight_integration,
+       git: "https://github.com/copperpunk-elixir/realflight-integration.git",
+       tag: "v0.1.1-alpha"},
+
+      {:via_estimation,
+       git: "https://github.com/copperpunk-elixir/via-estimation.git", tag: "v0.1.1-alpha.1"},
+      # "~> 0.1.0"},
+      {:via_input_event,
+       git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
     ]
   end
 

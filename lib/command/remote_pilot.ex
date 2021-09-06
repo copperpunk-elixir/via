@@ -69,7 +69,7 @@ defmodule Command.RemotePilot do
 
   @impl GenServer
   def handle_cast({Groups.command_channels(), channel_values}, state) do
-    # Logger.debug("Channel values: #{inspect(channel_values)}")
+    # Logger.debug("Channel values: #{ViaUtils.Format.eftb_list(channel_values,3)}")
     {channel_values_watchdog, channel_values} =
       if length(channel_values) >= state.num_channels do
         {Watchdog.reset(state.channel_values_watchdog), channel_values}

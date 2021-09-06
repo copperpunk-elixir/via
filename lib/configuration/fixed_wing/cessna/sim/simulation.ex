@@ -93,7 +93,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
        publish_airspeed_interval_ms: 200,
        publish_downward_tof_distance_interval_ms: 200,
        sim_loop_interval_ms: 20,
-       rc_passthrough: true}
+       rc_passthrough: false}
     ]
   end
 
