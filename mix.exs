@@ -50,6 +50,7 @@ defmodule Via.MixProject do
       {:scenic, "~> 0.10.5"},
       {:scenic_driver_glfw, "~> 0.10.1", targets: :host},
       {:scenic_driver_nerves_rpi, "0.10.0", targets: @all_targets},
+      {:scenic_driver_nerves_touch, "0.10.0", targets: @all_targets},
       {:scenic_sensor, "~> 0.7"},
       {:circuits_uart, "~> 1.4.2"},
       {:vintage_net, "~> 0.10.5", targets: @all_targets},
@@ -76,9 +77,7 @@ defmodule Via.MixProject do
        git: "https://github.com/copperpunk-elixir/xplane-integration.git", tag: "v0.1.3-alpha.1"},
       # "~> 0.1.1"},
       {:realflight_integration,
-       git: "https://github.com/copperpunk-elixir/realflight-integration.git",
-       tag: "v0.1.1-alpha"},
-
+       git: "https://github.com/copperpunk-elixir/realflight-integration.git", tag: "v0.1.1-alpha"},
       {:via_estimation,
        git: "https://github.com/copperpunk-elixir/via-estimation.git", tag: "v0.1.1-alpha.1"},
       # "~> 0.1.0"},

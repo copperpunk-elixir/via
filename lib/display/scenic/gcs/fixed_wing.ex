@@ -144,7 +144,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
-    {graph, _offset_x, offset_y} =
+    {graph, offset_x, _offset_y} =
       Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
         id: :ip_address_row,
         width: ip_width,
@@ -155,6 +155,18 @@ defmodule Display.Scenic.Gcs.FixedWing do
         labels: ["IP address"],
         ids: [:ip_address],
         font_size: @font_size
+      })
+
+    {graph, _offset_x, _offset_y} =
+      Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+        text: "Reset Estimation",
+        id: :reset_estimation,
+        theme: %{text: :white, background: :green, active: :grey, border: :white},
+        width: ip_width,
+        height: 2 * ip_height,
+        font_size: @font_size,
+        offset_x: offset_x + 30,
+        offset_y: offset_y
       })
 
     # cluster_status_offset_x = vp_width - cluster_status_side - 40
@@ -223,11 +235,12 @@ defmodule Display.Scenic.Gcs.FixedWing do
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
     ViaUtils.Comms.join_group(__MODULE__, Groups.current_pilot_control_level_and_commands())
 
-    ip_address_timer = ViaUtils.Process.start_loop(
-      self(),
-      1000,
-      @ip_address_loop
-    )
+    ip_address_timer =
+      ViaUtils.Process.start_loop(
+        self(),
+        1000,
+        @ip_address_loop
+      )
 
     # ViaUtils.Comms.join_group(__MODULE__, :tx_battery)
     # ViaUtils.Comms.join_group(__MODULE__, :cluster_status)
@@ -242,6 +255,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
   def handle_info(@ip_address_loop, state) do
     Logger.debug("ip loop")
+
     ip_address_string =
       if Via.Application.is_target() do
         ip_address = Network.Connection.get_ip_address_eth0()
@@ -251,12 +265,14 @@ defmodule Display.Scenic.Gcs.FixedWing do
       end
 
     graph = Scenic.Graph.modify(state.graph, :ip_address, &text(&1, ip_address_string))
+
     ip_address_timer =
       if ip_address_string != "" do
         ViaUtils.Process.stop_loop(state.ip_address_timer)
       else
         state.ip_address_timer
       end
+
     {:noreply, %{state | graph: graph, ip_address_timer: ip_address_timer}, push: graph}
   end
 
@@ -472,33 +488,50 @@ defmodule Display.Scenic.Gcs.FixedWing do
   end
 
   @impl Scenic.Scene
-  def filter_event({:click, :save_log}, _from, state) do
-    Logger.debug("Save Log to file: #{state.save_log_file} (NOT CONNECTED)")
+  def filter_event({:click, :reset_estimation}, _from, state) do
+    Logger.debug("Reset Estimation")
+    Estimation.Estimator.reset_estimation()
     # save_log_proto = Display.Scenic.Gcs.Protobuf.SaveLog.new([filename: state.save_log_file])
     # save_log_encoded =Display.Scenic.Gcs.Protobuf.SaveLog.encode(save_log_proto)
     # Peripherals.Uart.Generic.construct_and_send_proto_message(:save_log_proto, save_log_encoded, Peripherals.Uart.Telemetry.Operator)
-    {:cont, :event, state}
+    {:noreply, state}
+  end
+
+  # @impl Scenic.Scene
+  # def filter_event({:click, :save_log}, _from, state) do
+  #   Logger.debug("Save Log to file: #{state.save_log_file} (NOT CONNECTED)")
+  #   # save_log_proto = Display.Scenic.Gcs.Protobuf.SaveLog.new([filename: state.save_log_file])
+  #   # save_log_encoded =Display.Scenic.Gcs.Protobuf.SaveLog.encode(save_log_proto)
+  #   # Peripherals.Uart.Generic.construct_and_send_proto_message(:save_log_proto, save_log_encoded, Peripherals.Uart.Telemetry.Operator)
+  #   {:cont, :event, state}
+  # end
+
+  # @impl Scenic.Scene
+  # def filter_event({:click, {:peri_ctrl, action}}, _from, state) do
+  #   Logger.debug("Change PeriCtrl #{action} (NOT CONNECTED)")
+  #   # control_value =
+  #   #   case action do
+  #   #     :allow -> 1
+  #   #     :deny -> 0
+  #   #   end
+  #   # Peripherals.Uart.Generic.construct_and_send_message(:change_peripheral_control, [control_value], Peripherals.Uart.Telemetry.Operator)
+  #   {:cont, :event, state}
+  # end
+
+  @impl Scenic.Scene
+  def filter_event({:click, event}, from, state) do
+    Logger.debug("click #{inspect(event)}) from #{inspect(from)}")
+    {:noreply, state}
   end
 
   @impl Scenic.Scene
-  def filter_event({:click, {:peri_ctrl, action}}, _from, state) do
-    Logger.debug("Change PeriCtrl #{action} (NOT CONNECTED)")
-    # control_value =
-    #   case action do
-    #     :allow -> 1
-    #     :deny -> 0
-    #   end
-    # Peripherals.Uart.Generic.construct_and_send_message(:change_peripheral_control, [control_value], Peripherals.Uart.Telemetry.Operator)
-    {:cont, :event, state}
+  def filter_event(event, from, state) do
+    Logger.debug("#{inspect(event)}) from #{inspect(from)}")
+    {:noreply, state}
   end
 
-  @impl Scenic.Scene
-  def filter_event({:click, _other}, _from, state) do
-    {:cont, :event, state}
-  end
-
-  @impl Scenic.Scene
-  def filter_event({:value_changed, :save_log_filename, filename}, _from, state) do
-    {:cont, :event, %{state | save_log_file: filename}}
-  end
+  # @impl Scenic.Scene
+  # def filter_event({:value_changed, :save_log_filename, filename}, _from, state) do
+  #   {:cont, :event, %{state | save_log_file: filename}}
+  # end
 end

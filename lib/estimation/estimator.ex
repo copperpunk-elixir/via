@@ -12,6 +12,7 @@ defmodule Estimation.Estimator do
   @gps :gps
   @airspeed :airspeed
   @agl :agl
+  @reset_estimation :reset_estimation
   def start_link(config) do
     Logger.debug("Start Estimation.Estimator GenServer")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
@@ -20,12 +21,16 @@ defmodule Estimation.Estimator do
   @impl GenServer
   def init(config) do
     ins_kf_module = Keyword.fetch!(config, :ins_kf_type)
-    ins_kf = apply(ins_kf_module, :new, [Keyword.fetch!(config, :ins_kf_config)])
+    ins_kf_config = Keyword.fetch!(config, :ins_kf_config)
+    ins_kf = apply(ins_kf_module, :new, [ins_kf_config])
 
     agl_kf_module = Keyword.fetch!(config, :agl_kf_type)
-    agl_kf = apply(agl_kf_module, :new, [Keyword.fetch!(config, :agl_kf_config)])
+    agl_kf_config = Keyword.fetch!(config, :agl_kf_config)
+    agl_kf = apply(agl_kf_module, :new, [agl_kf_config])
 
     state = %{
+      ins_kf_config: ins_kf_config,
+      agl_kf_config: agl_kf_config,
       min_speed_for_course: Keyword.fetch!(config, :min_speed_for_course),
       attitude_rad: %{},
       groundspeed_mps: 0,
@@ -89,6 +94,26 @@ defmodule Estimation.Estimator do
   def terminate(reason, state) do
     Logging.Logger.log_terminate(reason, state, __MODULE__)
     state
+  end
+
+  def reset_estimation() do
+    GenServer.cast(__MODULE__, @reset_estimation)
+  end
+
+  @impl GenServer
+  def handle_cast(@reset_estimation, state) do
+    Logger.warn("Reset estimation")
+    ins_kf = apply(state.ins_kf.__struct__, :new, [state.ins_kf_config])
+    agl_kf = apply(state.agl_kf.__struct__, :new, [state.agl_kf_config])
+
+    is_value_current = %{
+      imu: false,
+      gps: false,
+      airspeed: false,
+      agl: false
+    }
+
+    {:noreply, %{state | ins_kf: ins_kf, agl_kf: agl_kf, is_value_current: is_value_current}}
   end
 
   @impl GenServer
@@ -265,7 +290,10 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_info({@clear_is_value_current_callback, key}, state) do
-    Logger.warn("#{inspect(__MODULE__)} clear #{inspect(key)}: #{inspect(get_in(state, [:is_value_current, key]))}")
+    Logger.warn(
+      "#{inspect(__MODULE__)} clear #{inspect(key)}: #{inspect(get_in(state, [:is_value_current, key]))}"
+    )
+
     state = put_in(state, [:is_value_current, key], false)
     {:noreply, state}
   end

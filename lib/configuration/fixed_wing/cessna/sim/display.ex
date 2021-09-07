@@ -12,17 +12,35 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
         Scenic.Driver.Glfw
       end
 
+    gcs_drivers =
+      if Via.Application.is_target() do
+        [
+          %{
+            module: driver_module,
+            name: :gcs_driver,
+            opts: [resizeable: false, title: "gcs"]
+          },
+          %{
+            module: Scenic.Driver.Nerves.Touch,
+            opts: [
+              device: "TSTP MTouch",#"raspberrypi-ts",
+              calibration: {{1, 0, 0}, {0, 1, 0}}
+            ]
+          }
+        ]
+      else
+        [%{
+          module: driver_module,
+          name: :gcs_driver,
+          opts: [resizeable: false, title: "gcs"]
+        }]
+      end
+
     gcs_config = %{
       name: :main_viewport,
       size: {1024, 600},
       default_scene: {gcs_scene, nil},
-      drivers: [
-        %{
-          module: driver_module,
-          name: :gcs_driver,
-          opts: [resizeable: false, title: "gcs"]
-        }
-      ]
+      drivers: gcs_drivers
     }
 
     # PLANNER
