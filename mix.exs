@@ -81,8 +81,9 @@ defmodule Via.MixProject do
       {:via_estimation,
        git: "https://github.com/copperpunk-elixir/via-estimation.git", tag: "v0.1.1-alpha.1"},
       # "~> 0.1.0"},
-      {:via_input_event,
-       git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
+      {:via_input_event, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event"},
+
+      #  git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
     ]
   end
 

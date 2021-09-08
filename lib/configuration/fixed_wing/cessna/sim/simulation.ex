@@ -7,6 +7,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
   @spec config() :: list()
   def config() do
     realflight() ++ sim_interface()
+    # xplane() ++ sim_interface()
   end
 
   def sim_interface() do
@@ -107,17 +108,30 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
 
   def joystick() do
     [
-      {ViaInputEvent.FrskyJoystick,
+      {ViaInputEvent.Joystick,
        [
          channel_map: %{
-           :abs_x => 0,
-           :abs_y => 1,
-           :abs_z => 2,
-           :abs_rx => 3,
-           :abs_ry => 4,
-           :abs_rz => 5,
-           :abs_throttle => 6,
-           :btn_b => 9
+           Frsky: %{
+             :abs_x => 0,
+             :abs_y => 1,
+             :abs_z => 2,
+             :abs_rx => 3,
+             :abs_ry => 4,
+             :abs_rz => 5,
+             :abs_throttle => 6,
+             :btn_b => 9
+           },
+           Spektrum: %{
+             multiplier: 1 / 0.662,
+             abs_z: 0,
+             abs_rx: 1,
+             abs_y: 2,
+             abs_x: 3,
+             abs_ry: 4,
+             abs_throttle: 5,
+             none: 6,
+             btn_rz: 9
+           }
          },
          default_values: %{
            0 => 0,
