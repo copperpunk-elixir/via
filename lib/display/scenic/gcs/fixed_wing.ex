@@ -5,30 +5,17 @@ defmodule Display.Scenic.Gcs.FixedWing do
   require Command.ControlTypes, as: CCT
 
   import Scenic.Primitives
-  # @body_offset 80
-  @font_size 24
+  @font_size 19
   @battery_font_size 20
   @degrees "°"
-  # @radians "rads"
   @dps "°/s"
   @meters "m"
   @mps "m/s"
   @pct "%"
 
-  # @offset_x 0
-  # @width 300
-  # @height 50
-  # @labels {"", "", ""}
   @rect_border 6
   @ip_address_loop :ip_address_loop
 
-  @moduledoc """
-  This version of `Sensor` illustrates using spec functions to
-  construct the display graph. Compare this with `Sensor` which uses
-  anonymous functions.
-  """
-
-  # ============================================================================
   @impl true
   def init(_, opts) do
     # Logger.debug("Sensor.init: #{inspect(opts)}")
@@ -38,21 +25,23 @@ defmodule Display.Scenic.Gcs.FixedWing do
       |> Scenic.ViewPort.info()
 
     # col = vp_width / 12
-    label_value_width = 300
-    label_value_height = 50
-    goals_width = 500
-    goals_height = 50
+    label_value_width = 250
+    label_value_height = 40
+    goals_width = 400
+    goals_height = 40
     battery_width = 400
     battery_height = 40
-    ip_width = 300
-    ip_height = 40
+    ip_width = 200
+    ip_height = 30
     cluster_status_side = 100
     # build the graph
     offset_x_origin = 10
     offset_y_origin = 10
     spacer_y = 20
 
-    graph = Scenic.Graph.build(font: :roboto, font_size: 16, theme: :dark)
+    graph =
+      Scenic.Graph.build()
+      |> rect({vp_width, vp_height})
 
     {graph, offset_x, offset_y} =
       Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
@@ -242,8 +231,6 @@ defmodule Display.Scenic.Gcs.FixedWing do
         @ip_address_loop
       )
 
-    # ViaUtils.Comms.join_group(__MODULE__, :tx_battery)
-    # ViaUtils.Comms.join_group(__MODULE__, :cluster_status)
     state = %{
       graph: graph,
       save_log_file: "",
@@ -258,7 +245,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
     ip_address_string =
       if Via.Application.is_target() do
-        ip_address = Network.Connection.get_ip_address_eth0()
+        ip_address = Network.Connection.get_ip_address_for_interfaces(["eth0", "wlan0"])
         if is_nil(ip_address), do: "", else: VintageNet.IP.ip_to_string(ip_address)
       else
         "Check IP in terminal."
@@ -487,15 +474,16 @@ defmodule Display.Scenic.Gcs.FixedWing do
     )
   end
 
-  @impl Scenic.Scene
-  def filter_event({:click, :reset_estimation}, _from, state) do
-    Logger.debug("Reset Estimation")
-    Estimation.Estimator.reset_estimation()
-    # save_log_proto = Display.Scenic.Gcs.Protobuf.SaveLog.new([filename: state.save_log_file])
-    # save_log_encoded =Display.Scenic.Gcs.Protobuf.SaveLog.encode(save_log_proto)
-    # Peripherals.Uart.Generic.construct_and_send_proto_message(:save_log_proto, save_log_encoded, Peripherals.Uart.Telemetry.Operator)
-    {:noreply, state}
-  end
+  # @impl Scenic.Scene
+  # def filter_event({:click, :reset_estimation} = event, _from, state) do
+  #   Logger.debug("Reset Estimation")
+  #   Estimation.Estimator.reset_estimation()
+  #   # save_log_proto = Display.Scenic.Gcs.Protobuf.SaveLog.new([filename: state.save_log_file])
+  #   # save_log_encoded =Display.Scenic.Gcs.Protobuf.SaveLog.encode(save_log_proto)
+  #   # Peripherals.Uart.Generic.construct_and_send_proto_message(:save_log_proto, save_log_encoded, Peripherals.Uart.Telemetry.Operator)
+  #   # {:noreply, state}
+  #   {:cont, event, state}
+  # end
 
   # @impl Scenic.Scene
   # def filter_event({:click, :save_log}, _from, state) do
@@ -519,19 +507,10 @@ defmodule Display.Scenic.Gcs.FixedWing do
   # end
 
   @impl Scenic.Scene
-  def filter_event({:click, event}, from, state) do
-    Logger.debug("click #{inspect(event)}) from #{inspect(from)}")
-    {:noreply, state}
+  def filter_event({:click, :reset_estimation} = event, _from, state) do
+    Logger.debug("Reset Estimation")
+    Estimation.Estimator.reset_estimation()
+    {:cont, event, state}
+    # {:noreply, state}
   end
-
-  @impl Scenic.Scene
-  def filter_event(event, from, state) do
-    Logger.debug("#{inspect(event)}) from #{inspect(from)}")
-    {:noreply, state}
-  end
-
-  # @impl Scenic.Scene
-  # def filter_event({:value_changed, :save_log_filename, filename}, _from, state) do
-  #   {:cont, :event, %{state | save_log_file: filename}}
-  # end
 end

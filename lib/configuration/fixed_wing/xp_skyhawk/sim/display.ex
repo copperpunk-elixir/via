@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Display do
+defmodule Configuration.FixedWing.XpSkyhawk.Sim.Display do
   @spec config() :: list()
   def config() do
     gcs_scene = Display.Scenic.Gcs.FixedWing
@@ -23,8 +23,8 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
           %{
             module: Scenic.Driver.Nerves.Touch,
             opts: [
-              device: "TSTP MTouch",#"raspberrypi-ts",
-              calibration: {{1, 0, 0}, {0, 1, 0}}
+              device: "raspberrypi-ts",
+              calibration: {{1, 0, 0}, {1, 0, 0}}
             ]
           }
         ]
@@ -38,7 +38,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Display do
 
     gcs_config = %{
       name: :main_viewport,
-      size: {1024, 600},
+      size: {800, 480},
       default_scene: {gcs_scene, nil},
       drivers: gcs_drivers
     }

@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Hil.MessageSorter do
+defmodule Configuration.FixedWing.XpSkyhawk.Sim.MessageSorter do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require ViaUtils.Comms.Groups, as: Groups
@@ -37,9 +37,6 @@ defmodule Configuration.FixedWing.Cessna.Hil.MessageSorter do
 
     Map.get(classification_all, sorter, %{})
     |> Map.get(sender, nil)
-
-    # time_validity = Map.get(time_validity_all, sorter, 0)
-    # Logger.debug("class/time: #{inspect(classification)}/#{time_validity}")
   end
 
   @spec message_sorters_for_module(atom()) :: list()

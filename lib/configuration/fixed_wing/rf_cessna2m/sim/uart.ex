@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Uart do
+defmodule Configuration.FixedWing.RfCessna2m.Sim.Uart do
   require Logger
 
   @spec config() :: list()

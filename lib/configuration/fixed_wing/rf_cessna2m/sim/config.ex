@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Hil.Config do
+defmodule Configuration.FixedWing.RfCessna2m.Sim.Config do
   require Logger
 
   def modules() do
@@ -8,9 +8,7 @@ defmodule Configuration.FixedWing.Cessna.Hil.Config do
       :Display,
       :Estimation,
       :MessageSorter,
-      :Simulation,
-      :Uart
+      :Simulation
     ]
   end
-
 end

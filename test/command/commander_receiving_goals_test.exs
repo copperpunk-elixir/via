@@ -9,9 +9,9 @@ defmodule Command.CommanderReceivingGoalsTest do
 
   test "Open Serial Port" do
     # Expects comments from Gps operator
-    config = Configuration.FixedWing.Cessna.Sim.Uart.config(["FrskyRx_CP2104"])[:CommandRx]
+    config = Configuration.FixedWing.RfCessna2m.Sim.Uart.config(["FrskyRx_CP2104"])[:CommandRx]
     Uart.CommandRx.start_link(config)
-    config = Configuration.FixedWing.Cessna.Sim.Command.config()
+    config = Configuration.FixedWing.RfCessna2m.Sim.Command.config()
     Command.RemotePilot.start_link(config[:RemotePilot])
     Command.Commander.start_link(config[:Commander])
 

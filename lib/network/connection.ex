@@ -18,6 +18,20 @@ defmodule Network.Connection do
     get_inet_ip_address(all_ip_configs)
   end
 
+  @spec get_ip_address_for_interfaces(list()) :: tuple()
+  def get_ip_address_for_interfaces(interfaces) do
+    {[interface], remaining} = Enum.split(interfaces, 1)
+    all_ip_configs = VintageNet.get(["interface", interface, "addresses"], [])
+    # Logger.debug("all ip configs: #{inspect(all_ip_configs)}")
+    address = get_inet_ip_address(all_ip_configs)
+
+    cond do
+      !is_nil(address) -> address
+      Enum.empty?(remaining) -> ""
+      true -> get_ip_address_for_interfaces(remaining)
+    end
+  end
+
   @spec get_inet_ip_address(list()) :: tuple()
   def get_inet_ip_address(all_ip_configs) when length(all_ip_configs) == 0 do
     nil

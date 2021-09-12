@@ -1,4 +1,5 @@
-defmodule Configuration.FixedWing.Cessna.Hil.Estimation do
+defmodule Configuration.FixedWing.RfCessna2m.Sim.Estimation do
+  require Configuration.LoopIntervals, as: LoopIntervals
   @spec config() :: list()
   def config() do
     [
@@ -17,6 +18,7 @@ defmodule Configuration.FixedWing.Cessna.Hil.Estimation do
           gpsvel_xy_std: 0.088,
           gpsvel_z_std: 0.31,
           gpsyaw_std: 0.02,
+          expected_imu_dt_s: LoopIntervals.imu_receive_max_ms*(1.0e-3),
 
           # Mahony
           imu_config: [
@@ -29,7 +31,6 @@ defmodule Configuration.FixedWing.Cessna.Hil.Estimation do
         ],
         agl_kf_type: ViaEstimation.Ekf.Agl,
         agl_kf_config: [
-          # 3deg^2
           q_att_sq: 0.00274,
           q_zdot_sq: 0.25,
           q_z_sq: 0.1,

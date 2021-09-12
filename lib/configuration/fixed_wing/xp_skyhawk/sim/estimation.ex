@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Estimation do
+defmodule Configuration.FixedWing.XpSkyhawk.Sim.Estimation do
   require Configuration.LoopIntervals, as: LoopIntervals
   @spec config() :: list()
   def config() do

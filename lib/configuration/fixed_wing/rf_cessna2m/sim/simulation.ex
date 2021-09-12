@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
+defmodule Configuration.FixedWing.RfCessna2m.Sim.Simulation do
   require ViaUtils.Comms.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaInputEvent.KeypressAction, as: KA
@@ -7,7 +7,6 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
   @spec config() :: list()
   def config() do
     realflight() ++ sim_interface()
-    # xplane() ++ sim_interface()
   end
 
   def sim_interface() do
@@ -17,10 +16,10 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
          expected_imu_receive_interval_ms: 10,
          controllers: [
            rollrate_aileron: [
-             kp: 0.3,
-             ki: 0.1,
+             kp: 0.02,
+             ki: 0.0,
              kd: 0,
-             ff_multiplier: 0.318,
+             ff_multiplier: 0.128,
              output_min: -1.0,
              output_neutral: 0,
              output_max: 1.0,
@@ -28,7 +27,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
              integrator_airspeed_min_mps: 5.0
            ],
            pitchrate_elevator: [
-             kp: 0.3,
+             kp: 0.03,
              ki: 0.1,
              kd: 0,
              ff_multiplier: 0.318,
@@ -39,7 +38,7 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
              integrator_airspeed_min_mps: 5.0
            ],
            yawrate_rudder: [
-             kp: 0.3,
+             kp: 0.03,
              ki: 0.0,
              kd: 0,
              ff_multiplier: 0.318,
@@ -127,16 +126,16 @@ defmodule Configuration.FixedWing.Cessna.Sim.Simulation do
              abs_rx: 1,
              abs_y: 2,
              abs_x: 3,
-             abs_ry: 4,
+             abs_rz: 4,
              abs_throttle: 5,
-             none: 6,
-             btn_rz: 9
+             abs_ry: 6,
+             none: 9
            }
          },
          default_values: %{
            0 => 0,
            1 => 0,
-           2 => 0,
+           2 => -1,
            3 => 0,
            4 => -1,
            5 => -1,

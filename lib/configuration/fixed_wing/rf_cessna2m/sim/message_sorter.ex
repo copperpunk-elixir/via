@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.Cessna.Sim.MessageSorter do
+defmodule Configuration.FixedWing.RfCessna2m.Sim.MessageSorter do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require ViaUtils.Comms.Groups, as: Groups

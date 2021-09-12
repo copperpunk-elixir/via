@@ -55,56 +55,45 @@ defmodule Via.Application do
 
   @spec start_sim() :: atom()
   def start_sim() do
-    input_type =
-      System.get_env("input", "none")
-      |> String.downcase()
+    default_model_type = "xp_skyhawk"
 
-    case input_type do
-      "" ->
-        raise "Input not specified. Please add system argument input="
+    {vehicle_type, model_type, input_type} =
+      case get_model_type(default_model_type) do
+        "xp_skyhawk" -> {"FixedWing", "XpSkyhawk", get_input_type("any")}
+        "rf_cessna2m" -> {"FixedWing", "RfCessna2m", :none}
+        other -> raise "model #{inspect(other)} not supported"
+      end
 
-      "none" ->
-        start_sim(:none)
+    model_module = Module.concat(["Configuration", vehicle_type, model_type, "Sim"])
 
-      "any" ->
-        start_sim(:any)
-
-      "keyboard" ->
-        start_sim(:keyboard)
-
-      "joystick" ->
-        start_sim(:joystick)
-
-      "rx" ->
-        start_sim_rx(get_usb_converter_name())
-
-      other ->
-        raise "#{inspect(other)} not recognized. Input must be Joystick, Keyboard, Any, or Rx (case-insensitive). Please try again."
-    end
+    start_sim(input_type, model_module)
   end
 
-  @spec start_sim(atom()) :: atom()
-  def start_sim(remote_control_interface) do
-    full_config = Configuration.Utils.config("FixedWing", "Cessna", "Sim")
+  @spec start_sim(atom(), atom()) :: atom()
+  def start_sim(input_type, model_module) when input_type == :rx do
+    usb_converter = get_usb_converter_name()
 
-    simulation_config =
-      full_config[:Simulation]
-      |> Kernel.++(
-        apply(Configuration.FixedWing.Cessna.Sim.Simulation, remote_control_interface, [])
-      )
+    uart_config_module = Module.concat(model_module, Uart)
+    uart_config = apply(uart_config_module, :config, ["CommandRx_" <> usb_converter])
 
-    full_config = Keyword.put(full_config, :Simulation, simulation_config)
+    full_config =
+      Configuration.Utils.config(Module.concat(model_module, Config))
+      |> Keyword.put(:Uart, uart_config)
+
     start_with_config(full_config)
   end
 
-  @spec start_sim_rx(binary()) :: atom()
-  def start_sim_rx(usb_converter \\ "CP2104") do
-    uart_config = Configuration.FixedWing.Cessna.Sim.Uart.config(["CommandRx_" <> usb_converter])
+  @spec start_sim(atom(), module()) :: atom()
+  def start_sim(input_type, model_module) do
+    full_config = Configuration.Utils.config(Module.concat(model_module, Config))
 
-    full_config =
-      Configuration.Utils.config("FixedWing", "Cessna", "Sim")
-      |> Keyword.put(:Uart, uart_config)
+    sim_config_module = Module.concat(model_module, Simulation)
 
+    simulation_config =
+      full_config[:Simulation]
+      |> Kernel.++(apply(sim_config_module, input_type, []))
+
+    full_config = Keyword.put(full_config, :Simulation, simulation_config)
     start_with_config(full_config)
   end
 
@@ -155,6 +144,19 @@ defmodule Via.Application do
   @spec is_target() :: boolean()
   def is_target() do
     String.contains?(File.cwd!(), "/srv/erlang")
+  end
+
+  @spec get_model_type(binary()) :: atom()
+  def get_model_type(default_input) do
+    System.get_env("model", default_input)
+    |> String.downcase()
+  end
+
+  @spec get_input_type(binary()) :: atom()
+  def get_input_type(default_input) do
+    System.get_env("input", default_input)
+    |> String.downcase()
+    |> String.to_atom()
   end
 
   @spec get_mix_env() :: binary()
