@@ -1,6 +1,6 @@
 # X-Plane Simulation
 
-Via uses off-the-shelf software for its simulation environments. Someday we will build a headless simulator in Gazebo, but for now we're taking advantage of what's already out there. If you would like to fly a Cessna in X-Plane with Via in the loop, please follow these steps:
+Via uses off-the-shelf software for its simulation environments. Someday we will build a headless simulator in Gazebo, but for now we're taking advantage of what's already out there. If you would like to fly a Cessna in X-Plane with Via in the loop, you will need a Raspberry Pi 3 B/B+ (Linux is also supported, but that requires setting up a development environment). For now, please follow these steps:
 
 0.  [Raspberry Pi setup](rpi.md).
 1.  [Transmitter setup](transmitter.md).
