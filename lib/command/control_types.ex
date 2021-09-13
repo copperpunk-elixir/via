@@ -1,7 +1,7 @@
 defmodule Command.ControlTypes do
-  defmacro autopilot_control_mode_full_auto, do: 3
+  defmacro autopilot_control_mode_full_auto, do: 1
   defmacro autopilot_control_mode_controller_assist, do: 2
-  defmacro autopilot_control_mode_remote_pilot_override, do: 1
+  defmacro autopilot_control_mode_remote_pilot_override, do: 3
   defmacro input_inverted, do: -1
   defmacro input_not_inverted, do: 1
 
