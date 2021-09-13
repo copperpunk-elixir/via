@@ -131,7 +131,7 @@ defmodule Via.Application do
 
   @spec start_test(binary()) :: keyword()
   def start_test(node_type \\ "Sim") do
-    start_test("FixedWing", "Cessna", node_type)
+    start_test("FixedWing", "XpSkyhawk", node_type)
   end
 
   @spec prepare_environment() :: atom()
