@@ -3,7 +3,7 @@
 Via uses off-the-shelf software for its simulation environments. Someday we will build a headless simulator in Gazebo, but for now we're taking advantage of what's already out there. If you would like to fly a Cessna in X-Plane with Via in the loop, you will need a Raspberry Pi 3 B/B+ (Linux is also supported, but that requires setting up a development environment). For now, please follow these steps:
 
 0.  [Raspberry Pi setup](rpi.md).
-1.  [Transmitter setup](transmitter.md).
+1.  [Transmitter](transmitter.md) or [Keyboard](keyboard.md) setup.
 2.  [Install X-Plane](https://www.x-plane.com/desktop/try-it/) (the demo version is fine)
 3.  Modify X-Plane settings to output data via UDP. <p align="center"><img src="../resources/xplane_data_output.jpg" width="70%"></p>
     In case you don't like looking at pictures, the following messages must have the **Network via UDP** box checked:
