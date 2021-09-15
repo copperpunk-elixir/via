@@ -244,8 +244,8 @@ defmodule Display.Scenic.Gcs.FixedWing do
     Logger.debug("ip loop")
 
     ip_address_string =
-      if Via.Application.is_target() do
-        ip_address = Network.Connection.get_ip_address_for_interfaces(["eth0", "wlan0"])
+      if Via.Application.target?() do
+        ip_address = Network.Utils.get_ip_address_for_interfaces(["eth0", "wlan0"])
         if is_nil(ip_address), do: "", else: VintageNet.IP.ip_to_string(ip_address)
       else
         "Check IP in terminal."

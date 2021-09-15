@@ -8,7 +8,7 @@ defmodule Via.Application do
     Logger.warn("Via.Application.Start")
 
     cond do
-      is_target() ->
+      target?() ->
         Logger.warn("Sim environment. Start sim.")
         start_sim()
 
@@ -136,13 +136,13 @@ defmodule Via.Application do
 
   @spec prepare_environment() :: atom()
   def prepare_environment() do
-    # if Common.Utils.is_target?() do
+    # if Common.Utils.target??() do
     RingLogger.attach()
     # end
   end
 
-  @spec is_target() :: boolean()
-  def is_target() do
+  @spec target?() :: boolean()
+  def target?() do
     String.contains?(File.cwd!(), "/srv/erlang")
   end
 

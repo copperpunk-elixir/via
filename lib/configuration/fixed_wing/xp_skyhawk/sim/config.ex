@@ -8,6 +8,7 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Config do
       :Display,
       :Estimation,
       :MessageSorter,
+      :Network,
       :Simulation
     ]
   end
