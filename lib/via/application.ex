@@ -55,7 +55,8 @@ defmodule Via.Application do
 
   @spec start_sim() :: atom()
   def start_sim() do
-    default_model_type = "xp_skyhawk"
+    # default_model_type = "xp_skyhawk"
+    default_model_type = "rf_cessna2m"
 
     {vehicle_type, model_type, input_type} =
       case get_model_type(default_model_type) do

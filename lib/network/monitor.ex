@@ -2,8 +2,7 @@ defmodule Network.Monitor do
   use GenServer
   require Logger
 
-  @wireless_interfaces ["wlan0"]
-  @mount_path "/mnt"
+  @check_network_loop :check_network_loop
 
   def start_link(config) do
     Logger.debug("Start Network.Monitor with config: #{inspect(config)}")
@@ -14,55 +13,63 @@ defmodule Network.Monitor do
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
 
+    network_utils_module =
+      if Via.Application.target?() do
+        GenServer.cast(__MODULE__, :configure_network)
+        Network.Utils.Target
+      else
+        Logger.debug("Host. No need to configure network.")
+        Network.Utils.Host
+      end
+
     state = %{
-      network_config: Keyword.get(config, :network_config, [])
+      network_config: Keyword.get(config, :network_config, []),
+      network_utils_module: network_utils_module,
+      ip_address: nil
     }
 
-    if Via.Application.target?() do
-      GenServer.cast(__MODULE__, :configure_network)
-    else
-      Logger.debug("Host. No need to configure network.")
-    end
+    ViaUtils.Process.start_loop(
+      self(),
+      1000,
+      @check_network_loop
+    )
 
     {:ok, state}
   end
 
   @impl GenServer
   def handle_cast(:configure_network, state) do
-    Enum.each(state.network_config, fn {interface, config} ->
-      config =
-        if String.contains?(interface, @wireless_interfaces) do
-          Map.put(config, :vintage_net_wifi, get_wifi_config())
-        end
+    Network.Utils.Target.configure_network(state.network_config)
+    {:noreply, state}
+  end
 
-      Logger.debug("network config: #{inspect(config)}")
-      result = VintageNet.configure(interface, config)
-      Logger.debug("Configure #{interface}: #{inspect(result)}")
-    end)
+  @impl GenServer
+  def handle_cast(:resend_ip_address, state) do
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      {:host_ip_address_updated, state.ip_address},
+      self()
+    )
 
     {:noreply, state}
   end
 
-  @spec get_wifi_config() :: map()
-  def get_wifi_config() do
-    ViaUtils.File.mount_usb_drive("sda1", @mount_path)
-    {:ok, ssid_psk} = File.read(@mount_path <> "/network.txt")
-    [ssid, psk] = String.split(ssid_psk, ",")
-    psk = String.trim_trailing(psk, "\n")
-    ViaUtils.File.unmount_usb_drive(@mount_path)
+  @impl GenServer
+  def handle_info(@check_network_loop, state) do
+    ip_address = apply(state.network_utils_module, :get_ip_address, [])
 
-    %{
-      networks: [
-        %{
-          key_mgmt: :wpa_psk,
-          psk: psk,
-          ssid: ssid
-        }
-      ]
-    }
-  end
+    if is_nil(state.ip_address) and !is_nil(ip_address) do
+      Logger.debug("new ip address: #{inspect(ip_address)}")
 
-  @spec configure_wifi(binary(), binary()) :: any()
-  def configure_wifi(ssid, psk) do
+      ip_address = Enum.join(Tuple.to_list(ip_address), ".")
+
+      ViaUtils.Comms.send_local_msg_to_group(
+        __MODULE__,
+        {:host_ip_address_updated, ip_address},
+        self()
+      )
+    end
+
+    {:noreply, %{state | ip_address: ip_address}}
   end
 end

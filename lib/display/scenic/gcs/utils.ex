@@ -9,15 +9,16 @@ defmodule Display.Scenic.Gcs.Utils do
     offset_x = config.offset_x
     offset_y = config.offset_y
     width = config.width
+    width_text = Map.get(config, :width_text, width)
     height = config.height
     labels = config.labels
     font_size = config.font_size
     # ids = Map.get(config, :ids, {:x,:y, :z})
     ids = config.ids
-    col = width / 2
     row = height / length(labels)
     v_spacing = 1
     h_spacing = 3
+    label_text = Map.get(config, :text, Enum.map(ids, fn _ -> "" end))
 
     graph =
       Enum.reduce(Enum.with_index(labels), graph, fn {label, index}, acc ->
@@ -27,7 +28,7 @@ defmodule Display.Scenic.Gcs.Utils do
             g
             |> button(
               label,
-              width: col - 2 * h_spacing,
+              width: width - 2 * h_spacing,
               height: row - 2 * v_spacing,
               theme: :secondary,
               translate: {0, index * (row + v_spacing)}
@@ -45,19 +46,20 @@ defmodule Display.Scenic.Gcs.Utils do
           fn g ->
             g
             |> text(
-              "",
+              Enum.at(label_text, index),
+              width: width_text,
               text_align: :center_middle,
               font_size: font_size,
               id: id,
               translate: {0, index * row}
             )
           end,
-          translate: {offset_x + 1.5 * col + h_spacing, offset_y + row / 2},
+          translate: {offset_x + 1.5 * width + h_spacing, offset_y + row / 2},
           button_font_size: font_size
         )
       end)
 
-    {graph, offset_x, offset_y + height + config.spacer_y}
+    {graph, offset_x + width + width_text + h_spacing, offset_y + height + config.spacer_y}
   end
 
   def add_rows_to_graph(graph, config) do
@@ -74,6 +76,7 @@ defmodule Display.Scenic.Gcs.Utils do
     row = height / 2
     v_spacing = 1
     h_spacing = 3
+    label_text = Map.get(config, :text, Enum.map(ids, fn _ -> "" end))
 
     graph =
       Enum.reduce(Enum.with_index(ids), graph, fn {id, index}, acc ->
@@ -82,7 +85,7 @@ defmodule Display.Scenic.Gcs.Utils do
           fn g ->
             g
             |> text(
-              "",
+              Enum.at(label_text, index),
               text_align: :center_middle,
               font_size: font_size,
               id: id,
@@ -122,7 +125,7 @@ defmodule Display.Scenic.Gcs.Utils do
         stroke: {@rect_border, :white}
       )
 
-    {graph, offset_x + width + 2*h_spacing, offset_y + height + config.spacer_y}
+    {graph, offset_x + width + 2 * h_spacing, offset_y + height + config.spacer_y}
   end
 
   def add_button_to_graph(graph, config) do
@@ -140,7 +143,7 @@ defmodule Display.Scenic.Gcs.Utils do
         translate: {config.offset_x, config.offset_y}
       )
 
-    {graph, config.offset_x, config.offset_y + config.height}
+    {graph, config.offset_x + config.width, config.offset_y + config.height}
   end
 
   def add_rectangle_to_graph(graph, config) do

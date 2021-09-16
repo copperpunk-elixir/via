@@ -8,6 +8,7 @@ defmodule Configuration.FixedWing.RfCessna2m.Sim.Config do
       :Display,
       :Estimation,
       :MessageSorter,
+      :Network,
       :Simulation
     ]
   end

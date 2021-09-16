@@ -6,7 +6,8 @@ defmodule Network.Utils.Host do
     with(
       {_interface, config} <-
         Enum.find(interfaces, fn {_interface, config} ->
-          Enum.member?(config[:flags], :up) and !Enum.member?(config[:flags], :loopback)
+          Enum.member?(config[:flags], :up) and !Enum.member?(config[:flags], :loopback) and
+            List.keymember?(config, :addr, 0)
         end),
       {:addr, ip_address} <-
         Enum.find(config, fn {key, value} ->
