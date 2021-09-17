@@ -146,7 +146,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
         spacer_y: spacer_y,
         labels: ["Host IP", "RealFlight IP"],
         text: ["searching...", "waiting..."],
-        ids: [:host_ip_address, :realflight_ip_address],
+        ids: [:host_ip, :realflight_ip],
         font_size: @font_size
       })
 
@@ -167,7 +167,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
     {graph, offset_x, _offset_y} =
       Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
         text: "+",
-        id: :increment_realflight_ip,
+        id: {:modify_realflight_ip, 1},
         theme: %{text: :white, background: :green, active: :grey, border: :white},
         width: modify_ip_width,
         height: modify_ip_height,
@@ -179,7 +179,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
     {graph, offset_x, _offset_y} =
       Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
         text: "-",
-        id: :decrement_realflight_ip,
+        id: {:modify_realflight_ip, -1},
         theme: %{text: :white, background: :red, active: :grey, border: :white},
         width: modify_ip_width,
         height: modify_ip_height,
@@ -270,24 +270,49 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
     state = %{
       graph: graph,
+      host_ip: nil,
+      realflight_ip: nil,
       save_log_file: ""
     }
 
+    :erlang.send_after(3000, self(), :request_realflight_ip_address)
     {:ok, state, push: graph}
   end
 
+  @impl true
+  def handle_info(:request_realflight_ip_address, state) do
+    Logger.debug("request rf ip")
+
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      :get_realflight_ip_address,
+      :get_realflight_ip_address,
+      self()
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_cast({:host_ip_address_updated, ip_address}, state) do
     Logger.warn("host ip updated: #{inspect(ip_address)}")
 
-    graph = Scenic.Graph.modify(state.graph, :host_ip_address, &text(&1, ip_address))
-    {:noreply, %{state | graph: graph}, push: graph}
+    graph = Scenic.Graph.modify(state.graph, :host_ip, &text(&1, ip_address))
+    {:noreply, %{state | graph: graph, host_ip: ip_address}, push: graph}
   end
 
+  @impl true
   def handle_cast({:realflight_ip_address_updated, ip_address}, state) do
     Logger.warn("RF ip updated: #{inspect(ip_address)}")
 
-    graph = Scenic.Graph.modify(state.graph, :realflight_ip_address, &text(&1, ip_address))
-    {:noreply, %{state | graph: graph}, push: graph}
+    graph =
+      if is_binary(ip_address) do
+        Scenic.Graph.modify(state.graph, :realflight_ip, &text(&1, ip_address))
+      else
+        state.graph
+      end
+
+    {:noreply, %{state | graph: graph, realflight_ip: ip_address}, push: graph}
   end
 
   # --------------------------------------------------------
@@ -539,5 +564,49 @@ defmodule Display.Scenic.Gcs.FixedWing do
     Estimation.Estimator.reset_estimation()
     {:cont, event, state}
     # {:noreply, state}
+  end
+
+  @impl Scenic.Scene
+  def filter_event({:click, {:modify_realflight_ip, value_to_add}} = event, _from, state) do
+    Logger.debug("Change IP by #{value_to_add}")
+
+    cond do
+      !is_nil(state.realflight_ip) ->
+        host_ip = state.host_ip
+
+        ip_address = Network.Utils.add_to_ip_address_last_byte(state.realflight_ip, value_to_add)
+
+        ip_address =
+          if ip_address == host_ip do
+            Network.Utils.add_to_ip_address_last_byte(host_ip, value_to_add)
+          else
+            ip_address
+          end
+
+        GenServer.cast(self(), {:realflight_ip_address_updated, ip_address})
+
+      !is_nil(state.host_ip) ->
+        ip_address = Network.Utils.add_to_ip_address_last_byte(state.host_ip, value_to_add)
+        GenServer.cast(self(), {:realflight_ip_address_updated, ip_address})
+
+      true ->
+        :ok
+    end
+
+    {:cont, event, state}
+    # {:noreply, state}
+  end
+
+  @impl Scenic.Scene
+  def filter_event({:click, :set_realflight_ip} = event, _from, state) do
+    Logger.debug("Set IP #{state.realflight_ip}")
+
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      {:set_realflight_ip_address, state.realflight_ip},
+      self()
+    )
+
+    {:cont, event, state}
   end
 end

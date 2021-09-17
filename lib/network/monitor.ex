@@ -22,17 +22,19 @@ defmodule Network.Monitor do
         Network.Utils.Host
       end
 
+    check_network_timer =
+      ViaUtils.Process.start_loop(
+        self(),
+        1000,
+        @check_network_loop
+      )
+
     state = %{
       network_config: Keyword.get(config, :network_config, []),
       network_utils_module: network_utils_module,
-      ip_address: nil
+      ip_address: nil,
+      check_network_timer: check_network_timer
     }
-
-    ViaUtils.Process.start_loop(
-      self(),
-      1000,
-      @check_network_loop
-    )
 
     {:ok, state}
   end
@@ -58,18 +60,42 @@ defmodule Network.Monitor do
   def handle_info(@check_network_loop, state) do
     ip_address = apply(state.network_utils_module, :get_ip_address, [])
 
-    if is_nil(state.ip_address) and !is_nil(ip_address) do
-      Logger.debug("new ip address: #{inspect(ip_address)}")
+    check_network_timer =
+      cond do
+        is_nil(state.ip_address) and !is_nil(ip_address) ->
+          Logger.debug("new ip address: #{inspect(ip_address)}")
 
-      ip_address = Enum.join(Tuple.to_list(ip_address), ".")
+          ip_address = Enum.join(Tuple.to_list(ip_address), ".")
 
-      ViaUtils.Comms.send_local_msg_to_group(
-        __MODULE__,
-        {:host_ip_address_updated, ip_address},
-        self()
-      )
-    end
+          ViaUtils.Comms.send_local_msg_to_group(
+            __MODULE__,
+            {:host_ip_address_updated, ip_address},
+            self()
+          )
 
-    {:noreply, %{state | ip_address: ip_address}}
+          ViaUtils.Process.stop_loop(state.check_network_timer)
+
+          ViaUtils.Process.start_loop(
+            self(),
+            10000,
+            @check_network_loop
+          )
+
+        !is_nil(state.ip_address) and is_nil(ip_address) ->
+          Logger.warn("Network was up, but now it is down.")
+          ViaUtils.Process.stop_loop(state.check_network_timer)
+
+          ViaUtils.Process.start_loop(
+            self(),
+            1000,
+            @check_network_loop
+          )
+
+        true ->
+          Logger.debug("Check network. Status unchanged.")
+          state.check_network_timer
+      end
+
+    {:noreply, %{state | ip_address: ip_address, check_network_timer: check_network_timer}}
   end
 end

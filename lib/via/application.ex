@@ -10,6 +10,8 @@ defmodule Via.Application do
     cond do
       target?() ->
         Logger.warn("Sim environment. Start sim.")
+
+        ViaUtils.File.mount_usb_drive("sda1")
         start_sim()
 
       Mix.env() != :test ->

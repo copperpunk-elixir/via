@@ -4,7 +4,7 @@ defmodule Configuration.FixedWing.RfCessna2m.Sim.Network do
     [
       Monitor: [
         network_config: [
-          {"wlan0", %{type: VintageNetWiFi, ipv4: %{method: :dhcp}}}
+          # {"wlan0", %{type: VintageNetWiFi, ipv4: %{method: :dhcp}}}
         ]
       ]
     ]

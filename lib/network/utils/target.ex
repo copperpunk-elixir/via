@@ -1,7 +1,6 @@
 defmodule Network.Utils.Target do
   require Logger
   @wireless_interfaces ["wlan0"]
-  @mount_path "/mnt"
 
   @spec get_ip_address() :: any()
   def get_ip_address() do
@@ -41,16 +40,19 @@ defmodule Network.Utils.Target do
 
   @spec get_wifi_config() :: map()
   def get_wifi_config() do
-    ssid_psk = check_data_directory_for_credentials()
+    ssid_psk = ViaUtils.File.read_file("network.txt", "/data")
 
     {ssid, psk} =
       if is_nil(ssid_psk) do
         Logger.warn("Wifi config not found in data folder. Checking USB drive")
-        ViaUtils.File.mount_usb_drive("sda1", @mount_path)
-        {:ok, ssid_psk} = File.read(@mount_path <> "/network.txt")
-        ViaUtils.File.unmount_usb_drive(@mount_path)
-        File.write("/data/network.txt", ssid_psk)
-        split_ssid_psk_binary(ssid_psk)
+        ssid_psk = ViaUtils.File.read_file("network.txt")
+
+        if is_nil(ssid_psk) do
+          raise "Wifi Network configuration could not be located"
+        else
+          :ok = ViaUtils.File.write_file("network.txt", "/data", ssid_psk)
+          split_ssid_psk_binary(ssid_psk)
+        end
       else
         Logger.warn("Wifi config IS found in data folder. #{ssid_psk}")
         split_ssid_psk_binary(ssid_psk)
@@ -65,13 +67,6 @@ defmodule Network.Utils.Target do
         }
       ]
     }
-  end
-
-  def check_data_directory_for_credentials() do
-    case File.read("/data/network.txt") do
-      {:ok, ssid_psk} -> ssid_psk
-      _other -> nil
-    end
   end
 
   def split_ssid_psk_binary(ssid_psk) do
