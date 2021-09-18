@@ -6,14 +6,14 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Display do
     planner_scene = nil
 
     driver_module =
-      if Via.Application.target?() do
+      if ViaUtils.File.target?() do
         Scenic.Driver.Nerves.Rpi
       else
         Scenic.Driver.Glfw
       end
 
     gcs_drivers =
-      if Via.Application.target?() do
+      if ViaUtils.File.target?() do
         [
           %{
             module: driver_module,

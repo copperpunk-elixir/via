@@ -1,5 +1,7 @@
 defmodule Network.Utils.Target do
   require Logger
+  require ViaUtils.File
+
   @wireless_interfaces ["wlan0"]
 
   @spec get_ip_address() :: any()
@@ -40,22 +42,19 @@ defmodule Network.Utils.Target do
 
   @spec get_wifi_config() :: map()
   def get_wifi_config() do
-    ssid_psk = ViaUtils.File.read_file("network.txt", "/data")
+    ssid_psk =
+      ViaUtils.File.read_file_target(
+        "network.txt",
+        ViaUtils.File.default_mount_path(),
+        true,
+        true
+      )
 
-    {ssid, psk} =
+    [ssid, psk] =
       if is_nil(ssid_psk) do
-        Logger.warn("Wifi config not found in data folder. Checking USB drive")
-        ssid_psk = ViaUtils.File.read_file("network.txt")
-
-        if is_nil(ssid_psk) do
-          raise "Wifi Network configuration could not be located"
-        else
-          :ok = ViaUtils.File.write_file("network.txt", "/data", ssid_psk)
-          split_ssid_psk_binary(ssid_psk)
-        end
+        raise "Wifi Network configuration could not be located"
       else
-        Logger.warn("Wifi config IS found in data folder. #{ssid_psk}")
-        split_ssid_psk_binary(ssid_psk)
+        String.split(ssid_psk, ",")
       end
 
     %{
@@ -67,11 +66,5 @@ defmodule Network.Utils.Target do
         }
       ]
     }
-  end
-
-  def split_ssid_psk_binary(ssid_psk) do
-    [ssid, psk] = String.split(ssid_psk, ",")
-    psk = String.trim_trailing(psk, "\n")
-    {ssid, psk}
   end
 end

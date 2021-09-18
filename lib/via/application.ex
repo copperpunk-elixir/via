@@ -8,7 +8,7 @@ defmodule Via.Application do
     Logger.warn("Via.Application.Start")
 
     cond do
-      target?() ->
+      ViaUtils.File.target?() ->
         Logger.warn("Sim environment. Start sim.")
 
         ViaUtils.File.mount_usb_drive("sda1")
@@ -58,14 +58,21 @@ defmodule Via.Application do
   @spec start_sim() :: atom()
   def start_sim() do
     # default_model_type = "xp_skyhawk"
-    default_model_type = "rf_cessna2m"
+    {simulator_type, modelname, input_type} = Simulation.Utils.get_simulation_env()
 
-    {vehicle_type, model_type, input_type} =
-      case get_model_type(default_model_type) do
-        "xp_skyhawk" -> {"FixedWing", "XpSkyhawk", get_input_type("any")}
-        "rf_cessna2m" -> {"FixedWing", "RfCessna2m", :none}
-        other -> raise "model #{inspect(other)} not supported"
+    {vehicle_type, model_type} =
+      if is_nil(simulator_type) or is_nil(modelname) do
+        {vehicle_type, model_type, input_type} =
+          case get_model_type(default_model_type) do
+            "xp_skyhawk" -> {"FixedWing", "XpSkyhawk", get_input_type("any")}
+            "rf_cessna2m" -> {"FixedWing", "RfCessna2m", :none}
+            other -> raise "model #{inspect(other)} not supported"
+          end
+      else
+        Simulation.Utils.get_vehicle_and_model_type(simulator_type, modelname)
       end
+
+    default_model_type = "rf_cessna2m"
 
     model_module = Module.concat(["Configuration", vehicle_type, model_type, "Sim"])
 
@@ -139,14 +146,7 @@ defmodule Via.Application do
 
   @spec prepare_environment() :: atom()
   def prepare_environment() do
-    # if Common.Utils.target??() do
     RingLogger.attach()
-    # end
-  end
-
-  @spec target?() :: boolean()
-  def target?() do
-    String.contains?(File.cwd!(), "/srv/erlang")
   end
 
   @spec get_model_type(binary()) :: atom()

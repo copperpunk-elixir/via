@@ -14,7 +14,7 @@ defmodule Network.Monitor do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
 
     network_utils_module =
-      if Via.Application.target?() do
+      if ViaUtils.File.target?() do
         GenServer.cast(__MODULE__, :configure_network)
         Network.Utils.Target
       else
