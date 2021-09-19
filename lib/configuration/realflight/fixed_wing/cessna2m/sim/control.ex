@@ -1,4 +1,4 @@
-defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Control do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
   require Command.ControlTypes, as: CCT
 
   @spec config() :: list()

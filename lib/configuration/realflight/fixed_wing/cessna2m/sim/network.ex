@@ -1,4 +1,4 @@
-defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Network do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Network do
   @spec config() :: list()
   def config() do
     [

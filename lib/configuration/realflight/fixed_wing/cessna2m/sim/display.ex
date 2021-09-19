@@ -1,4 +1,4 @@
-defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Display do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Display do
   @spec config() :: list()
   def config() do
     gcs_scene = Display.Scenic.Gcs.FixedWing
@@ -41,7 +41,7 @@ defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Display do
     gcs_config = %{
       name: :main_viewport,
       size: {800, 480},
-      default_scene: {gcs_scene, %{show_realflight_ip: false}},
+      default_scene: {gcs_scene, %{show_realflight_ip: true}},
       drivers: gcs_drivers
     }
 

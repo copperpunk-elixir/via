@@ -1,4 +1,4 @@
-defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Uart.Generic do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.Generic do
   require Logger
   @spec module_key_and_config(binary()) :: tuple()
   def module_key_and_config(uart_port) do

@@ -1,4 +1,4 @@
-defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Uart.CommandRx do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.CommandRx do
   require Logger
   @spec config(binary()) :: list()
   def config(uart_port) do

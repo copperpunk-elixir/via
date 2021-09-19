@@ -10,7 +10,7 @@ defmodule Uart.CommandRx.ParseFrskyRxTest do
 
   test "Open Serial Port" do
     # Expects comments from Gps operator
-config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Uart.get_frsky_rx_config("CP2104")
+config = Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.get_frsky_rx_config("CP2104")
     Uart.CommandRx.start_link(config)
 
     Process.sleep(200000)
