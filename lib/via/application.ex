@@ -8,16 +8,18 @@ defmodule Via.Application do
     Logger.warn("Via.Application.Start")
 
     cond do
-      is_target() ->
-        Logger.warn("Sim environment. Start sim.")
-        start_sim()
+      ViaUtils.File.target?() ->
+        Logger.warn("Sim environment. Start sim_target.")
+
+        ViaUtils.File.mount_usb_drive("sda1")
+        start_sim_target()
 
       Mix.env() != :test ->
         Logger.debug("Non-sim environment. Start vehicle.")
         node_type = System.get_env("node")
 
         if is_nil(node_type) or node_type == "Sim" do
-          start_sim()
+          start_sim_host()
         else
           start_real_vehicle()
         end
@@ -53,24 +55,35 @@ defmodule Via.Application do
     start_with_config(full_config)
   end
 
-  @spec start_sim() :: atom()
-  def start_sim() do
-    default_model_type = "xp_skyhawk"
+  @spec start_sim_target() :: atom()
+  def start_sim_target() do
+    {simulator_type, model_type, input_type} =
+      Simulation.Utils.get_simulation_env("xplane", "skyhawk", "any")
 
-    {vehicle_type, model_type, input_type} =
-      case get_model_type(default_model_type) do
-        "xp_skyhawk" -> {"FixedWing", "XpSkyhawk", get_input_type("any")}
-        "rf_cessna2m" -> {"FixedWing", "RfCessna2m", :none}
-        other -> raise "model #{inspect(other)} not supported"
-      end
+    vehicle_type = Simulation.Utils.get_vehicle_type(model_type)
 
-    model_module = Module.concat(["Configuration", vehicle_type, model_type, "Sim"])
+    model_module =
+      Module.concat(["Configuration", simulator_type, vehicle_type, model_type, "Sim"])
 
     start_sim(input_type, model_module)
   end
 
-  @spec start_sim(atom(), atom()) :: atom()
-  def start_sim(input_type, model_module) when input_type == :rx do
+  @spec start_sim_host() :: atom()
+  def start_sim_host() do
+    simulator_type = get_simulator_type("xplane")
+    model_type = get_model_type("skyhawk")
+    input_type = get_input_type("any")
+
+    vehicle_type = Simulation.Utils.get_vehicle_type(model_type)
+
+    model_module =
+      Module.concat(["Configuration", simulator_type, vehicle_type, model_type, "Sim"])
+
+    start_sim(input_type, model_module)
+  end
+
+  @spec start_sim(binary(), atom()) :: atom()
+  def start_sim(input_type, model_module) when input_type == "rx" do
     usb_converter = get_usb_converter_name()
 
     uart_config_module = Module.concat(model_module, Uart)
@@ -83,8 +96,10 @@ defmodule Via.Application do
     start_with_config(full_config)
   end
 
-  @spec start_sim(atom(), module()) :: atom()
+  @spec start_sim(binary(), module()) :: atom()
   def start_sim(input_type, model_module) do
+    input_type = String.to_atom(input_type)
+
     full_config = Configuration.Utils.config(Module.concat(model_module, Config))
 
     sim_config_module = Module.concat(model_module, Simulation)
@@ -136,27 +151,25 @@ defmodule Via.Application do
 
   @spec prepare_environment() :: atom()
   def prepare_environment() do
-    # if Common.Utils.is_target?() do
     RingLogger.attach()
-    # end
-  end
-
-  @spec is_target() :: boolean()
-  def is_target() do
-    String.contains?(File.cwd!(), "/srv/erlang")
   end
 
   @spec get_model_type(binary()) :: atom()
   def get_model_type(default_input) do
     System.get_env("model", default_input)
-    |> String.downcase()
+    |> String.capitalize()
+  end
+
+  @spec get_simulator_type(binary()) :: atom()
+  def get_simulator_type(default_input) do
+    System.get_env("simulator", default_input)
+    |> String.capitalize()
   end
 
   @spec get_input_type(binary()) :: atom()
   def get_input_type(default_input) do
     System.get_env("input", default_input)
     |> String.downcase()
-    |> String.to_atom()
   end
 
   @spec get_mix_env() :: binary()

@@ -45,20 +45,23 @@ if keys == [],
     """)
 
 config :nerves_ssh,
-  authorized_keys: Enum.map(keys, &File.read!/1)
+  authorized_keys: Enum.map(keys, &File.read!/1),
+  user_passwords: [
+    {"via", "copperpunk"}
+  ]
 
 # Configure the network using vintage_net
 # See https://github.com/nerves-networking/vintage_net for more information
 config :vintage_net,
   regulatory_domain: "US",
   config: [
-    {"usb0", %{type: VintageNetDirect}},
+    #     {"usb0", %{type: VintageNetDirect}},
     {"eth0",
      %{
        type: VintageNetEthernet,
        ipv4: %{method: :dhcp}
-     }},
-    {"wlan0", %{type: VintageNetWiFi}}
+     }}
+    # {"wlan0", %{type: VintageNetWiFi}}
   ]
 
 config :mdns_lite,

@@ -14,25 +14,29 @@ defmodule Display.Scenic.Gcs.FixedWing do
   @pct "%"
 
   @rect_border 6
-  @ip_address_loop :ip_address_loop
 
   @impl true
-  def init(_, opts) do
-    # Logger.debug("Sensor.init: #{inspect(opts)}")
+  def init(args, opts) do
+    Logger.debug("Gcs.init: #{inspect(opts)}")
+    Logger.debug("Gcs.args: #{inspect(args)}")
 
     {:ok, %Scenic.ViewPort.Status{size: {vp_width, vp_height}}} =
       opts[:viewport]
       |> Scenic.ViewPort.info()
 
     # col = vp_width / 12
-    label_value_width = 250
+    label_value_width = 125
     label_value_height = 40
     goals_width = 400
     goals_height = 40
     battery_width = 400
     battery_height = 40
-    ip_width = 200
+    ip_width = 100
     ip_height = 30
+    modify_ip_width = 50
+    modify_ip_height = ip_height
+    reset_estimation_width = 160
+    reset_estimation_height = ip_height - 5
     cluster_status_side = 100
     # build the graph
     offset_x_origin = 10
@@ -43,7 +47,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
       Scenic.Graph.build()
       |> rect({vp_width, vp_height})
 
-    {graph, offset_x, offset_y} =
+    {graph, _offset_x, offset_y} =
       Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
         width: label_value_width,
         height: 4 * label_value_height,
@@ -55,11 +59,11 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
-    {graph, offset_x, offset_y} =
+    {graph, _offset_x, offset_y} =
       Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
         width: label_value_width,
         height: 3 * label_value_height,
-        offset_x: offset_x,
+        offset_x: offset_x_origin,
         offset_y: offset_y,
         spacer_y: spacer_y,
         labels: ["airspeed", "speed", "course"],
@@ -71,7 +75,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
       Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
         width: label_value_width,
         height: 3 * label_value_height,
-        offset_x: offset_x,
+        offset_x: offset_x_origin,
         offset_y: offset_y,
         spacer_y: spacer_y,
         labels: ["roll", "pitch", "yaw"],
@@ -79,7 +83,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
-    goals_offset_x = 60 + label_value_width
+    goals_offset_x = 60 + 2 * label_value_width
 
     {graph, _offset_x, offset_y} =
       Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
@@ -133,30 +137,83 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
+    {ip_labels, ip_text, ip_ids} =
+      if Map.get(args, :show_realflight_ip, false) do
+        {["Host IP", "RealFlight IP"], ["searching...", "waiting..."], [:host_ip, :realflight_ip]}
+      else
+        {["Host IP"], ["searching..."], [:host_ip]}
+      end
+
     {graph, offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_rows_to_graph(graph, %{
-        id: :ip_address_row,
-        width: ip_width,
-        height: 2 * ip_height,
+      Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
+        width: 100,
+        width_text: ip_width,
+        height: ip_height * 2,
         offset_x: goals_offset_x,
         offset_y: offset_y,
         spacer_y: spacer_y,
-        labels: ["IP address"],
-        ids: [:ip_address],
+        labels: ip_labels,
+        text: ip_text,
+        ids: ip_ids,
         font_size: @font_size
       })
 
-    {graph, _offset_x, _offset_y} =
+    {graph, _offset_x, offset_y} =
       Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
         text: "Reset Estimation",
         id: :reset_estimation,
-        theme: %{text: :white, background: :green, active: :grey, border: :white},
-        width: ip_width,
-        height: 2 * ip_height,
+        theme: %{text: :black, background: :white, active: :grey, border: :white},
+        width: reset_estimation_width,
+        height: reset_estimation_height,
         font_size: @font_size,
         offset_x: offset_x + 30,
         offset_y: offset_y
       })
+
+    offset_y = offset_y + 5
+
+    graph =
+      if Map.get(args, :show_realflight_ip, false) do
+        {graph, offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "+",
+            id: {:modify_realflight_ip, 1},
+            theme: %{text: :white, background: :green, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size + 5,
+            offset_x: offset_x + 30,
+            offset_y: offset_y
+          })
+
+        {graph, offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "-",
+            id: {:modify_realflight_ip, -1},
+            theme: %{text: :white, background: :red, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size + 5,
+            offset_x: offset_x + 5,
+            offset_y: offset_y
+          })
+
+        {graph, _offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "Set IP",
+            id: :set_realflight_ip,
+            theme: %{text: :white, background: :blue, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size,
+            offset_x: offset_x + 5,
+            offset_y: offset_y
+          })
+
+        graph
+      else
+        graph
+      end
 
     # cluster_status_offset_x = vp_width - cluster_status_side - 40
     # cluster_status_offset_y = vp_height - cluster_status_side - 20
@@ -223,44 +280,54 @@ defmodule Display.Scenic.Gcs.FixedWing do
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
     ViaUtils.Comms.join_group(__MODULE__, Groups.current_pilot_control_level_and_commands())
-
-    ip_address_timer =
-      ViaUtils.Process.start_loop(
-        self(),
-        1000,
-        @ip_address_loop
-      )
+    ViaUtils.Comms.join_group(__MODULE__, :host_ip_address_updated)
+    ViaUtils.Comms.join_group(__MODULE__, :realflight_ip_address_updated)
 
     state = %{
       graph: graph,
-      save_log_file: "",
-      ip_address_timer: ip_address_timer
+      host_ip: nil,
+      realflight_ip: nil,
+      save_log_file: ""
     }
 
+    :erlang.send_after(3000, self(), :request_realflight_ip_address)
     {:ok, state, push: graph}
   end
 
-  def handle_info(@ip_address_loop, state) do
-    Logger.debug("ip loop")
+  @impl true
+  def handle_info(:request_realflight_ip_address, state) do
+    Logger.debug("request rf ip")
 
-    ip_address_string =
-      if Via.Application.is_target() do
-        ip_address = Network.Connection.get_ip_address_for_interfaces(["eth0", "wlan0"])
-        if is_nil(ip_address), do: "", else: VintageNet.IP.ip_to_string(ip_address)
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      :get_realflight_ip_address,
+      :get_realflight_ip_address,
+      self()
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:host_ip_address_updated, ip_address}, state) do
+    Logger.warn("host ip updated: #{inspect(ip_address)}")
+
+    graph = Scenic.Graph.modify(state.graph, :host_ip, &text(&1, ip_address))
+    {:noreply, %{state | graph: graph, host_ip: ip_address}, push: graph}
+  end
+
+  @impl true
+  def handle_cast({:realflight_ip_address_updated, ip_address}, state) do
+    Logger.warn("RF ip updated: #{inspect(ip_address)}")
+
+    graph =
+      if is_binary(ip_address) do
+        Scenic.Graph.modify(state.graph, :realflight_ip, &text(&1, ip_address))
       else
-        "Check IP in terminal."
+        state.graph
       end
 
-    graph = Scenic.Graph.modify(state.graph, :ip_address, &text(&1, ip_address_string))
-
-    ip_address_timer =
-      if ip_address_string != "" do
-        ViaUtils.Process.stop_loop(state.ip_address_timer)
-      else
-        state.ip_address_timer
-      end
-
-    {:noreply, %{state | graph: graph, ip_address_timer: ip_address_timer}, push: graph}
+    {:noreply, %{state | graph: graph, realflight_ip: ip_address}, push: graph}
   end
 
   # --------------------------------------------------------
@@ -512,5 +579,49 @@ defmodule Display.Scenic.Gcs.FixedWing do
     Estimation.Estimator.reset_estimation()
     {:cont, event, state}
     # {:noreply, state}
+  end
+
+  @impl Scenic.Scene
+  def filter_event({:click, {:modify_realflight_ip, value_to_add}} = event, _from, state) do
+    Logger.debug("Change IP by #{value_to_add}")
+
+    cond do
+      !is_nil(state.realflight_ip) ->
+        host_ip = state.host_ip
+
+        ip_address = Network.Utils.add_to_ip_address_last_byte(state.realflight_ip, value_to_add)
+
+        ip_address =
+          if ip_address == host_ip do
+            Network.Utils.add_to_ip_address_last_byte(host_ip, value_to_add)
+          else
+            ip_address
+          end
+
+        GenServer.cast(self(), {:realflight_ip_address_updated, ip_address})
+
+      !is_nil(state.host_ip) ->
+        ip_address = Network.Utils.add_to_ip_address_last_byte(state.host_ip, value_to_add)
+        GenServer.cast(self(), {:realflight_ip_address_updated, ip_address})
+
+      true ->
+        :ok
+    end
+
+    {:cont, event, state}
+    # {:noreply, state}
+  end
+
+  @impl Scenic.Scene
+  def filter_event({:click, :set_realflight_ip} = event, _from, state) do
+    Logger.debug("Set IP #{state.realflight_ip}")
+
+    ViaUtils.Comms.send_local_msg_to_group(
+      __MODULE__,
+      {:set_realflight_ip_address, state.realflight_ip},
+      self()
+    )
+
+    {:cont, event, state}
   end
 end
