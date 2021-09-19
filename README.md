@@ -1,5 +1,5 @@
 # Via
-
+<p align="center"><img src="resources/../docs/resources/via_type_invert.png" width=50%></p>
 Welcome! You are looking at the open source version of an Elixir-based autopilot that is being developed by COPPERPUNK. The only difference between this and the previous version is that hopefully this one is better. In order to make that the case, we started over. This means the documentation is basically non-existent and the features are fewer (for now). If you would like to read about the older version (code name `Gristle`), you can check out our blog : https://www.copperpunk.com/blog/categories/gristle.
 
 Via is not ready for developer collaboration just yet. Things are still changing quite a bit, so we wouldn't want anyone to waste their time writing code that will be obsolete in a week. However, we would love for people to start using the software. [This post](https://www.copperpunk.com/post/introducing-via) outlines a few reasons why Via might be worth your time.
