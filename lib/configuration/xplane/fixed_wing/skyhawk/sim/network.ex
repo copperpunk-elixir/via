@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Network do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Network do
   @spec config() :: list()
   def config() do
     [

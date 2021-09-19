@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.RfCessna2m.Sim.Command do
+defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Command do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require Command.ActuatorNames, as: Act

@@ -9,7 +9,7 @@ defmodule Command.StartWithSupervisorTest do
 
   test "Start With Supervisor", full_config do
     # Expects comments from Gps operator
-   config = Configuration.FixedWing.RfCessna2m.Sim.Command.config()
+   config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Command.config()
     Command.Supervisor.start_link(config)
     Process.sleep(1000)
   end

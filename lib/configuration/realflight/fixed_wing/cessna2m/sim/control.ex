@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Control do
+defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Control do
   require Command.ControlTypes, as: CCT
 
   @spec config() :: list()
@@ -24,20 +24,20 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Control do
             module: ViaControllers.FixedWing.SpeedCourseAltitudeSideslip,
             controller_config: [
               tecs_energy: [
-                ki: 0.1,
+                ki: 0.25,
                 kd: 0,
-                altitude_kp: 0.5,
-                energy_rate_scalar: 0.002,
-                integrator_range: 300,
+                altitude_kp: 1.0,
+                energy_rate_scalar: 0.004,
+                integrator_range: 100,
                 feed_forward_speed_max_mps: 65.0,
                 output_min: 0.0,
                 output_max: 1.0,
                 output_neutral: 0.0
               ],
               tecs_balance: [
-                ki: 0.02,
+                ki: 0.1,
                 kd: 0.0,
-                altitude_kp: 0.5,
+                altitude_kp: 0.75,
                 balance_rate_scalar: 0.5,
                 time_constant: 2.0,
                 integrator_range: 0.4,
@@ -66,7 +66,7 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Control do
                 output_min: -6.0,
                 output_neutral: 0,
                 output_max: 6.0,
-                multiplier: 2.0,
+                multiplier: 5.0,
                 command_rate_max: 1.0,
                 initial_command: 0
               ],
@@ -74,7 +74,7 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Control do
                 output_min: -3.0,
                 output_neutral: 0,
                 output_max: 3.0,
-                multiplier: 2.0,
+                multiplier: 5.0,
                 command_rate_max: 1.0,
                 initial_command: 0
               ],
@@ -82,7 +82,7 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Control do
                 output_min: -3.0,
                 output_neutral: 0,
                 output_max: 3.0,
-                multiplier: 2.0,
+                multiplier: 5.0,
                 command_rate_max: 1.5,
                 initial_command: 0
               ],

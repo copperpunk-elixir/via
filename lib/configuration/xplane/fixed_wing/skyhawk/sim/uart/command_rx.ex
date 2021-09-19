@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Uart.CommandRx do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Uart.CommandRx do
   require Logger
   @spec config(binary()) :: list()
   def config(uart_port) do

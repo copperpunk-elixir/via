@@ -15,7 +15,7 @@ defmodule Uart.Companion.PublishActuatorOutput do
     # Expects Logger statements from Companion operator process_data_fn
     # Expects comments from Gps operator
     uart_config =
-      Configuration.FixedWing.RfCessna2m.Sim.Uart.config([
+      Configuration.RealFlight.FixedWing.Cessna2m.Sim.Uart.config([
         "FrskyRx_CP2104",
         "Companion_Pico",
         "Gps_u-blox"
@@ -27,10 +27,10 @@ defmodule Uart.Companion.PublishActuatorOutput do
     Logger.debug("comp config: #{inspect(companion_config)}")
     Uart.Companion.start_link(companion_config)
     Uart.Gps.start_link(uart_config[:Gps])
-    config = Configuration.FixedWing.RfCessna2m.Sim.Command.config()
+    config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Command.config()
     Command.RemotePilot.start_link(config[:RemotePilot])
     Command.Commander.start_link(config[:Commander])
-    config = Configuration.FixedWing.RfCessna2m.Sim.Control.config()
+    config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Control.config()
     Control.Controller.start_link(config[:Controller])
 
     config = full_config[:Estimation][:Estimator]

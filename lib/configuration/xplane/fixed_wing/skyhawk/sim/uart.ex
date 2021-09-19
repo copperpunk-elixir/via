@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Uart do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Uart do
   require Logger
 
   @spec config() :: list()

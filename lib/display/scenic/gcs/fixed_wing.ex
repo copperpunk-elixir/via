@@ -16,8 +16,9 @@ defmodule Display.Scenic.Gcs.FixedWing do
   @rect_border 6
 
   @impl true
-  def init(_, opts) do
-    # Logger.debug("Sensor.init: #{inspect(opts)}")
+  def init(args, opts) do
+    Logger.debug("Gcs.init: #{inspect(opts)}")
+    Logger.debug("Gcs.args: #{inspect(args)}")
 
     {:ok, %Scenic.ViewPort.Status{size: {vp_width, vp_height}}} =
       opts[:viewport]
@@ -136,6 +137,13 @@ defmodule Display.Scenic.Gcs.FixedWing do
         font_size: @font_size
       })
 
+    {ip_labels, ip_text, ip_ids} =
+      if Map.get(args, :show_realflight_ip, false) do
+        {["Host IP", "RealFlight IP"], ["searching...", "waiting..."], [:host_ip, :realflight_ip]}
+      else
+        {["Host IP"], ["searching..."], [:host_ip]}
+      end
+
     {graph, offset_x, _offset_y} =
       Display.Scenic.Gcs.Utils.add_columns_to_graph(graph, %{
         width: 100,
@@ -144,9 +152,9 @@ defmodule Display.Scenic.Gcs.FixedWing do
         offset_x: goals_offset_x,
         offset_y: offset_y,
         spacer_y: spacer_y,
-        labels: ["Host IP", "RealFlight IP"],
-        text: ["searching...", "waiting..."],
-        ids: [:host_ip, :realflight_ip],
+        labels: ip_labels,
+        text: ip_text,
+        ids: ip_ids,
         font_size: @font_size
       })
 
@@ -164,41 +172,48 @@ defmodule Display.Scenic.Gcs.FixedWing do
 
     offset_y = offset_y + 5
 
-    {graph, offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
-        text: "+",
-        id: {:modify_realflight_ip, 1},
-        theme: %{text: :white, background: :green, active: :grey, border: :white},
-        width: modify_ip_width,
-        height: modify_ip_height,
-        font_size: @font_size + 5,
-        offset_x: offset_x + 30,
-        offset_y: offset_y
-      })
+    graph =
+      if Map.get(args, :show_realflight_ip, false) do
+        {graph, offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "+",
+            id: {:modify_realflight_ip, 1},
+            theme: %{text: :white, background: :green, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size + 5,
+            offset_x: offset_x + 30,
+            offset_y: offset_y
+          })
 
-    {graph, offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
-        text: "-",
-        id: {:modify_realflight_ip, -1},
-        theme: %{text: :white, background: :red, active: :grey, border: :white},
-        width: modify_ip_width,
-        height: modify_ip_height,
-        font_size: @font_size + 5,
-        offset_x: offset_x + 5,
-        offset_y: offset_y
-      })
+        {graph, offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "-",
+            id: {:modify_realflight_ip, -1},
+            theme: %{text: :white, background: :red, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size + 5,
+            offset_x: offset_x + 5,
+            offset_y: offset_y
+          })
 
-    {graph, _offset_x, _offset_y} =
-      Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
-        text: "Set IP",
-        id: :set_realflight_ip,
-        theme: %{text: :white, background: :blue, active: :grey, border: :white},
-        width: modify_ip_width,
-        height: modify_ip_height,
-        font_size: @font_size,
-        offset_x: offset_x + 5,
-        offset_y: offset_y
-      })
+        {graph, _offset_x, _offset_y} =
+          Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
+            text: "Set IP",
+            id: :set_realflight_ip,
+            theme: %{text: :white, background: :blue, active: :grey, border: :white},
+            width: modify_ip_width,
+            height: modify_ip_height,
+            font_size: @font_size,
+            offset_x: offset_x + 5,
+            offset_y: offset_y
+          })
+
+        graph
+      else
+        graph
+      end
 
     # cluster_status_offset_x = vp_width - cluster_status_side - 40
     # cluster_status_offset_y = vp_height - cluster_status_side - 20

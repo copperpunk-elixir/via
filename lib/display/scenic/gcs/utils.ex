@@ -129,7 +129,7 @@ defmodule Display.Scenic.Gcs.Utils do
   end
 
   def add_button_to_graph(graph, config) do
-    Logger.debug(inspect(config))
+    # Logger.debug(inspect(config))
 
     graph =
       button(

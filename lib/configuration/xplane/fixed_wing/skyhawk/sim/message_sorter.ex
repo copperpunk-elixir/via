@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.MessageSorter do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.MessageSorter do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require ViaUtils.Comms.Groups, as: Groups

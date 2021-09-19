@@ -10,13 +10,13 @@ defmodule Simulation.Xplane.SendActuatorOutputTest do
   end
 
   test "Publish All Values", full_config do
-    config = Configuration.FixedWing.RfCessna2m.Sim.Uart.config(["FrskyRx_CP2104"])[:CommandRx]
+    config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Uart.config(["FrskyRx_CP2104"])[:CommandRx]
     Logger.debug(inspect(config))
     Uart.CommandRx.start_link(config)
-    config = Configuration.FixedWing.RfCessna2m.Sim.Command.config()
+    config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Command.config()
     Command.RemotePilot.start_link(config[:RemotePilot])
     Command.Commander.start_link(config[:Commander])
-    config = Configuration.FixedWing.RfCessna2m.Sim.Control.config()
+    config = Configuration.RealFlight.FixedWing.Cessna2m.Sim.Control.config()
     Control.Controller.start_link(config[:Controller])
 
     config = full_config[:Estimation][:Estimator]

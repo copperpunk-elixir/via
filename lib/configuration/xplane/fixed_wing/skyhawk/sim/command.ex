@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Command do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Command do
   require Command.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require Command.ActuatorNames, as: Act

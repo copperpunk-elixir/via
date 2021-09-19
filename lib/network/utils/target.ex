@@ -50,21 +50,22 @@ defmodule Network.Utils.Target do
         true
       )
 
-    [ssid, psk] =
-      if is_nil(ssid_psk) do
-        raise "Wifi Network configuration could not be located"
-      else
-        String.split(ssid_psk, ",")
-      end
+    if is_nil(ssid_psk) do
+      Logger.error("Wifi Network configuration could not be located")
+      %{}
+    else
+      [ssid, psk] = String.split(ssid_psk, ",")
+      Logger.debug("Network ssid/psk: #{ssid}/#{psk}")
 
-    %{
-      networks: [
-        %{
-          key_mgmt: :wpa_psk,
-          psk: psk,
-          ssid: ssid
-        }
-      ]
-    }
+      %{
+        networks: [
+          %{
+            key_mgmt: :wpa_psk,
+            psk: psk,
+            ssid: ssid
+          }
+        ]
+      }
+    end
   end
 end

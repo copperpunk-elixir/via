@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.RfCessna2m.Sim.Config do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Config do
   require Logger
 
   def modules() do

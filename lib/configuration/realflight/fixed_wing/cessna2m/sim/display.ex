@@ -1,4 +1,4 @@
-defmodule Configuration.FixedWing.XpSkyhawk.Sim.Display do
+defmodule Configuration.RealFlight.FixedWing.Cessna2m.Sim.Display do
   @spec config() :: list()
   def config() do
     gcs_scene = Display.Scenic.Gcs.FixedWing
@@ -29,17 +29,19 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Display do
           }
         ]
       else
-        [%{
-          module: driver_module,
-          name: :gcs_driver,
-          opts: [resizeable: false, title: "gcs"]
-        }]
+        [
+          %{
+            module: driver_module,
+            name: :gcs_driver,
+            opts: [resizeable: false, title: "gcs"]
+          }
+        ]
       end
 
     gcs_config = %{
       name: :main_viewport,
       size: {800, 480},
-      default_scene: {gcs_scene, nil},
+      default_scene: {gcs_scene, %{show_realflight_ip: false}},
       drivers: gcs_drivers
     }
 
@@ -47,7 +49,7 @@ defmodule Configuration.FixedWing.XpSkyhawk.Sim.Display do
     planner_config = %{
       name: :planner,
       size: {1000, 1000},
-      default_scene: {planner_scene, nil},
+      default_scene: {planner_scene, %{}},
       drivers: [
         %{
           module: driver_module,
