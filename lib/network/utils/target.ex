@@ -1,6 +1,7 @@
 defmodule Network.Utils.Target do
   require Logger
   require ViaUtils.File
+  require Configuration.Filenames, as: Filenames
 
   @wireless_interfaces ["wlan0"]
 
@@ -44,7 +45,7 @@ defmodule Network.Utils.Target do
   def get_wifi_config() do
     ssid_psk =
       ViaUtils.File.read_file_target(
-        "network.txt",
+        Filenames.network(),
         ViaUtils.File.default_mount_path(),
         true,
         true

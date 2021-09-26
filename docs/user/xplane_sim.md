@@ -15,4 +15,5 @@ Via uses off-the-shelf software for its simulation environments. Someday we will
 
     <br>The **UDP Rate** slider should be put up to its maximum value (99.9 packets/sec), not that our dev computers can ever seem to run it that fast.
     <br>The **Send network data output** box should be checked, and you must specify the IP address of the Raspberry Pi that is running Via (it is shown on the Pi's display). The Port should be 49002.
-4.  Start flying the Cessna Skyhawk in X-Plane (any airport will do). If you are not achieving at least 50 frames-per-second with your frame rate, you will need to turn down some of your graphics (maybe just turn them all the way down anyway).
+4.  [Wireless setup](wireless.md) (if necessary)
+5.  Start flying the Cessna Skyhawk in X-Plane (any airport will do). If you are not achieving at least 50 frames-per-second with your frame rate, you will need to turn down some of your graphics (maybe just turn them all the way down anyway).

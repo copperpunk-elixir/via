@@ -1,8 +1,8 @@
 defmodule Simulation.Utils do
   require ViaUtils.File
   require Logger
+  require Configuration.Filenames, as: Filenames
 
-  @sim_env_filename "simulation.txt"
 
   @spec get_simulation_env(binary(), binary(), binary()) :: tuple()
   def get_simulation_env(
@@ -13,7 +13,7 @@ defmodule Simulation.Utils do
     file_contents =
       if ViaUtils.File.target?() do
         ViaUtils.File.read_file_target(
-          @sim_env_filename,
+          Filenames.simulation(),
           ViaUtils.File.default_mount_path(),
           true,
           true
