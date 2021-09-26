@@ -1,7 +1,7 @@
 # Raspberry Pi Setup
 
 1. Install [fwup](https://github.com/fwup-home/fwup).
-2. Download Raspberry Pi firmware image (https://github.com/copperpunk-elixir/via/releases/download/v0.1.1-alpha/via.fw)
+2. Download Raspberry Pi firmware image (https://github.com/copperpunk-elixir/via/releases/download/v0.1.2-alpha/via.fw)
 3. Burn to micro SD card:
    ```
    sudo fwup <path-to-fw-file>/via.fw
