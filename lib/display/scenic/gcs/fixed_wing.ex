@@ -138,7 +138,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
       })
 
     {ip_labels, ip_text, ip_ids} =
-      if Map.get(args, :show_realflight_ip, false) do
+      if Map.get(args, :realflight_sim, false) do
         {["Host IP", "RealFlight IP"], ["searching...", "waiting..."], [:host_ip, :realflight_ip]}
       else
         {["Host IP"], ["searching..."], [:host_ip]}
@@ -173,7 +173,7 @@ defmodule Display.Scenic.Gcs.FixedWing do
     offset_y = offset_y + 5
 
     graph =
-      if Map.get(args, :show_realflight_ip, false) do
+      if Map.get(args, :realflight_sim, false) do
         {graph, offset_x, _offset_y} =
           Display.Scenic.Gcs.Utils.add_button_to_graph(graph, %{
             text: "+",
@@ -290,7 +290,10 @@ defmodule Display.Scenic.Gcs.FixedWing do
       save_log_file: ""
     }
 
-    :erlang.send_after(3000, self(), :request_realflight_ip_address)
+    if Map.get(args, :realflight_sim, false) do
+      :erlang.send_after(3000, self(), :request_realflight_ip_address)
+    end
+
     {:ok, state, push: graph}
   end
 
@@ -540,17 +543,6 @@ defmodule Display.Scenic.Gcs.FixedWing do
       end
     )
   end
-
-  # @impl Scenic.Scene
-  # def filter_event({:click, :reset_estimation} = event, _from, state) do
-  #   Logger.debug("Reset Estimation")
-  #   Estimation.Estimator.reset_estimation()
-  #   # save_log_proto = Display.Scenic.Gcs.Protobuf.SaveLog.new([filename: state.save_log_file])
-  #   # save_log_encoded =Display.Scenic.Gcs.Protobuf.SaveLog.encode(save_log_proto)
-  #   # Peripherals.Uart.Generic.construct_and_send_proto_message(:save_log_proto, save_log_encoded, Peripherals.Uart.Telemetry.Operator)
-  #   # {:noreply, state}
-  #   {:cont, event, state}
-  # end
 
   # @impl Scenic.Scene
   # def filter_event({:click, :save_log}, _from, state) do

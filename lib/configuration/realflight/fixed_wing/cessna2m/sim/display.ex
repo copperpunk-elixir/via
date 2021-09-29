@@ -41,7 +41,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Display do
     gcs_config = %{
       name: :main_viewport,
       size: {800, 480},
-      default_scene: {gcs_scene, %{show_realflight_ip: true}},
+      default_scene: {gcs_scene, %{realflight_sim: true}},
       drivers: gcs_drivers
     }
 

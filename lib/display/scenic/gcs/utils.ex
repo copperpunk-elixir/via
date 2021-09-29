@@ -13,7 +13,6 @@ defmodule Display.Scenic.Gcs.Utils do
     height = config.height
     labels = config.labels
     font_size = config.font_size
-    # ids = Map.get(config, :ids, {:x,:y, :z})
     ids = config.ids
     row = height / length(labels)
     v_spacing = 1
@@ -70,7 +69,6 @@ defmodule Display.Scenic.Gcs.Utils do
     height = config.height
     labels = config.labels
     font_size = config.font_size
-    # ids = Map.get(config, :ids, {:x,:y, :z})
     ids = config.ids
     col = width / length(labels)
     row = height / 2

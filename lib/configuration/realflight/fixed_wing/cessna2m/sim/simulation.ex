@@ -57,7 +57,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Simulation do
     [
       {
         RealflightIntegration,
-        # realflight_ip: "192.168.7.188",
+        realflight_ip: "192.168.7.188",
         dt_accel_gyro_group: Groups.dt_accel_gyro_val(),
         gps_itow_position_velocity_group: Groups.gps_itow_position_velocity_val(),
         gps_itow_relheading_group: Groups.gps_itow_relheading_val(),

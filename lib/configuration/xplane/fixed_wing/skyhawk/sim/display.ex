@@ -39,7 +39,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Display do
     gcs_config = %{
       name: :main_viewport,
       size: {800, 480},
-      default_scene: {gcs_scene, %{show_realflight_ip: false}},
+      default_scene: {gcs_scene, %{realflight_sim: false}},
       drivers: gcs_drivers
     }
 

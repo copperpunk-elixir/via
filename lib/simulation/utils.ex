@@ -3,7 +3,6 @@ defmodule Simulation.Utils do
   require Logger
   require Configuration.Filenames, as: Filenames
 
-
   @spec get_simulation_env(binary(), binary(), binary()) :: tuple()
   def get_simulation_env(
         default_sim_name \\ "",
@@ -20,7 +19,7 @@ defmodule Simulation.Utils do
         )
       else
         ViaUtils.File.read_file(
-          @sim_env_filename,
+          Filenames.simulation(),
           ViaUtils.File.default_mount_path(),
           true
         )
@@ -66,10 +65,4 @@ defmodule Simulation.Utils do
 
     vehicle_type
   end
-
-  # def get_simulator_type_from_name(simulator_name) do
-  #   Enum.reduce(String.split(simulator_name, "_"), "", fn word, acc ->
-  #     acc <> String.capitalize(word)
-  #   end)
-  # end
 end
