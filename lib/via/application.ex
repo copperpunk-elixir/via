@@ -70,7 +70,7 @@ defmodule Via.Application do
 
   @spec start_sim_host() :: atom()
   def start_sim_host() do
-    simulator_type = get_simulator_type("xplane")
+    simulator_type = get_simulation_type("xplane")
     model_type = get_model_type("skyhawk")
     input_type = get_input_type("any")
 
@@ -160,9 +160,9 @@ defmodule Via.Application do
     |> String.capitalize()
   end
 
-  @spec get_simulator_type(binary()) :: atom()
-  def get_simulator_type(default_input) do
-    System.get_env("simulator", default_input)
+  @spec get_simulation_type(binary()) :: atom()
+  def get_simulation_type(default_input) do
+    System.get_env("simulation", default_input)
     |> String.capitalize()
   end
 

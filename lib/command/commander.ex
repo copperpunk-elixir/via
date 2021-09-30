@@ -1,9 +1,9 @@
 defmodule Command.Commander do
   use GenServer
   require Logger
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
   require Comms.Sorters, as: Sorters
-  require Command.ControlTypes, as: CCT
+  require ViaUtils.Shared.ControlTypes, as: CCT
   require MessageSorter.Sorter
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaUtils.Watchdog

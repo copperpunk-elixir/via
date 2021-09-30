@@ -8,7 +8,10 @@ defmodule Display.Supervisor do
   end
 
   def init(config) do
-    children = [Supervisor.child_spec({Scenic, viewports: config[:viewports]}, id: :scenic_app)]
+    children = [
+      apply(config[:display_module], :child_spec, [Keyword.drop(config, [:display_module])])
+    ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

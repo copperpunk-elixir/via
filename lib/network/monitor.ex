@@ -41,18 +41,7 @@ defmodule Network.Monitor do
 
   @impl GenServer
   def handle_cast(:configure_network, state) do
-    Network.Utils.Target.configure_network(state.network_config)
-    {:noreply, state}
-  end
-
-  @impl GenServer
-  def handle_cast(:resend_ip_address, state) do
-    ViaUtils.Comms.send_local_msg_to_group(
-      __MODULE__,
-      {:host_ip_address_updated, state.ip_address},
-      self()
-    )
-
+    apply(state.network_utils_module, :configure_network, [state.network_config])
     {:noreply, state}
   end
 

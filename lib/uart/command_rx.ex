@@ -2,7 +2,7 @@ defmodule Uart.CommandRx do
   use Bitwise
   use GenServer
   require Logger
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
 
   @protocol_id_loop :protocol_id_loop
   @protocol_id_loop_interval_ms 10

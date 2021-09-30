@@ -1,7 +1,7 @@
 defmodule Estimation.Estimator do
   use GenServer
   require Logger
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaUtils.Watchdog
 

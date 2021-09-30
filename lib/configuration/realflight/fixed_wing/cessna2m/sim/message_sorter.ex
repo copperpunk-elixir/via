@@ -1,7 +1,7 @@
 defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.MessageSorter do
-  require Command.ControlTypes, as: CCT
+  require ViaUtils.Shared.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
   require MessageSorter.Sorter, as: MSS
   require Comms.MessageHeaders
   require Configuration.LoopIntervals, as: LoopIntervals

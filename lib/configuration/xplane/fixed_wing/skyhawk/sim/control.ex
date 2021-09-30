@@ -1,5 +1,5 @@
 defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
-  require Command.ControlTypes, as: CCT
+  require ViaUtils.Shared.ControlTypes, as: CCT
 
   @spec config() :: list()
   def config() do

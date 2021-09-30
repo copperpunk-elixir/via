@@ -1,13 +1,13 @@
 defmodule Uart.Companion do
   use GenServer
   require Logger
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
   require Ubx.ClassDefs
   require Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
   require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
   require Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
   require Ubx.VehicleCmds.ActuatorOverrideCmd_9_16, as: ActuatorOverrideCmd_9_16
-  require Command.ActuatorNames, as: Act
+  require ViaUtils.Shared.ActuatorNames, as: Act
 
   @spec start_link(keyword) :: {:ok, any}
   def start_link(config) do

@@ -1,6 +1,6 @@
 defmodule Ubx.VehicleCmds.ActuatorOverrideCmd_9_16 do
   require Ubx.ClassDefs
-  require Command.ActuatorNames, as: Act
+  require ViaUtils.Shared.ActuatorNames, as: Act
   defmacro class, do: Ubx.ClassDefs.vehicle_cmds()
   defmacro id, do: 0x11
   defmacro bytes, do: [-2, -2, -2, -2, -2, -2, -2, -2, 1]
