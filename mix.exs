@@ -46,13 +46,7 @@ defmodule Via.MixProject do
       {:nerves_system_rpi3, "~> 1.16.2", runtime: false, targets: :rpi3},
       {:nerves_system_rpi3a, "~> 1.16.2", runtime: false, targets: :rpi3a},
       {:nerves_system_rpi4, "~> 1.16.2", runtime: false, targets: :rpi4},
-      # Scenic dependencies
-      {:scenic, "~> 0.10.5"},
-      {:scenic_driver_glfw, "~> 0.10.1", targets: :host},
-      {:scenic_driver_nerves_rpi, "0.10.0", targets: @all_targets},
-      {:scenic_driver_nerves_touch, "0.10.0", targets: @all_targets},
-      {:scenic_sensor, "~> 0.7"},
-      {:circuits_uart, "~> 1.4.2"},
+     {:circuits_uart, "~> 1.4.2"},
       {:vintage_net, "~> 0.10.5", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.10.5", targets: @all_targets},
       {:vintage_net_ethernet, "~> 0.10.2", targets: @all_targets},
@@ -85,7 +79,10 @@ defmodule Via.MixProject do
        git: "https://github.com/copperpunk-elixir/via-estimation.git", tag: "v0.1.1-alpha.1"},
       # "~> 0.1.0"},
       {:via_input_event,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event"}
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event"},
+      {:via_display_scenic,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-display-scenic"}
+
 
       #  git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
     ]

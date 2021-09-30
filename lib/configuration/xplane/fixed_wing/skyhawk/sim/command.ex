@@ -1,7 +1,7 @@
 defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Command do
-  require Command.ControlTypes, as: CCT
+  require ViaUtils.Shared.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
-  require Command.ActuatorNames, as: Act
+  require ViaUtils.Shared.ActuatorNames, as: Act
 
   @spec config() :: list()
   def config() do

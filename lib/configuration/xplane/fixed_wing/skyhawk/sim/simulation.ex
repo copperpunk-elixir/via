@@ -1,5 +1,5 @@
 defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
-  require ViaUtils.Comms.Groups, as: Groups
+  require ViaUtils.Shared.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaInputEvent.KeypressAction, as: KA
   alias ViaInputEvent.KeyCollection, as: KC

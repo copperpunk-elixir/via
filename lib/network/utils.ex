@@ -14,18 +14,4 @@ defmodule Network.Utils do
       other -> raise "Unknown error: #{inspect(other)}"
     end
   end
-
-  def add_to_ip_address_last_byte(ip_address, value_to_add) do
-    ip_list = String.split(ip_address, ".")
-    last_byte = ip_list |> Enum.at(3) |> String.to_integer() |> Kernel.+(value_to_add)
-
-    last_byte =
-      cond do
-        last_byte > 255 -> 255
-        last_byte < 100 -> 100
-        true -> last_byte
-      end
-
-    List.replace_at(ip_list, 3, Integer.to_string(last_byte)) |> Enum.join(".")
-  end
 end
