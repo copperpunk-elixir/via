@@ -12,6 +12,7 @@ defmodule Network.Monitor do
   @impl GenServer
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.join_group(__MODULE__, :get_host_ip_address)
 
     network_utils_module =
       if ViaUtils.File.target?() do
@@ -46,15 +47,26 @@ defmodule Network.Monitor do
   end
 
   @impl GenServer
+  def handle_cast({:get_host_ip_address, from}, state) do
+    Logger.debug("RF rx get_host_ip: #{state.ip_address}")
+
+    GenServer.cast(from, {:host_ip_address_updated, state.ip_address})
+
+    {:noreply, state}
+  end
+
+  @impl GenServer
   def handle_info(@check_network_loop, state) do
-    ip_address = apply(state.network_utils_module, :get_ip_address, [])
+    ip_address =
+      case apply(state.network_utils_module, :get_ip_address, []) do
+        nil -> nil
+        valid_ip -> Enum.join(Tuple.to_list(valid_ip), ".")
+      end
 
     check_network_timer =
       cond do
         is_nil(state.ip_address) and !is_nil(ip_address) ->
           Logger.debug("new ip address: #{inspect(ip_address)}")
-
-          ip_address = Enum.join(Tuple.to_list(ip_address), ".")
 
           ViaUtils.Comms.send_local_msg_to_group(
             __MODULE__,

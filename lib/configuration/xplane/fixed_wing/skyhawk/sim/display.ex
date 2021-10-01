@@ -3,6 +3,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Display do
   def config() do
     [
       display_module: ViaDisplayScenic,
+      vehicle_type: "FixedWing",
       realflight_sim: false
     ]
   end
