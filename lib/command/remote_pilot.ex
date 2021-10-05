@@ -119,6 +119,7 @@ defmodule Command.RemotePilot do
             current_pcl: current_pcl_goals,
             any_pcl: any_pcl_goals
           }
+
           # Logger.debug("cvmap: #{ViaUtils.Format.eftb_map(channel_value_map, 3)}")
           # Logger.debug("pcl_goals: #{ViaUtils.Format.eftb_map(current_pcl_goals, 3)}")
 
@@ -158,7 +159,7 @@ defmodule Command.RemotePilot do
     {:noreply, Map.put(state, key, [])}
   end
 
-  @spec     get_goals_for_channels(map(), map()) :: map()
+  @spec get_goals_for_channels(map(), map()) :: map()
   def get_goals_for_channels(channels, channel_value_map) do
     Enum.reduce(channels, %{}, fn {channel_name, {channel_number, channel_config}}, acc ->
       output =
@@ -195,11 +196,11 @@ defmodule Command.RemotePilot do
     unscaled_value = multiplier * value
 
     if unscaled_value > 0 do
-      output_mid + unscaled_value * (output_max - output_mid)
-      |> ViaUtils.Math.apply_deadband( deadband)
+      (output_mid + unscaled_value * (output_max - output_mid))
+      |> ViaUtils.Math.apply_deadband(deadband)
     else
-      output_mid + unscaled_value * (output_mid - output_min)
-      |> ViaUtils.Math.apply_deadband( deadband)
+      (output_mid + unscaled_value * (output_mid - output_min))
+      |> ViaUtils.Math.apply_deadband(deadband)
     end
   end
 end

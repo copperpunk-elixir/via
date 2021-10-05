@@ -59,7 +59,7 @@ defmodule Control.Controller do
 
     ViaUtils.Comms.join_group(
       __MODULE__,
-      Groups.current_commands_for_pilot_control_level(),
+      Groups.commands_for_current_pilot_control_level(),
       self()
     )
 
@@ -98,7 +98,7 @@ defmodule Control.Controller do
 
   @impl GenServer
   def handle_cast(
-        {Groups.current_commands_for_pilot_control_level(), pilot_control_level, commands},
+        {Groups.commands_for_current_pilot_control_level(), pilot_control_level, commands},
         state
       ) do
     # Logger.debug(

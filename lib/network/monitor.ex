@@ -1,6 +1,7 @@
 defmodule Network.Monitor do
   use GenServer
   require Logger
+  require ViaUtils.Shared.Groups, as: Groups
 
   @check_network_loop :check_network_loop
 
@@ -12,7 +13,7 @@ defmodule Network.Monitor do
   @impl GenServer
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, :get_host_ip_address)
+    ViaUtils.Comms.join_group(__MODULE__, Groups.get_host_ip_address())
 
     network_utils_module =
       if ViaUtils.File.target?() do
@@ -47,10 +48,10 @@ defmodule Network.Monitor do
   end
 
   @impl GenServer
-  def handle_cast({:get_host_ip_address, from}, state) do
+  def handle_cast({Groups.get_host_ip_address(), from}, state) do
     Logger.debug("RF rx get_host_ip: #{state.ip_address}")
 
-    GenServer.cast(from, {:host_ip_address_updated, state.ip_address})
+    GenServer.cast(from, {Groups.host_ip_address(), state.ip_address})
 
     {:noreply, state}
   end
@@ -70,7 +71,7 @@ defmodule Network.Monitor do
 
           ViaUtils.Comms.send_local_msg_to_group(
             __MODULE__,
-            {:host_ip_address_updated, ip_address},
+            {Groups.host_ip_address(), ip_address},
             self()
           )
 

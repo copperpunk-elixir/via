@@ -2,6 +2,7 @@ defmodule Estimation.Estimator do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.ValueNames, as: SVN
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaUtils.Watchdog
 
@@ -185,7 +186,7 @@ defmodule Estimation.Estimator do
     state =
       if state.is_value_current.imu do
         imu = state.ins_kf.imu
-        attitude_rad = %{roll_rad: imu.roll_rad, pitch_rad: imu.pitch_rad, yaw_rad: imu.yaw_rad}
+        attitude_rad = Map.take(imu, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
         # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
@@ -204,31 +205,41 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_info(@position_velocity_loop, state) do
+    %{gps: gps_current, imu: imu_current, agl: agl_current, airspeed: airspeed_current} =
+      state.is_value_current
+
     state =
-      if state.is_value_current.gps do
-        {position_rrm, velocity_mps} =
+      if gps_current and imu_current do
+        {%{
+           SVN.altitude_m() => altitude_m
+         } = position_rrm,
+         %{
+           SVN.v_north_mps() => v_north_mps,
+           SVN.v_east_mps() => v_east_mps,
+           SVN.v_down_mps() => v_down_mps
+         } = _velocity_mps} =
           apply(state.ins_kf.__struct__, :position_rrm_velocity_mps, [state.ins_kf])
 
         # Logger.debug("alt: #{ViaUtils.Format.eftb(position_rrm.altitude_m,2)}")
         # If the velocity is below a threshold, we use yaw instead
+
+        %{SVN.roll_rad() => roll_rad, SVN.pitch_rad() => pitch_rad, SVN.yaw_rad() => yaw_rad} =
+          state.attitude_rad
+
         {groundspeed_mps, course_rad} =
           ViaUtils.Motion.get_speed_course_for_velocity(
-            velocity_mps.north_mps,
-            velocity_mps.east_mps,
+            v_north_mps,
+            v_east_mps,
             state.min_speed_for_course,
-            Map.get(state.attitude_rad, :yaw_rad, 0)
+            yaw_rad
           )
 
         # Logger.debug("course/yaw: #{Common.Utils.eftb_deg(course,1)}/#{Common.Utils.eftb_deg(Map.get(state.attitude, :yaw, 0),2)}")
-        vertical_velocity_mps = -velocity_mps.down_mps
-        attitude_rad = state.attitude_rad
+        vertical_velocity_mps = -v_down_mps
         # Update AGL
-        roll_rad = Map.get(attitude_rad, :roll_rad, 0)
-        pitch_rad = Map.get(attitude_rad, :pitch_rad, 0)
-
         # Logger.debug("rpv: #{Common.Utils.eftb_deg(roll,1)}/#{Common.Utils.eftb_deg(pitch,1)}/#{zdot}")
         {agl_kf, agl_m, ground_altitude_m} =
-          if state.is_value_current.agl do
+          if agl_current do
             agl_kf =
               apply(state.agl_kf.__struct__, :predict, [
                 state.agl_kf,
@@ -238,24 +249,24 @@ defmodule Estimation.Estimator do
               ])
 
             agl_m = apply(agl_kf.__struct__, :agl_m, [agl_kf])
-            ground_altitude_m = position_rrm.altitude_m - agl_m
+            ground_altitude_m = altitude_m - agl_m
             {agl_kf, agl_m, ground_altitude_m}
           else
             ground_altitude_m =
-              if is_nil(state.ground_altitude_m),
-                do: position_rrm.altitude_m,
-                else: state.ground_altitude_m
+              case state.ground_altitude_m do
+                nil -> altitude_m
+                ground_alt -> ground_alt
+              end
 
-            {state.agl_kf, position_rrm.altitude_m - ground_altitude_m, ground_altitude_m}
+            {state.agl_kf, altitude_m - ground_altitude_m, ground_altitude_m}
           end
 
-        airspeed_mps =
-          if state.is_value_current.airspeed, do: state.airspeed, else: groundspeed_mps
+        airspeed_mps = if airspeed_current, do: state.airspeed_mps, else: groundspeed_mps
 
         position =
-          Map.take(position_rrm, [:latitude_rad, :longitude_rad, :altitude_m])
-          |> Map.put(:ground_altitude_m, ground_altitude_m)
-          |> Map.put(:agl_m, agl_m)
+          position_rrm
+          |> Map.put(SVN.ground_altitude_m(), ground_altitude_m)
+          |> Map.put(SVN.agl_m(), agl_m)
 
         velocity = %{
           groundspeed_mps: groundspeed_mps,

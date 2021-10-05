@@ -93,7 +93,7 @@ defmodule Uart.Gps do
 
 
             position_rrm =
-              ViaUtils.Location.new_location_input_degrees(
+              ViaUtils.Location.new_degrees(
                 values.latitude_deg,
                 values.longitude_deg,
                 values.height_m

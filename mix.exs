@@ -46,7 +46,7 @@ defmodule Via.MixProject do
       {:nerves_system_rpi3, "~> 1.16.2", runtime: false, targets: :rpi3},
       {:nerves_system_rpi3a, "~> 1.16.2", runtime: false, targets: :rpi3a},
       {:nerves_system_rpi4, "~> 1.16.2", runtime: false, targets: :rpi4},
-     {:circuits_uart, "~> 1.4.2"},
+      {:circuits_uart, "~> 1.4.2"},
       {:vintage_net, "~> 0.10.5", targets: @all_targets},
       {:vintage_net_wifi, "~> 0.10.5", targets: @all_targets},
       {:vintage_net_ethernet, "~> 0.10.2", targets: @all_targets},
@@ -67,22 +67,17 @@ defmodule Via.MixProject do
       #  git: "https://github.com/copperpunk-elixir/via-utils.git", tag: "v0.1.4-alpha"},
       # ~> 0.1.1"},
       {:via_controllers,
-       git: "https://github.com/copperpunk-elixir/via-controllers.git", tag: "v0.1.1-alpha.1"},
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-controllers"},
       # "~> 0.1.2"},
       {:xplane_integration,
-       git: "https://github.com/copperpunk-elixir/xplane-integration.git", tag: "v0.1.3-alpha.1"},
-      # "~> 0.1.1"},
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/xplane-integration"},
       {:realflight_integration,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/realflight-integration"},
-      #  git: "https://github.com/copperpunk-elixir/realflight-integration.git", tag: "v0.1.1-alpha"},
-      {:via_estimation,
-       git: "https://github.com/copperpunk-elixir/via-estimation.git", tag: "v0.1.1-alpha.1"},
-      # "~> 0.1.0"},
+      {:via_estimation, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-estimation"},
       {:via_input_event,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event"},
       {:via_display_scenic,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-display-scenic"}
-
 
       #  git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
     ]

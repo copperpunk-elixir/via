@@ -85,7 +85,7 @@ defmodule Command.Commander do
 
       ViaUtils.Comms.send_local_msg_to_group(
         __MODULE__,
-        {Groups.current_commands_for_pilot_control_level(), pilot_control_level, commands},
+        {Groups.commands_for_current_pilot_control_level(), pilot_control_level, commands},
         self()
       )
 
