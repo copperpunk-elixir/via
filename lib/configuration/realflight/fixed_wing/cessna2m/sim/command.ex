@@ -1,5 +1,6 @@
 defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Command do
   require ViaUtils.Shared.ControlTypes, as: CCT
+  require ViaUtils.Shared.GoalNames, as: SGN
   require Comms.Sorters, as: Sorters
   require ViaUtils.Shared.ActuatorNames, as: Act
 
@@ -23,29 +24,29 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Command do
         num_channels: 10,
         current_pcl_channel_config: %{
           CCT.pilot_control_level_4() => %{
-            course_rate_rps: {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
-            altitude_rate_mps: {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
-            groundspeed_mps: {2, {0, 32.5, 65.0, CCT.input_not_inverted(), 0}},
-            sideslip_rad: {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.052}}
+            SGN.course_rate_rps() => {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
+            SGN.altitude_rate_mps() => {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
+            SGN.groundspeed_mps() => {2, {0, 32.5, 65.0, CCT.input_not_inverted(), 0}},
+            SGN.sideslip_rad() => {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.052}}
           },
           CCT.pilot_control_level_2() => %{
-            roll_rad: {0, {-1.05, 0, 1.05, CCT.input_not_inverted(), 0.017}},
-            pitch_rad: {1, {-0.52, 0, 0.52, CCT.input_inverted(), 0.017}},
-            thrust_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
-            deltayaw_rad: {3, {-0.78, 0, 0.78, CCT.input_not_inverted(), 0.017}}
+            SGN.roll_rad() => {0, {-1.05, 0, 1.05, CCT.input_not_inverted(), 0.017}},
+            SGN.pitch_rad() => {1, {-0.52, 0, 0.52, CCT.input_inverted(), 0.017}},
+            SGN.thrust_scaled() => {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+            SGN.deltayaw_rad() => {3, {-0.78, 0, 0.78, CCT.input_not_inverted(), 0.017}}
           },
           CCT.pilot_control_level_1() => %{
-            rollrate_rps: {0, {-6.28, 0, 6.28, CCT.input_not_inverted(), 0.087}},
-            pitchrate_rps: {1, {-3.14, 0, 3.14, CCT.input_inverted(), 0.087}},
-            throttle_scaled: {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
-            yawrate_rps: {3, {-3.14, 0.0, 3.14, CCT.input_not_inverted(), 0.087}}
+            SGN.rollrate_rps() => {0, {-6.28, 0, 6.28, CCT.input_not_inverted(), 0.087}},
+            SGN.pitchrate_rps() => {1, {-3.14, 0, 3.14, CCT.input_inverted(), 0.087}},
+            SGN.throttle_scaled() => {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+            SGN.yawrate_rps() => {3, {-3.14, 0.0, 3.14, CCT.input_not_inverted(), 0.087}}
           }
         },
         any_pcl_channel_config: %{
-          flaps_scaled: {4, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
-          gear_scaled: {9, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
-          pilot_control_level: {5, {-1.0, 0, 1.0, CCT.input_not_inverted(), 0}},
-          autopilot_control_mode: {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
+          SGN.flaps_scaled => {4, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+          SGN.gear_scaled => {9, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
+          SGN.pilot_control_level => {5, {-1.0, 0, 1.0, CCT.input_not_inverted(), 0}},
+          SGN.autopilot_control_mode => {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
         },
         remote_pilot_override_channels: %{
           Act.aileron() => 0,

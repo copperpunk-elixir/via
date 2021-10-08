@@ -42,6 +42,7 @@ defmodule Simulation.Utils do
         length(String.split(file_contents, ",")) == 2 ->
           [simulator_name, model_name] = String.split(file_contents, ",")
           simulator_name = String.downcase(simulator_name)
+          model_name = String.downcase(model_name)
 
           case simulator_name do
             "realflight" -> [simulator_name, model_name, "none"]
