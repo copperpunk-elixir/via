@@ -51,11 +51,12 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
                 kp: 0.3,
                 ki: 0.1,
                 kd: 0,
+                time_constant_s: 2,
                 output_min: -0.78,
                 output_max: 0.78,
                 output_neutral: 0.0,
                 integrator_range: 0.052,
-                integrator_airspeed_min_mps: 5.0
+                integrator_airspeed_min_mps: 5. 0
               ]
             ]
           ],

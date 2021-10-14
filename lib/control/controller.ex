@@ -9,7 +9,7 @@ defmodule Control.Controller do
   require Configuration.LoopIntervals, as: LoopIntervals
   alias ViaUtils.Watchdog
 
-  @controller_loop :controller_loop
+  @publish_commands_loop :publish_commands_loop
   @commands :commands
   @attitude :attitude
   @position_velocity :position_velocity
@@ -69,7 +69,7 @@ defmodule Control.Controller do
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity(), self())
 
-    ViaUtils.Process.start_loop(self(), LoopIntervals.controller_update_ms(), @controller_loop)
+    ViaUtils.Process.start_loop(self(), LoopIntervals.controller_update_ms(), @publish_commands_loop)
     {:ok, state}
   end
 
@@ -225,7 +225,7 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_info(@controller_loop, state) do
+  def handle_info(@publish_commands_loop, state) do
     override_commands = state.remote_pilot_override_commands
 
     state =

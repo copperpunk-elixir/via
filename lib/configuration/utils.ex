@@ -125,4 +125,12 @@ defmodule Configuration.Utils do
       [node_type] -> [node_type, nil]
     end
   end
+
+  @spec get_message_sorter_module(module()) :: module()
+  def get_message_sorter_module(current_module) do
+    Module.split(current_module)
+    |> Enum.drop(-1)
+    |> Module.concat()
+    |> Module.concat(MessageSorter)
+  end
 end

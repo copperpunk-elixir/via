@@ -8,6 +8,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Config do
       :Display,
       :Estimation,
       :MessageSorter,
+      :Navigation,
       :Network,
       :Simulation
     ]

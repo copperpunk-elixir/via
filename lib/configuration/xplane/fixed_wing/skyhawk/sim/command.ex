@@ -6,11 +6,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Command do
 
   @spec config() :: list()
   def config() do
-    message_sorter_module =
-      Module.split(__MODULE__)
-      |> Enum.drop(-1)
-      |> Module.concat()
-      |> Module.concat(MessageSorter)
+    message_sorter_module = Configuration.Utils.get_message_sorter_module(__MODULE__)
 
     remote_pilot_goals_sorter_classification_and_time_validity_ms =
       apply(message_sorter_module, :message_sorter_classification_time_validity_ms, [

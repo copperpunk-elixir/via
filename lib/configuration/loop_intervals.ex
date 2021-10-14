@@ -14,7 +14,7 @@ defmodule Configuration.LoopIntervals do
   defmacro commands_publish_ms, do: 20
 
   defmacro navigator_goals_publish_ms, do: 40
-  defmacro remote_pilot_goals_publish_ms, do: 50
+  defmacro remote_pilot_goals_publish_ms, do: 40
 
   # CLUSTER
   defmacro heartbeat_publish_ms, do: 100

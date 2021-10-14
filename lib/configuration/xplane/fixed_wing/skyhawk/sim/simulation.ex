@@ -162,7 +162,8 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
              ),
            flaps: KC.new_all(KA.new_discrete(0, 1, 0.5, 0)),
            gear: KC.new_all(KA.new_toggle(-1)),
-           pcl: KC.new_all(KA.new_discrete(1, 4, 1, 1))
+           pcl: KC.new_all(KA.new_discrete(1, 4, 1, 1)),
+           acm: KC.new_all(KA.new_discrete(-1, 1, 1, 0))
          },
          key_map: %{
            key_a: [{:yaw_axis, :subtract, []}],
@@ -178,21 +179,25 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
              {:yaw_axis, :set, [0]},
-             {:thrust_axis, :set_value_for_output, :pcl_hold}
+             {:thrust_axis, :set_value_for_output, :pcl_hold},
+             {:acm, :set, [0]}
            ],
            key_2: [
              {:pcl, :set, [2]},
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
              {:yaw_axis, :set, [0]},
-             {:thrust_axis, :set_value_for_output, :pcl_hold}
+             {:thrust_axis, :set_value_for_output, :pcl_hold},
+             {:acm, :set, [0]}
            ],
+           key_3: [{:acm, :set, [-1]}],
            key_4: [
              {:pcl, :set, [4]},
              {:roll_axis, :set, [0]},
              {:pitch_axis, :set, [0]},
              {:yaw_axis, :set, [0]},
-             {:thrust_axis, :set_value_for_output, :pcl_hold}
+             {:thrust_axis, :set_value_for_output, :pcl_hold},
+             {:acm, :set, [0]}
            ],
            key_f: [{:flaps, :increment, []}],
            key_g: [{:gear, :toggle, []}],
@@ -208,6 +213,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
            yaw_axis: 3,
            flaps: 4,
            pcl: 5,
+           acm: 6,
            gear: 9
          },
          default_values: %{
