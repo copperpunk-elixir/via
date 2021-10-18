@@ -4,7 +4,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Estimation do
   def config() do
     [
       Estimator: [
-        min_speed_for_course: 1.0,
+        min_speed_for_course: 5.0,
         ins_kf_type: ViaEstimation.Ekf.SevenState,
         ins_kf_config: [
           init_std_devs: [0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05],
@@ -12,13 +12,13 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Estimation do
           qpos_z_std: 0.05,
           qvel_xy_std: 0.05,
           qvel_z_std: 0.1,
-          qyaw_std: 0.08,
+          qyaw_std: 0.18,
           gpspos_xy_std: 0.715,
           gpspos_z_std: 2.05,
           gpsvel_xy_std: 0.088,
           gpsvel_z_std: 0.31,
           gpsyaw_std: 0.02,
-          expected_imu_dt_s: LoopIntervals.imu_receive_max_ms*(1.0e-3),
+          expected_imu_dt_s: LoopIntervals.imu_receive_max_ms() * 1.0e-3,
 
           # Mahony
           imu_config: [

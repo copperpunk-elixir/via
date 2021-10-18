@@ -50,7 +50,8 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
               roll_course: [
                 kp: 0.3,
                 ki: 0.1,
-                kd: 0,
+                kd: 0.1,
+                time_constant_s: 2,
                 output_min: -0.78,
                 output_max: 0.78,
                 output_neutral: 0.0,

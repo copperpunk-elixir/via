@@ -119,7 +119,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast({Groups.dt_accel_gyro_val(), values}, state) do
-    # Logger.debug("dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
+    # Logger.error("dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
     # start_time = :erlang.monotonic_time(:nanosecond)
     ins_kf = apply(state.ins_kf.__struct__, :predict, [state.ins_kf, values])
     # end_time = :erlang.monotonic_time(:nanosecond)
@@ -144,6 +144,7 @@ defmodule Estimation.Estimator do
       ) do
     # Logger.warn("rx gps")
     # start_time = :erlang.monotonic_time(:nanosecond)
+    # Logger.error("EKF update with GPS: #{ViaUtils.Format.eftb_map(velocity_mps, 1)}")
 
     ins_kf =
       apply(state.ins_kf.__struct__, :update_from_gps, [state.ins_kf, position_rrm, velocity_mps])
@@ -153,8 +154,8 @@ defmodule Estimation.Estimator do
 
     gps_watchdog = Watchdog.reset(state.gps_watchdog)
     is_value_current = Map.put(state.is_value_current, :gps, true)
-    # {position, velocity} = apply(ins_kf.__struct__, :position_rrm_velocity_mps, [kf])
-    # Logger.debug("new position: #{ViaUtils.Location.to_string(position)}")
+    # {position, velocity} = apply(ins_kf.__struct__, :position_rrm_velocity_mps, [ins_kf])
+    # Logger.error("new position: #{ViaUtils.Location.to_string(position)}")
     # Logger.debug("new velocity: #{ViaUtils.Format.eftb_map(velocity, 1)}")
 
     {:noreply,
@@ -171,7 +172,7 @@ defmodule Estimation.Estimator do
         {Groups.gps_itow_relheading_val(), _itow_ms, rel_heading_rad},
         state
       ) do
-    # Logger.debug("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
+    # Logger.error("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
     # start_time = :erlang.monotonic_time(:nanosecond)
     ins_kf = apply(state.ins_kf.__struct__, :update_from_heading, [state.ins_kf, rel_heading_rad])
     # end_time = :erlang.monotonic_time(:nanosecond)
@@ -188,6 +189,7 @@ defmodule Estimation.Estimator do
         imu = state.ins_kf.imu
         attitude_rad = Map.take(imu, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
         # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
+
         ViaUtils.Comms.send_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_attitude(), attitude_rad},
@@ -196,7 +198,7 @@ defmodule Estimation.Estimator do
 
         %{state | attitude_rad: attitude_rad}
       else
-        # Logger.debug("IMU is not current.")
+        Logger.debug("IMU is not current.")
         state
       end
 
@@ -234,7 +236,8 @@ defmodule Estimation.Estimator do
             yaw_rad
           )
 
-        # Logger.debug("course/yaw: #{Common.Utils.eftb_deg(course,1)}/#{Common.Utils.eftb_deg(Map.get(state.attitude, :yaw, 0),2)}")
+        # /#{Common.Utils.eftb_deg(Map.get(state.attitude, :yaw, 0),2)}")
+        # Logger.debug("est course: #{ViaUtils.Format.eftb_deg(course_rad, 1)}")
         vertical_velocity_mps = -v_down_mps
         # Update AGL
         # Logger.debug("rpv: #{Common.Utils.eftb_deg(roll,1)}/#{Common.Utils.eftb_deg(pitch,1)}/#{zdot}")

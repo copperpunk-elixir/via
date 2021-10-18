@@ -50,13 +50,13 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
               roll_course: [
                 kp: 0.3,
                 ki: 0.1,
-                kd: 0,
-                time_constant_s: 2,
+                kd: 0.1,
+                time_constant_s: 4,
                 output_min: -0.78,
                 output_max: 0.78,
                 output_neutral: 0.0,
                 integrator_range: 0.052,
-                integrator_airspeed_min_mps: 5. 0
+                integrator_airspeed_min_mps: 5.0
               ]
             ]
           ],
@@ -67,15 +67,15 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
                 output_min: -6.0,
                 output_neutral: 0,
                 output_max: 6.0,
-                multiplier: 2.0,
-                command_rate_max: 1.0,
+                multiplier: 5.0,
+                command_rate_max: 3.0,
                 initial_command: 0
               ],
               pitch: [
                 output_min: -3.0,
                 output_neutral: 0,
                 output_max: 3.0,
-                multiplier: 2.0,
+                multiplier: 5.0,
                 command_rate_max: 1.0,
                 initial_command: 0
               ],
@@ -83,7 +83,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
                 output_min: -3.0,
                 output_neutral: 0,
                 output_max: 3.0,
-                multiplier: 2.0,
+                multiplier: 5.0,
                 command_rate_max: 1.5,
                 initial_command: 0
               ],

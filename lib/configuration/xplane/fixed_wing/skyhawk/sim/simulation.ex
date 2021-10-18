@@ -13,7 +13,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
     [
       {Simulation.Interface,
        [
-         expected_imu_receive_interval_ms: 10,
+         expected_imu_receive_interval_ms: 20,
          controllers: [
            rollrate_aileron: [
              kp: 0.3,

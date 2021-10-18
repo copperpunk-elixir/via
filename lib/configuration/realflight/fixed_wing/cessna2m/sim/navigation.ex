@@ -1,4 +1,4 @@
-defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Navigation do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Navigation do
   require ViaNavigation.Dubins.Shared.PathFollowerValues, as: PFV
   require Comms.Sorters
 
@@ -18,10 +18,10 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Navigation do
           navigator_pilot_goals_sorter_classification_and_time_validity_ms,
         path_type: "Dubins",
         path_follower_params: [
-          {PFV.k_path(), 0.025},
-          {PFV.k_orbit(), 3.5},
+          {PFV.k_path(), 0.05},
+          {PFV.k_orbit(), 2.0},
           {PFV.chi_inf_rad(), 1.04},
-          {PFV.lookahead_dt_s(), 2.0}
+          {PFV.lookahead_dt_s(), 0.5}
         ]
       ]
     ]

@@ -2,7 +2,6 @@ defmodule Navigation.Navigator do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
-  require ViaUtils.Shared.ValueNames, as: SVN
   require ViaUtils.Shared.ControlTypes, as: SCT
   require Configuration.LoopIntervals, as: LoopIntervals
   require Comms.MessageHeaders, as: MessageHeaders
@@ -104,10 +103,10 @@ defmodule Navigation.Navigator do
 
     route =
       if !is_nil(mission) and !Enum.empty?(position_rrm) and !Enum.empty?(velocity_mps) do
-        {route, pcl_goals} = ViaNavigation.update_goals(route, position_rrm, velocity_mps)
+        {route, goals} = ViaNavigation.update_goals(route, position_rrm, velocity_mps)
 
-        unless Enum.empty?(pcl_goals) do
-          goals = %{current_pcl: pcl_goals, any_pcl: %{}}
+        unless Enum.empty?(goals) do
+          # goals = %{current_pcl: pcl_goals, any_pcl: %{}}
 
           ViaUtils.Comms.send_global_msg_to_group(
             __MODULE__,
@@ -117,7 +116,7 @@ defmodule Navigation.Navigator do
             self()
           )
 
-          Logger.debug("Goals: #{inspect(pcl_goals)}")
+          # Logger.debug("Goals: #{inspect(goals)}")
         end
 
         route

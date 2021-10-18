@@ -8,6 +8,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Config do
       :Display,
       :Estimation,
       :MessageSorter,
+      :Navigation,
       :Network,
       :Simulation
     ]
