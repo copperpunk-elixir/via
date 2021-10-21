@@ -114,7 +114,14 @@ defmodule Estimation.Estimator do
       agl: false
     }
 
-    {:noreply, %{state | ins_kf: ins_kf, agl_kf: agl_kf, is_value_current: is_value_current}}
+    {:noreply,
+     %{
+       state
+       | ins_kf: ins_kf,
+         agl_kf: agl_kf,
+         is_value_current: is_value_current,
+         ground_altitude_m: nil
+     }}
   end
 
   @impl GenServer

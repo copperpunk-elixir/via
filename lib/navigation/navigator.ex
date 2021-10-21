@@ -103,7 +103,12 @@ defmodule Navigation.Navigator do
 
     route =
       if !is_nil(mission) and !Enum.empty?(position_rrm) and !Enum.empty?(velocity_mps) do
-        {route, goals} = ViaNavigation.update_goals(route, position_rrm, velocity_mps)
+        {route, goals} =
+          ViaNavigation.update_goals(
+            route,
+            position_rrm,
+            velocity_mps
+          )
 
         unless Enum.empty?(goals) do
           # goals = %{current_pcl: pcl_goals, any_pcl: %{}}
