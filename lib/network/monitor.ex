@@ -69,7 +69,7 @@ defmodule Network.Monitor do
         is_nil(state.ip_address) and !is_nil(ip_address) ->
           Logger.debug("new ip address: #{inspect(ip_address)}")
 
-          ViaUtils.Comms.send_local_msg_to_group(
+          ViaUtils.Comms.cast_local_msg_to_group(
             __MODULE__,
             {Groups.host_ip_address(), ip_address},
             self()

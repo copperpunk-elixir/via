@@ -123,12 +123,12 @@ defmodule Command.RemotePilot do
           # Logger.debug("cvmap: #{ViaUtils.Format.eftb_map(channel_value_map, 3)}")
           # Logger.debug("pcl_goals: #{ViaUtils.Format.eftb_map(current_pcl_goals, 3)}")
 
-          ViaUtils.Comms.send_global_msg_to_group(
+          ViaUtils.Comms.cast_global_msg_to_group(
             __MODULE__,
             {MessageHeaders.global_group_to_sorter(), classification, time_validity_ms,
              {pilot_control_level, goals}},
-            Groups.sorter_pilot_control_level_and_goals(),
-            self()
+            self(),
+            Groups.sorter_pilot_control_level_and_goals()
           )
 
         autopilot_control_mode == ControlTypes.autopilot_control_mode_remote_pilot_override() ->
@@ -139,7 +139,7 @@ defmodule Command.RemotePilot do
               Map.put(acc, channel_name, Map.fetch!(channel_value_map, channel_number))
             end)
 
-          ViaUtils.Comms.send_global_msg_to_group(
+          ViaUtils.Comms.cast_global_msg_to_group(
             __MODULE__,
             {Groups.remote_pilot_override_commands(), override_commands},
             self()

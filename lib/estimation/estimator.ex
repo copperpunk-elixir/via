@@ -197,7 +197,7 @@ defmodule Estimation.Estimator do
         attitude_rad = Map.take(imu, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
         # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
 
-        ViaUtils.Comms.send_local_msg_to_group(
+        ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_attitude(), attitude_rad},
           self()
@@ -285,7 +285,7 @@ defmodule Estimation.Estimator do
           airspeed_mps: airspeed_mps
         }
 
-        ViaUtils.Comms.send_local_msg_to_group(
+        ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
           {Groups.estimation_position_velocity(), position, velocity},
           self()

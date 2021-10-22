@@ -113,12 +113,12 @@ defmodule Navigation.Navigator do
         unless Enum.empty?(goals) do
           # goals = %{current_pcl: pcl_goals, any_pcl: %{}}
 
-          ViaUtils.Comms.send_global_msg_to_group(
+          ViaUtils.Comms.cast_global_msg_to_group(
             __MODULE__,
             {MessageHeaders.global_group_to_sorter(), classification, time_validity_ms,
              {SCT.pilot_control_level_3(), goals}},
-            Groups.sorter_pilot_control_level_and_goals(),
-            self()
+            self(),
+            Groups.sorter_pilot_control_level_and_goals()
           )
 
           # Logger.debug("Goals: #{inspect(goals)}")

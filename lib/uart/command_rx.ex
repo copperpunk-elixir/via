@@ -144,7 +144,7 @@ defmodule Uart.CommandRx do
 
     rx =
       if !Enum.empty?(channel_values) do
-        ViaUtils.Comms.send_local_msg_to_group(
+        ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
           {Groups.command_channels(), channel_values},
           self()

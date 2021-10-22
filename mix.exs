@@ -55,8 +55,7 @@ defmodule Via.MixProject do
 
       {:via_utils,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils", override: true},
-      {:ubx_interpreter,
-       git: "https://github.com/copperpunk-elixir/ubx-interpreter.git", tag: "v0.1.0-alpha.1"},
+      {:ubx_interpreter, "~> 0.1.1"},
       # "~> 0.1.0"},
       {:frsky_parser,
        git: "https://github.com/copperpunk-elixir/frsky-parser.git", tag: "v0.1.0-alpha"},

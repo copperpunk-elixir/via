@@ -235,7 +235,7 @@ defmodule Control.Controller do
         #   "ctrl loop override_commands: #{ViaUtils.Format.eftb_map(override_commands, 3)}"
         # )
 
-        ViaUtils.Comms.send_local_msg_to_group(
+        ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
           {Groups.controller_override_commands(), override_commands},
           self()
@@ -404,13 +404,13 @@ defmodule Control.Controller do
     %{commands: commands, pilot_control_level: pilot_control_level} = state
     pcl_1_commands = Map.get(commands, SCT.pilot_control_level_1(), %{})
 
-    ViaUtils.Comms.send_local_msg_to_group(
+    ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
       {Groups.controller_bodyrate_commands(), pcl_1_commands},
       self()
     )
 
-    ViaUtils.Comms.send_local_msg_to_group(
+    ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
       {Groups.current_pilot_control_level_and_commands(), pilot_control_level, commands},
       self()
@@ -421,7 +421,7 @@ defmodule Control.Controller do
 
   @spec send_commands_for_any_pcl(map()) :: atom()
   def send_commands_for_any_pcl(any_pcl_commands) do
-    ViaUtils.Comms.send_local_msg_to_group(
+    ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
       {Groups.commands_for_any_pilot_control_level(), any_pcl_commands},
       self()

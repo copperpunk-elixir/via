@@ -191,7 +191,7 @@ defmodule Simulation.Interface do
 
   @spec send_actuator_output(map(), boolean()) :: atom()
   def send_actuator_output(actuator_output, is_override) do
-    ViaUtils.Comms.send_local_msg_to_group(
+    ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
       {Groups.simulation_update_actuators(), actuator_output, is_override},
       self()
