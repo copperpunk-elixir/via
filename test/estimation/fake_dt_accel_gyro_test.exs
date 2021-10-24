@@ -1,15 +1,15 @@
 defmodule Estimation.FakeDtAccelGyroTest do
   use ExUnit.Case
   require Logger
-  require Ubx.ClassDefs
-  require Ubx.AccelGyro.DtAccelGyro
+  require ViaUtils.Ubx.ClassDefs
+  require ViaUtils.Ubx.AccelGyro.DtAccelGyro
 
   test "Open Serial Port" do
-    msg_class = Ubx.ClassDefs.accel_gyro()
-    msg_id = Ubx.AccelGyro.DtAccelGyro.id()
-    byte_types = Ubx.AccelGyro.DtAccelGyro.bytes()
-    multipliers = Ubx.AccelGyro.DtAccelGyro.multipliers()
-    keys = Ubx.AccelGyro.DtAccelGyro.keys()
+    msg_class = ViaUtils.Ubx.ClassDefs.accel_gyro()
+    msg_id = ViaUtils.Ubx.AccelGyro.DtAccelGyro.id()
+    byte_types = ViaUtils.Ubx.AccelGyro.DtAccelGyro.bytes()
+    multipliers = ViaUtils.Ubx.AccelGyro.DtAccelGyro.multipliers()
+    keys = ViaUtils.Ubx.AccelGyro.DtAccelGyro.keys()
 
     accel_gyro_values = [5000, 1, 2, 3, 4, 5, 6]
 

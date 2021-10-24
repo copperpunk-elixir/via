@@ -1,7 +1,7 @@
 defmodule TestHelper.Companion.Utils do
   require Logger
-  require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
-  require Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
+  require ViaUtils.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
+  require ViaUtils.Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
 
   @spec display_bodyrate_thrust_cmd(list()) :: :ok
   def display_bodyrate_thrust_cmd(payload) do

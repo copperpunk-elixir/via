@@ -55,7 +55,9 @@ defmodule Via.MixProject do
 
       {:via_utils,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils", override: true},
-      {:ubx_interpreter, "~> 0.1.1"},
+      # ~> 0.1.1"},
+      {:ubx_interpreter,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},
       # "~> 0.1.0"},
       {:frsky_parser,
        git: "https://github.com/copperpunk-elixir/frsky-parser.git", tag: "v0.1.0-alpha"},
@@ -76,7 +78,9 @@ defmodule Via.MixProject do
       {:via_input_event,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-input-event"},
       {:via_display_scenic,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-display-scenic"}
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-display-scenic"},
+      {:teraranger_evo_uart,
+       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/teraranger-evo-uart"}
 
       #  git: "https://github.com/copperpunk-elixir/via-input-event.git", tag: "v0.1.0-alpha.1"}
     ]

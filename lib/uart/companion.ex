@@ -2,11 +2,11 @@ defmodule Uart.Companion do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
-  require Ubx.ClassDefs
-  require Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
-  require Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
-  require Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
-  require Ubx.VehicleCmds.ActuatorOverrideCmd_9_16, as: ActuatorOverrideCmd_9_16
+  require ViaUtils.Ubx.ClassDefs
+  require ViaUtils.Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
+  require ViaUtils.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
+  require ViaUtils.Ubx.VehicleCmds.ActuatorOverrideCmd_1_8, as: ActuatorOverrideCmd_1_8
+  require ViaUtils.Ubx.VehicleCmds.ActuatorOverrideCmd_9_16, as: ActuatorOverrideCmd_9_16
   require ViaUtils.Shared.ActuatorNames, as: Act
 
   @spec start_link(keyword) :: {:ok, any}
@@ -28,15 +28,22 @@ defmodule Uart.Companion do
     state = %{
       uart_ref: nil,
       ubx: UbxInterpreter.new(),
-      accel_counts_to_mpss: Keyword.fetch!(config, :accel_counts_to_mpss),
-      gyro_counts_to_rps: Keyword.fetch!(config, :gyro_counts_to_rps),
       channels_config_1_8: Keyword.fetch!(config, :channels_1_8),
+      channels_config_9_16: Keyword.get(config, :channels_9_16, %{}),
       use_only_channels_1_8: use_only_channels_1_8
     }
 
     uart_port = Keyword.fetch!(config, :uart_port)
-    port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
-    GenServer.cast(self(), {:open_uart_connection, uart_port, port_options})
+    Logger.info("Uart.Companion uart port: #{inspect(uart_port)}")
+
+    if uart_port == "virtual" do
+      Logger.debug("#{__MODULE__} virtual UART port")
+      ViaUtils.Comms.join_group(__MODULE__, Groups.virtual_uart_dt_accel_gyro())
+    else
+      port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
+      GenServer.cast(self(), {:open_uart_connection, uart_port, port_options})
+    end
+
     Logger.debug("Uart.Companion.Operator #{uart_port} setup complete!")
     {:ok, state}
   end
@@ -64,11 +71,11 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
-    Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+    # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
-        Ubx.ClassDefs.vehicle_cmds(),
+        ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
         BodyrateThrustCmd.id(),
         BodyrateThrustCmd.bytes(),
         BodyrateThrustCmd.multiplier(),
@@ -76,7 +83,12 @@ defmodule Uart.Companion do
         bodyrate_commands
       )
 
-    Circuits.UART.write(state.uart_ref, ubx_message)
+    %{uart_ref: uart_ref} = state
+
+    unless is_nil(uart_ref) do
+      Circuits.UART.write(uart_ref, ubx_message)
+    end
+
     {:noreply, state}
   end
 
@@ -88,49 +100,58 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.controller_override_commands(), override_commands}, state) do
-    channels_config_1_8 = state.channels_config_1_8
+    %{
+      channels_config_1_8: channels_config_1_8,
+      channels_config_9_16: channels_config_9_16,
+      use_only_channels_1_8: use_only_channels_1_8,
+      uart_ref: uart_ref
+    } = state
 
-    {channel_values_1_8, channel_values_9_16} =
-      Map.split(override_commands, channels_config_1_8.keys)
+    %{keys: ch_1_8_keys, default_values: ch_1_8_default_values} = channels_config_1_8
+
+    {channel_values_1_8, channel_values_9_16} = Map.split(override_commands, ch_1_8_keys)
 
     # Fill in missing values with default values, as defined by Companion config
     channel_values_1_8 =
-      Map.merge(channels_config_1_8.default_values, channel_values_1_8)
-      |> Map.put(Act.process_actuators(), state.use_only_channels_1_8)
+      Map.merge(ch_1_8_default_values, channel_values_1_8)
+      |> Map.put(Act.process_actuators(), use_only_channels_1_8)
 
     # Logger.warn("ch 1-8: #{ViaUtils.Format.eftb_map(channel_values_1_8,3)}")
 
     ubx_message_1_8 =
       UbxInterpreter.construct_message_from_map(
-        Ubx.ClassDefs.vehicle_cmds(),
+        ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
         ActuatorOverrideCmd_1_8.id(),
         ActuatorOverrideCmd_1_8.bytes(),
         ActuatorOverrideCmd_1_8.multiplier(),
-        channels_config_1_8.keys,
+        ch_1_8_keys,
         channel_values_1_8
       )
 
-    Circuits.UART.write(state.uart_ref, ubx_message_1_8)
+    unless is_nil(uart_ref) do
+      Circuits.UART.write(uart_ref, ubx_message_1_8)
 
-    if !Enum.empty?(channel_values_9_16) do
-      Logger.debug("More than 8 channels. Must send 9-16 message")
-      channels_config_9_16 = state.channels_config_9_16
+      if !Enum.empty?(channel_values_9_16) do
+        Logger.debug("More than 8 channels. Must send 9-16 message")
 
-      channel_values_9_16 =
-        Map.merge(channels_config_9_16.default_values, channel_values_9_16)
-        |> Map.put(Act.process_actuators(), 1 - state.use_only_channels_1_8)
+        %{keys: ch_9_16_keys, default_values: ch_9_16_default_values} = channels_config_9_16
 
-      ubx_message_9_16 =
-        UbxInterpreter.construct_message_from_map(
-          Ubx.ClassDefs.vehicle_cmds(),
-          ActuatorOverrideCmd_9_16.id(),
-          ActuatorOverrideCmd_9_16.bytes(),
-          ActuatorOverrideCmd_9_16.multiplier(),
-          channels_config_9_16.keys,
-          channel_values_9_16
-        )
+        channel_values_9_16 =
+          Map.merge(ch_9_16_default_values, channel_values_9_16)
+          |> Map.put(Act.process_actuators(), 1 - use_only_channels_1_8)
 
-      Circuits.UART.write(state.uart_ref, ubx_message_9_16)
+        ubx_message_9_16 =
+          UbxInterpreter.construct_message_from_map(
+            ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
+            ActuatorOverrideCmd_9_16.id(),
+            ActuatorOverrideCmd_9_16.bytes(),
+            ActuatorOverrideCmd_9_16.multiplier(),
+            ch_9_16_keys,
+            channel_values_9_16
+          )
+
+        Circuits.UART.write(uart_ref, ubx_message_9_16)
+      end
     end
 
     {:noreply, state}
@@ -145,6 +166,7 @@ defmodule Uart.Companion do
   @impl GenServer
   def handle_info({:circuits_uart, _port, data}, state) do
     # Logger.debug("rx'd data: #{inspect(data)}")
+
     ubx =
       UbxInterpreter.check_for_new_messages_and_process(
         state.ubx,
@@ -160,7 +182,7 @@ defmodule Uart.Companion do
   def process_data_fn(msg_class, msg_id, payload) do
     # Logger.debug("Comp rx class/id: #{msg_class}/#{msg_id}")
     case msg_class do
-      Ubx.ClassDefs.accel_gyro() ->
+      ViaUtils.Ubx.ClassDefs.accel_gyro() ->
         case msg_id do
           DtAccelGyro.id() ->
             values =
@@ -184,7 +206,7 @@ defmodule Uart.Companion do
             Logger.warn("Bad message id: #{msg_id}")
         end
 
-      Ubx.ClassDefs.vehicle_cmds() ->
+      ViaUtils.Ubx.ClassDefs.vehicle_cmds() ->
         case msg_id do
           BodyrateThrustCmd.id() ->
             TestHelper.Companion.Utils.display_bodyrate_thrust_cmd(payload)

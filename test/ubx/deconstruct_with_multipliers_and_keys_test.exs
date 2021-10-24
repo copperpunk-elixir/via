@@ -1,7 +1,7 @@
 defmodule Ubx.DeconstructWithMultipliersAndKeys do
   use ExUnit.Case
   require Logger
-  require Ubx.NavRelposned, as: NavRelposned
+  require ViaUtils.Ubx.NavRelposned, as: NavRelposned
 
   setup do
     RingLogger.attach()

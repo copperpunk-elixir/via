@@ -35,9 +35,14 @@ defmodule Uart.CommandRx do
       configure_uart_timer: nil
     }
 
-    port_options = Map.get(rx_module_config, Enum.at(rxs, 0).__struct__)
+    Logger.info("#{__MODULE__} uart port: #{inspect(uart_port)}")
 
-    GenServer.cast(self(), {:open_uart_connection, uart_port, port_options, false})
+    if uart_port == "virtual" do
+      Logger.debug("#{__MODULE__} virtual UART port")
+    else
+      port_options = Map.get(rx_module_config, Enum.at(rxs, 0).__struct__)
+      GenServer.cast(self(), {:open_uart_connection, uart_port, port_options, false})
+    end
 
     Logger.debug("Uart.CommandRx #{uart_port} setup complete!")
     {:ok, state}

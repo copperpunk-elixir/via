@@ -10,7 +10,8 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Config do
       :MessageSorter,
       :Navigation,
       :Network,
-      :Simulation
+      :Simulation,
+      :Uart
     ]
   end
 end

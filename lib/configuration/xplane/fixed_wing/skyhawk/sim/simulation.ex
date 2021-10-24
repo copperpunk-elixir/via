@@ -59,16 +59,18 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
        [
          receive: [
            port: 49002,
-           dt_accel_gyro_group: Groups.dt_accel_gyro_val(),
-           gps_itow_position_velocity_group: Groups.gps_itow_position_velocity_val(),
-           gps_itow_relheading_group: Groups.gps_itow_relheading_val(),
+           dt_accel_gyro_group: Groups.virtual_uart_dt_accel_gyro(),
+           gps_itow_position_velocity_group: Groups.virtual_uart_gps(),
+           gps_itow_relheading_group: Groups.virtual_uart_gps(),
            airspeed_group: Groups.airspeed_val(),
-           downward_tof_distance_group: Groups.downward_tof_distance_val(),
+           downward_range_distance_group: Groups.virtual_uart_downward_range(),
            publish_dt_accel_gyro_interval_ms: 5,
            publish_gps_position_velocity_interval_ms: 200,
            publish_gps_relative_heading_interval_ms: 200,
            publish_airspeed_interval_ms: 200,
-           publish_downward_tof_distance_interval_ms: 200
+           publish_downward_range_distance_interval_ms: 200,
+           downward_range_max_m: 40,
+           downward_range_module: TerarangerEvoUart
          ],
          send: [
            source_port: 49003,

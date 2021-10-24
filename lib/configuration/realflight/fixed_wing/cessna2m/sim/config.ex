@@ -10,7 +10,8 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Config do
       :MessageSorter,
       :Navigation,
       :Network,
-      :Simulation
+      :Simulation,
+      :Uart
     ]
   end
 end
