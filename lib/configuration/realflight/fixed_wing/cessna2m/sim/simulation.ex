@@ -27,14 +27,14 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Simulation do
              integrator_airspeed_min_mps: 5.0
            ],
            pitchrate_elevator: [
-             kp: 0.03,
-             ki: 0.1,
+             kp: 0.5,
+             ki: 0.5,
              kd: 0,
              ff_multiplier: 0.318,
              output_min: -1.0,
              output_neutral: 0,
              output_max: 1.0,
-             integrator_range: 0.26,
+             integrator_range: 2.0,
              integrator_airspeed_min_mps: 5.0
            ],
            yawrate_rudder: [

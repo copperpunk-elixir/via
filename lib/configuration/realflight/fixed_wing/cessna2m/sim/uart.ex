@@ -3,7 +3,13 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart do
 
   @spec config() :: list()
   def config() do
-    peripherals = ["CommandRx_CP2104"]
+    peripherals = [
+      "CommandRx_virtual",
+      "Gps_virtual",
+      "DownwardRange_virtual",
+      "Companion_virtual"
+    ]
+
     Uart.Utils.config(__MODULE__, peripherals)
   end
 end

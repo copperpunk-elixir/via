@@ -29,7 +29,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
                 altitude_kp: 1.0,
                 energy_rate_scalar: 0.004,
                 integrator_range: 100,
-                feed_forward_speed_max_mps: 65.0,
+                feed_forward_speed_max_mps: 20.0,
                 output_min: 0.0,
                 output_max: 1.0,
                 output_neutral: 0.0
@@ -42,7 +42,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
                 time_constant: 2.0,
                 integrator_range: 0.4,
                 integrator_factor: 5.0,
-                min_airspeed_for_climb_mps: 10,
+                min_airspeed_for_climb_mps: 8,
                 output_min: -0.78,
                 output_max: 0.52,
                 output_neutral: 0.0
@@ -67,7 +67,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
                 output_min: -6.0,
                 output_neutral: 0,
                 output_max: 6.0,
-                multiplier: 5.0,
+                multiplier: 10.0,
                 command_rate_max: 1.0,
                 initial_command: 0
               ],
@@ -75,7 +75,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
                 output_min: -3.0,
                 output_neutral: 0,
                 output_max: 3.0,
-                multiplier: 5.0,
+                multiplier: 10.0,
                 command_rate_max: 1.0,
                 initial_command: 0
               ],
