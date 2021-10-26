@@ -25,8 +25,9 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
             controller_config: [
               tecs_energy: [
                 ki: 0.1,
-                kd: 0,
-                altitude_kp: 0.5,
+                kd: 0.0,
+                altitude_kp: 1.0,
+                speed_kp: 1.0,
                 energy_rate_scalar: 0.002,
                 integrator_range: 300,
                 feed_forward_speed_max_mps: 65.0,
@@ -35,14 +36,14 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
                 output_neutral: 0.0
               ],
               tecs_balance: [
-                ki: 0.02,
-                kd: 0.0,
+                ki: 0.05,
+                kd: 0.002,
                 altitude_kp: 0.5,
                 balance_rate_scalar: 0.5,
                 time_constant: 2.0,
                 integrator_range: 0.4,
                 integrator_factor: 5.0,
-                min_airspeed_for_climb_mps: 10,
+                min_airspeed_for_climb_mps: 30,
                 output_min: -0.78,
                 output_max: 0.52,
                 output_neutral: 0.0

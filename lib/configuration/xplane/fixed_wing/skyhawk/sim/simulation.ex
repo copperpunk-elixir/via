@@ -27,8 +27,8 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
              integrator_airspeed_min_mps: 5.0
            ],
            pitchrate_elevator: [
-             kp: 0.3,
-             ki: 0.1,
+             kp: 0.6,
+             ki: 0.5,
              kd: 0,
              ff_multiplier: 0.318,
              output_min: -1.0,
