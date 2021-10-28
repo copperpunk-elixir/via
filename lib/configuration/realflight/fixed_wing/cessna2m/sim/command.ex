@@ -26,7 +26,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Command do
           CCT.pilot_control_level_4() => %{
             SGN.course_rate_rps() => {0, {-0.52, 0, 0.52, CCT.input_not_inverted(), 0.052}},
             SGN.altitude_rate_mps() => {1, {-5.0, 0, 5.0, CCT.input_inverted(), 0.05}},
-            SGN.groundspeed_mps() => {2, {0, 32.5, 65.0, CCT.input_not_inverted(), 0}},
+            SGN.groundspeed_mps() => {2, {0, 10, 20.0, CCT.input_not_inverted(), 0}},
             SGN.sideslip_rad() => {3, {-0.26, 0, 0.26, CCT.input_not_inverted(), 0.052}}
           },
           CCT.pilot_control_level_2() => %{

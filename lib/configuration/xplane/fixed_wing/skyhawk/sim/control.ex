@@ -24,7 +24,6 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
             module: ViaControllers.FixedWing.ScasStAp,
             controller_config: [
               min_airspeed_for_climb_mps: 25,
-              feed_forward_speed_max_mps: 65.0,
               speed_thrust: [
                 kp: 0.2,
                 ki: 0.01,

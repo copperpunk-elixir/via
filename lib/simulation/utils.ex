@@ -55,7 +55,7 @@ defmodule Simulation.Utils do
     {simulator_type, model_type, input_type}
   end
 
-  @spec get_vehicle_type(binary()) :: tuple()
+  @spec get_vehicle_type(binary()) :: binary()
   def get_vehicle_type(model_type) do
     vehicle_type =
       case model_type do

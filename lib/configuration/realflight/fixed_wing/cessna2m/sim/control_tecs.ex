@@ -1,4 +1,4 @@
-defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
+defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.ControlTecs do
   require ViaUtils.Shared.ControlTypes, as: CCT
 
   @spec config() :: list()
@@ -21,29 +21,31 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
         },
         controllers: %{
           CCT.pilot_control_level_3() => [
-            module: ViaControllers.FixedWing.ScasStAp,
+            module: ViaControllers.FixedWing.SpeedCourseAltitudeSideslip,
             controller_config: [
-              min_airspeed_for_climb_mps: 6,
-              speed_thrust: [
-                kp: 0.2,
-                ki: 0.01,
+              tecs_energy: [
+                ki: 0.25,
                 kd: 0,
+                altitude_kp: 1.0,
+                energy_rate_scalar: 0.004,
+                integrator_range: 100,
+                feed_forward_speed_max_mps: 20.0,
                 output_min: 0.0,
-                output_neutral: 0.0,
                 output_max: 1.0,
-                feed_forward_speed_max_mps: 20,
-                integrator_range: 2,
-                integrator_airspeed_min_mps: 5.0
+                output_neutral: 0.0
               ],
-              altitude_pitch: [
-                kp: 0.05,
-                ki: 0.01,
+              tecs_balance: [
+                ki: 0.1,
                 kd: 0.0,
+                altitude_kp: 0.75,
+                balance_rate_scalar: 0.5,
+                time_constant: 2.0,
+                integrator_range: 0.4,
+                integrator_factor: 5.0,
+                min_airspeed_for_climb_mps: 8,
                 output_min: -0.78,
-                output_neutral: 0,
                 output_max: 0.52,
-                integrator_range: 0.5,
-                integrator_airspeed_min_mps: 5.0
+                output_neutral: 0.0
               ],
               roll_course: [
                 kp: 0.3,
