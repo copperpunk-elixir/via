@@ -1,4 +1,4 @@
-defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
+defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.ControlTecs do
   require ViaUtils.Shared.ControlTypes, as: CCT
 
   @spec config() :: list()
@@ -21,41 +21,43 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
         },
         controllers: %{
           CCT.pilot_control_level_3() => [
-            module: ViaControllers.FixedWing.ScasStAp,
+            module: ViaControllers.FixedWing.ScasTecs,
             controller_config: [
-              min_airspeed_for_climb_mps: 25,
-              feed_forward_speed_max_mps: 65.0,
-              speed_thrust: [
-                kp: 0.2,
-                ki: 0.01,
-                kd: 0,
-                output_min: 0.0,
-                output_neutral: 0.0,
-                output_max: 1.0,
-                feed_forward_speed_max_mps: 65,
-                integrator_range: 5,
-                integrator_airspeed_min_mps: 5.0
-              ],
-              altitude_pitch: [
-                kp: 0.025,
-                ki: 0.01,
+              tecs_energy: [
+                ki: 0.1,
                 kd: 0.0,
+                altitude_kp: 1.0,
+                speed_kp: 1.0,
+                energy_rate_scalar: 0.002,
+                integrator_range: 300,
+                feed_forward_speed_max_mps: 65.0,
+                output_min: 0.0,
+                output_max: 1.0,
+                output_neutral: 0.0
+              ],
+              tecs_balance: [
+                ki: 0.05,
+                kd: 0.002,
+                altitude_kp: 0.5,
+                balance_rate_scalar: 0.5,
+                time_constant: 2.0,
+                integrator_range: 0.4,
+                integrator_factor: 5.0,
+                min_airspeed_for_climb_mps: 30,
                 output_min: -0.78,
-                output_neutral: 0,
                 output_max: 0.52,
-                integrator_range: 0.5,
-                integrator_airspeed_min_mps: 5.0
+                output_neutral: 0.0
               ],
               roll_course: [
-                kp: 0.25,
-                ki: 0.0,
-                kd: 0,
+                kp: 0.1,
+                ki: 0.1,
+                kd: 0.0,
                 time_constant_s: 4,
-                integrator_range: 0.052,
-                integrator_airspeed_min_mps: 5.0,
                 output_min: -0.78,
                 output_max: 0.78,
-                output_neutral: 0.0
+                output_neutral: 0.0,
+                integrator_range: 0.052,
+                integrator_airspeed_min_mps: 5.0
               ]
             ]
           ],

@@ -252,7 +252,7 @@ defmodule Control.Controller do
 
         {pilot_control_level, commands} =
           if map_size(commands) == 0 do
-            {default_pilot_control_level, %{default_pilot_control_level => default_commands}}
+            {default_pilot_control_level, %{default_pilot_control_level => default_commands.current_pcl}}
           else
             {pilot_control_level, commands}
           end
