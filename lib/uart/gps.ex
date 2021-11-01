@@ -15,7 +15,7 @@ defmodule Uart.Gps do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
 
     state = %{
       uart_ref: nil,

@@ -11,7 +11,7 @@ defmodule Uart.DownwardRange do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
 
     device_module = Keyword.fetch!(config, :device_module)
 

@@ -40,7 +40,7 @@ defmodule Navigation.Navigator do
         Keyword.fetch!(config, :goals_sorter_classification_and_time_validity_ms)
     }
 
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.load_mission(), self())

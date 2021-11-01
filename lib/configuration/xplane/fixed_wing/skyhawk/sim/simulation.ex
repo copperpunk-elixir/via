@@ -6,7 +6,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
 
   @spec config() :: list()
   def config() do
-    xplane() ++ sim_interface()
+    xplane()# ++ sim_interface()
   end
 
   def sim_interface() do

@@ -6,7 +6,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Simulation do
 
   @spec config() :: list()
   def config() do
-    realflight() ++ sim_interface()
+    realflight()# ++ sim_interface()
   end
 
   def sim_interface() do

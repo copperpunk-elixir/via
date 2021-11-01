@@ -71,7 +71,7 @@ defmodule Estimation.Estimator do
         )
     }
 
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.dt_accel_gyro_val(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_position_velocity_val(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.gps_itow_relheading_val(), self())
@@ -126,7 +126,7 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast({Groups.dt_accel_gyro_val(), values}, state) do
-    # Logger.error("dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
+    # Logger.error("est dtag: #{ViaUtils.Format.eftb_map(values, 4)}")
     # start_time = :erlang.monotonic_time(:nanosecond)
     ins_kf = apply(state.ins_kf.__struct__, :predict, [state.ins_kf, values])
     # end_time = :erlang.monotonic_time(:nanosecond)
