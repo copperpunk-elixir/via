@@ -61,6 +61,11 @@ defmodule Uart.Companion do
               LoopIntervals.imu_receive_max_ms()
             )
         ),
+      direct_actuator_output_watchdog:
+        Watchdog.new(
+          {@clear_is_value_current_callback, @direct_actuator_output},
+          2 * LoopIntervals.remote_pilot_goals_publish_ms()
+        ),
       channel_names_direct: Map.merge(bodyrate_channels, any_pcl_channels),
       channel_names_any_pcl: any_pcl_channels,
       ubx_write_function: nil
@@ -127,14 +132,14 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
-    # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+    Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
         ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
         BodyrateThrustCmd.id(),
         BodyrateThrustCmd.bytes(),
-        BodyrateThrustCmd.multiplier(),
+        BodyrateThrustCmd.multipliers(),
         BodyrateThrustCmd.keys(),
         bodyrate_commands
       )
@@ -156,12 +161,13 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.controller_direct_actuator_output(), direct_actuator_output}, state) do
-    Logger.debug("comp rx ovrd_cmds: #{ViaUtils.Format.eftb_map(direct_actuator_output, 3)}")
+    # Logger.debug("comp rx ovrd_cmds: #{ViaUtils.Format.eftb_map(direct_actuator_output, 3)}")
 
     %{
       is_value_current: is_value_current,
       channel_names_direct: channel_names_direct,
-      uart_ref: uart_ref
+      uart_ref: uart_ref,
+      direct_actuator_output_watchdog: direct_actuator_output_watchdog
     } = state
 
     ubx_message = create_actuator_message(direct_actuator_output, channel_names_direct)
@@ -177,11 +183,17 @@ defmodule Uart.Companion do
       Circuits.UART.write(uart_ref, ubx_message)
     end
 
-    Logger.debug("ubx: #{ubx_message}")
+    # Logger.debug("ubx: #{ubx_message}")
 
+    direct_actuator_output_watchdog = Watchdog.reset(direct_actuator_output_watchdog)
     is_value_current = Map.put(is_value_current, @direct_actuator_output, true)
 
-    {:noreply, %{state | is_value_current: is_value_current}}
+    {:noreply,
+     %{
+       state
+       | is_value_current: is_value_current,
+         direct_actuator_output_watchdog: direct_actuator_output_watchdog
+     }}
   end
 
   @impl GenServer
@@ -220,9 +232,10 @@ defmodule Uart.Companion do
     %{
       is_value_current: is_value_current,
       bodyrate_actuator_output: bodyrate_actuator_output,
-      uart_ref: uart_ref
+      uart_ref: uart_ref,
+      ubx_write_function: ubx_write_function
     } = state
-
+      Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
     unless is_value_current.direct_actuator_output or Enum.empty?(bodyrate_actuator_output) do
       # Logger.warn("comp act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
 
@@ -231,21 +244,22 @@ defmodule Uart.Companion do
           ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
           BodyrateActuatorOutput.id(),
           BodyrateActuatorOutput.bytes(),
-          BodyrateActuatorOutput.multiplier(),
+          BodyrateActuatorOutput.multipliers(),
           BodyrateActuatorOutput.keys(),
           bodyrate_actuator_output
         )
 
-      if is_nil(uart_ref) do
-        ViaUtils.Comms.send_local_msg_to_group(
-          __MODULE__,
-          {:circuits_uart, 0, ubx_message},
-          self(),
-          Groups.virtual_uart_actuator_output()
-        )
-      else
-        Circuits.UART.write(uart_ref, ubx_message)
-      end
+      ubx_write_function.(ubx_message, uart_ref)
+      # if is_nil(uart_ref) do
+      #   ViaUtils.Comms.send_local_msg_to_group(
+      #     __MODULE__,
+      #     {:circuits_uart, 0, ubx_message},
+      #     self(),
+      #     Groups.virtual_uart_actuator_output()
+      #   )
+      # else
+      #   Circuits.UART.write(uart_ref, ubx_message)
+      # end
     end
 
     {:noreply, state}
@@ -257,23 +271,24 @@ defmodule Uart.Companion do
       is_value_current: is_value_current,
       any_pcl_actuator_output: any_pcl_actuator_output,
       channel_names_any_pcl: channel_names_any_pcl,
-      uart_ref: uart_ref
+      uart_ref: uart_ref,
+      ubx_write_function: ubx_write_function
     } = state
 
     unless is_value_current.direct_actuator_output or Enum.empty?(any_pcl_actuator_output) do
       # Logger.warn("comp act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
       ubx_message = create_actuator_message(any_pcl_actuator_output, channel_names_any_pcl)
-
-      if is_nil(uart_ref) do
-        ViaUtils.Comms.send_local_msg_to_group(
-          __MODULE__,
-          {:circuits_uart, 0, ubx_message},
-          self(),
-          Groups.virtual_uart_actuator_output()
-        )
-      else
-        Circuits.UART.write(uart_ref, ubx_message)
-      end
+      ubx_write_function.(ubx_message, uart_ref)
+      # if is_nil(uart_ref) do
+      #   ViaUtils.Comms.send_local_msg_to_group(
+      #     __MODULE__,
+      #     {:circuits_uart, 0, ubx_message},
+      #     self(),
+      #     Groups.virtual_uart_actuator_output()
+      #   )
+      # else
+      #   Circuits.UART.write(uart_ref, ubx_message)
+      # end
     end
 
     {:noreply, state}
@@ -311,7 +326,7 @@ defmodule Uart.Companion do
                   self()
                 )
 
-                state = calculate_actuator_output(values, state)
+                state = calculate_bodyrate_actuator_output(values, state)
 
                 %{state | ubx: UbxInterpreter.clear(ubx)}
 
@@ -342,6 +357,7 @@ defmodule Uart.Companion do
     {channel_payload_bytes, channel_payload_values} =
       ActuatorCmdDirect.Utils.get_payload_bytes_and_values(actuator_output_map, channel_names)
 
+    # Logger.debug("bytes/values: #{inspect(channel_payload_bytes)}/#{inspect(channel_payload_values)}")
     UbxInterpreter.construct_message_from_list(
       ActuatorCmdDirect.class(),
       ActuatorCmdDirect.id(),
@@ -350,15 +366,14 @@ defmodule Uart.Companion do
     )
   end
 
-  def calculate_actuator_output(dt_accel_gyro_values, state) do
+  def calculate_bodyrate_actuator_output(dt_accel_gyro_values, state) do
     %{
       is_value_current: is_value_current,
       imu_watchdog: imu_watchdog,
       pid_controllers: pid_controllers,
       airspeed_mps: airspeed_mps,
       bodyrate_commands: bodyrate_commands,
-      any_pcl_commands: any_pcl_commands,
-      actuator_output: actuator_output
+      bodyrate_actuator_output: bodyrate_actuator_output_prev
     } = state
 
     # Logger.debug("comp is_val_cur: #{inspect(is_value_current)}")
@@ -369,13 +384,13 @@ defmodule Uart.Companion do
     # Logger.debug("reset imu watch")
     imu_watchdog = Watchdog.reset(imu_watchdog)
 
-    {pid_controllers, actuator_output} =
+    {pid_controllers, bodyrate_actuator_output} =
       cond do
         is_current_direct_actuator_output ->
           {reset_all_pid_integrators(pid_controllers), %{}}
 
         is_current_imu ->
-          # Logger.debug("br cmds: #{inspect(bodyrate_commands)}")
+          Logger.debug("br cmds: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
           if !Enum.empty?(bodyrate_commands) do
             {pid_controllers, controller_output} =
@@ -386,24 +401,24 @@ defmodule Uart.Companion do
                 airspeed_mps
               )
 
-            actuator_output =
+            bodyrate_actuator_output =
               Map.merge(
                 controller_output,
                 Map.take(bodyrate_commands, [SGN.throttle_scaled()])
               )
 
-            {pid_controllers, actuator_output}
+            Logger.debug("ctrl out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
+            {pid_controllers, bodyrate_actuator_output}
           else
-            {reset_all_pid_integrators(pid_controllers), actuator_output}
+            {reset_all_pid_integrators(pid_controllers), bodyrate_actuator_output_prev}
           end
 
         true ->
-          {reset_all_pid_integrators(pid_controllers), actuator_output}
+          {reset_all_pid_integrators(pid_controllers), bodyrate_actuator_output_prev}
       end
 
     # elapsed_time = :erlang.monotonic_time(:microsecond) - state.start_time
     # Logger.debug("rpy: #{elapsed_time}: #{Estimation.Imu.Utils.rpy_to_string(ins_kf.imu, 2)}")
-    actuator_output = Map.merge(actuator_output, any_pcl_commands)
     is_value_current = Map.put(is_value_current, @imu, true)
 
     %{
@@ -411,7 +426,7 @@ defmodule Uart.Companion do
       | is_value_current: is_value_current,
         imu_watchdog: imu_watchdog,
         pid_controllers: pid_controllers,
-        actuator_output: actuator_output
+        bodyrate_actuator_output: bodyrate_actuator_output
     }
   end
 
@@ -495,14 +510,14 @@ defmodule Uart.Companion do
 
   @spec real_ubx_write() :: function()
   def real_ubx_write() do
-    fn uart_ref, ubx_message ->
+    fn ubx_message, uart_ref ->
       Circuits.UART.write(uart_ref, ubx_message)
     end
   end
 
   @spec virtual_ubx_write() :: function()
   def virtual_ubx_write() do
-    fn ubx_message ->
+    fn ubx_message, _ ->
       ViaUtils.Comms.send_local_msg_to_group(
         __MODULE__,
         {:circuits_uart, 0, ubx_message},

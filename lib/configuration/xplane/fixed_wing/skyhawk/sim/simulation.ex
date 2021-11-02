@@ -1,12 +1,14 @@
 defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
   require ViaUtils.Shared.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
+  require ViaUtils.Shared.ActuatorNames, as: Act
   alias ViaInputEvent.KeypressAction, as: KA
   alias ViaInputEvent.KeyCollection, as: KC
 
   @spec config() :: list()
   def config() do
-    xplane()# ++ sim_interface()
+    # ++ sim_interface()
+    xplane()
   end
 
   def sim_interface() do
@@ -74,7 +76,15 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
          ],
          send: [
            source_port: 49003,
-           destination_port: 49000
+           destination_port: 49000,
+           channel_names: %{
+             0 => Act.aileron(),
+             1 => Act.elevator(),
+             2 => Act.throttle(),
+             3 => Act.rudder(),
+             4 => Act.flaps(),
+             5 => Act.gear()
+           }
          ]
        ]}
     ]

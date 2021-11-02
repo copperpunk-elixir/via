@@ -7,7 +7,7 @@ defmodule TestHelper.Companion.Utils do
     values =
       UbxInterpreter.deconstruct_message_to_map(
         BodyrateThrustCmd.bytes(),
-        BodyrateThrustCmd.multiplier(),
+        BodyrateThrustCmd.multipliers(),
         BodyrateThrustCmd.keys(),
         payload
       )
