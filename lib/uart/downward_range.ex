@@ -88,7 +88,7 @@ defmodule Uart.DownwardRange do
       else
         ViaUtils.Comms.cast_global_msg_to_group(
           __MODULE__,
-          {{:estimation_measured, :range}, range},
+          {Groups.downward_range_distance_val(), range},
           self()
         )
 

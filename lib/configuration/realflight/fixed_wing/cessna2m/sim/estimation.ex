@@ -4,7 +4,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Estimation do
   def config() do
     [
       Estimator: [
-        min_speed_for_course: 3.0,
+        min_speed_for_course_mps: 3.0,
         ins_kf_type: ViaEstimation.Ekf.SevenState,
         ins_kf_config: [
           init_std_devs: [0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05],

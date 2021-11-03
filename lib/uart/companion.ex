@@ -132,7 +132,7 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
-    Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+    # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
@@ -235,7 +235,7 @@ defmodule Uart.Companion do
       uart_ref: uart_ref,
       ubx_write_function: ubx_write_function
     } = state
-      Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
+      # Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
     unless is_value_current.direct_actuator_output or Enum.empty?(bodyrate_actuator_output) do
       # Logger.warn("comp act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
 
@@ -390,7 +390,7 @@ defmodule Uart.Companion do
           {reset_all_pid_integrators(pid_controllers), %{}}
 
         is_current_imu ->
-          Logger.debug("br cmds: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+          # Logger.debug("br cmds: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
           if !Enum.empty?(bodyrate_commands) do
             {pid_controllers, controller_output} =
@@ -407,7 +407,7 @@ defmodule Uart.Companion do
                 Map.take(bodyrate_commands, [SGN.throttle_scaled()])
               )
 
-            Logger.debug("ctrl out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
+            # Logger.debug("ctrl out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
             {pid_controllers, bodyrate_actuator_output}
           else
             {reset_all_pid_integrators(pid_controllers), bodyrate_actuator_output_prev}

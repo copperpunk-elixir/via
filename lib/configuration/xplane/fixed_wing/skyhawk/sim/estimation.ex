@@ -4,7 +4,7 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Estimation do
   def config() do
     [
       Estimator: [
-        min_speed_for_course: 5.0,
+        min_speed_for_course_mps: 5.0,
         ins_kf_type: ViaEstimation.Ekf.SevenState,
         ins_kf_config: [
           init_std_devs: [0.1, 0.1, 0.3, 0.1, 0.1, 0.3, 0.05],
