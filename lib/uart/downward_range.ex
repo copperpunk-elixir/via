@@ -11,7 +11,7 @@ defmodule Uart.DownwardRange do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
 
     device_module = Keyword.fetch!(config, :device_module)
 
@@ -88,7 +88,7 @@ defmodule Uart.DownwardRange do
       else
         ViaUtils.Comms.cast_global_msg_to_group(
           __MODULE__,
-          {{:estimation_measured, :range}, range},
+          {Groups.downward_range_distance_val(), range},
           self()
         )
 

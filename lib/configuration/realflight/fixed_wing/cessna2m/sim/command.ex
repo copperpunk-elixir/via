@@ -38,13 +38,13 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Command do
           CCT.pilot_control_level_1() => %{
             SGN.rollrate_rps() => {0, {-6.28, 0, 6.28, CCT.input_not_inverted(), 0.087}},
             SGN.pitchrate_rps() => {1, {-3.14, 0, 3.14, CCT.input_inverted(), 0.087}},
-            SGN.throttle_scaled() => {2, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
+            SGN.throttle_scaled() => {2, {-1, 0.0, 1.0, CCT.input_not_inverted(), -0.99}},
             SGN.yawrate_rps() => {3, {-3.14, 0.0, 3.14, CCT.input_not_inverted(), 0.087}}
           }
         },
         any_pcl_channel_config: %{
-          SGN.flaps_scaled => {4, {0, 0.5, 1.0, CCT.input_not_inverted(), 0.01}},
-          SGN.gear_scaled => {9, {0, 0.5, 1.0, CCT.input_inverted(), 0.01}},
+          SGN.flaps_scaled => {4, {-1, 0.0, 1.0, CCT.input_not_inverted(), -0.99}},
+          SGN.gear_scaled => {9, {-1, 0.0, 1.0, CCT.input_inverted(), -0.99}},
           SGN.pilot_control_level => {5, {-1.0, 0, 1.0, CCT.input_not_inverted(), 0}},
           SGN.autopilot_control_mode => {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
         },

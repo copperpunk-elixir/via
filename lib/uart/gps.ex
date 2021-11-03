@@ -15,7 +15,7 @@ defmodule Uart.Gps do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
 
     state = %{
       uart_ref: nil,
@@ -160,10 +160,15 @@ defmodule Uart.Gps do
             rel_distance_m = rel_pos_length_cm * 0.01 + rel_pos_hp_length_mm * 0.001
             # Logger.debug("flags/dist: #{values.flags}/#{rel_distance_m}")
 
+            # Logger.debug(
+            #   "dist/expdist/thresh: #{rel_distance_m}/#{expected_gps_antenna_distance_m}/#{gps_antenna_distance_error_threshold_m}"
+            # )
+
             if (flags &&& 261) == 261 and
                  abs(rel_distance_m - expected_gps_antenna_distance_m) <
                    gps_antenna_distance_error_threshold_m do
               rel_heading_rad = rel_pos_heading_deg |> ViaUtils.Math.deg2rad()
+              # Logger.debug("gps rel hsg: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
 
               ViaUtils.Comms.cast_global_msg_to_group(
                 __MODULE__,

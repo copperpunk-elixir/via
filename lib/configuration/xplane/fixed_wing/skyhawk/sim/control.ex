@@ -86,10 +86,10 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Control do
                 initial_command: 0
               ],
               thrust: [
-                output_min: 0.0,
-                output_neutral: 0.0,
+                output_min: -1.0,
+                output_neutral: -1.0,
                 output_max: 1.0,
-                multiplier: 1.0,
+                multiplier: 2.0,
                 command_rate_max: 0.5,
                 initial_command: 0.0
               ]

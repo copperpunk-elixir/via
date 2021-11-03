@@ -57,7 +57,7 @@ defmodule Control.Controller do
       controllers: get_controllers_from_config(config)
     }
 
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
 
     ViaUtils.Comms.join_group(
       __MODULE__,
@@ -237,7 +237,7 @@ defmodule Control.Controller do
 
         ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
-          {Groups.controller_override_commands(), override_commands},
+          {Groups.controller_direct_actuator_output(), override_commands},
           self()
         )
 

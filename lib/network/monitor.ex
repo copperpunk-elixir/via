@@ -12,7 +12,7 @@ defmodule Network.Monitor do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
     ViaUtils.Comms.join_group(__MODULE__, Groups.get_host_ip_address())
 
     network_utils_module =

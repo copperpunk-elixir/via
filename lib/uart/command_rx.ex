@@ -15,7 +15,7 @@ defmodule Uart.CommandRx do
 
   @impl GenServer
   def init(config) do
-    ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
+    ViaUtils.Comms.start_operator(__MODULE__)
     rx_module_config = Keyword.fetch!(config, :rx_module_config)
 
     rxs =
