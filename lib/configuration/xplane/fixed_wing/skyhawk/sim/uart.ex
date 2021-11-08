@@ -7,7 +7,8 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Uart do
       "CommandRx_virtual",
       "Gps_virtual",
       "DownwardRange_virtual",
-      "Companion_virtual"
+      "Companion_virtual",
+      "Telemetry_virtual"
     ]
 
     Uart.Utils.config(__MODULE__, peripherals)

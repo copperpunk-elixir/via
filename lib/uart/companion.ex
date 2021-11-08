@@ -2,11 +2,11 @@ defmodule Uart.Companion do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
-  require ViaUtils.Ubx.ClassDefs
-  require ViaUtils.Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
-  require ViaUtils.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
-  require ViaUtils.Ubx.VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
-  require ViaUtils.Ubx.VehicleCmds.BodyrateActuatorOutput, as: BodyrateActuatorOutput
+  require ViaTelemetry.Ubx.ClassDefs
+  require ViaTelemetry.Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
+  require ViaTelemetry.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
+  require ViaTelemetry.Ubx.VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
+  require ViaTelemetry.Ubx.VehicleCmds.BodyrateActuatorOutput, as: BodyrateActuatorOutput
   require ViaUtils.Shared.ValueNames, as: SVN
   require ViaUtils.Shared.GoalNames, as: SGN
   require Configuration.LoopIntervals, as: LoopIntervals
@@ -103,7 +103,7 @@ defmodule Uart.Companion do
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_direct_actuator_output(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.commands_for_any_pilot_control_level())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val())
 
     Logger.debug("Uart.Companion.Operator #{uart_port} setup complete!")
     {:ok, %{state | ubx_write_function: ubx_write_function}}
@@ -136,7 +136,7 @@ defmodule Uart.Companion do
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
-        ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
+        ViaTelemetry.Ubx.ClassDefs.vehicle_cmds(),
         BodyrateThrustCmd.id(),
         BodyrateThrustCmd.bytes(),
         BodyrateThrustCmd.multipliers(),
@@ -197,9 +197,10 @@ defmodule Uart.Companion do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_position_velocity(), _position, velocity}, state) do
+  def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
+    %{SVN.velocity_mps() => velocity_mps} = values
     # Logger.debug("Comp rx vel: #{ViaUtils.Format.eftb_map(velocity, 1)}")
-    %{SVN.airspeed_mps() => airspeed_mps} = velocity
+    %{SVN.airspeed_mps() => airspeed_mps} = velocity_mps
     {:noreply, %{state | airspeed_mps: airspeed_mps}}
   end
 
@@ -235,13 +236,14 @@ defmodule Uart.Companion do
       uart_ref: uart_ref,
       ubx_write_function: ubx_write_function
     } = state
-      # Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
+
+    # Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
     unless is_value_current.direct_actuator_output or Enum.empty?(bodyrate_actuator_output) do
       # Logger.warn("comp act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
 
       ubx_message =
         UbxInterpreter.construct_message_from_map(
-          ViaUtils.Ubx.ClassDefs.vehicle_cmds(),
+          ViaTelemetry.Ubx.ClassDefs.vehicle_cmds(),
           BodyrateActuatorOutput.id(),
           BodyrateActuatorOutput.bytes(),
           BodyrateActuatorOutput.multipliers(),
@@ -306,7 +308,7 @@ defmodule Uart.Companion do
       # Logger.debug("msg class/id: #{msg_class}/#{msg_id}")
       state =
         case msg_class do
-          ViaUtils.Ubx.ClassDefs.accel_gyro() ->
+          ViaTelemetry.Ubx.ClassDefs.accel_gyro() ->
             case msg_id do
               DtAccelGyro.id() ->
                 values =
@@ -326,36 +328,34 @@ defmodule Uart.Companion do
                   self()
                 )
 
-                state = calculate_bodyrate_actuator_output(values, state)
-
-                %{state | ubx: UbxInterpreter.clear(ubx)}
+                calculate_bodyrate_actuator_output(values, state)
 
               _other ->
                 Logger.warn("Bad message id: #{msg_id}")
                 state
             end
 
-          ViaUtils.Ubx.ClassDefs.vehicle_cmds() ->
+          ViaTelemetry.Ubx.ClassDefs.vehicle_cmds() ->
             case msg_id do
               BodyrateThrustCmd.id() ->
                 TestHelper.Companion.Utils.display_bodyrate_thrust_cmd(payload)
             end
 
-            %{state | ubx: UbxInterpreter.clear(ubx)}
+            state
 
           _other ->
             Logger.warn("Bad message class: #{msg_class}")
             state
         end
 
-      check_for_new_messages_and_process([], state)
+      check_for_new_messages_and_process([], %{state | ubx: UbxInterpreter.clear(ubx)})
     end
   end
 
   @spec create_actuator_message(map(), map()) :: binary()
   def create_actuator_message(actuator_output_map, channel_names) do
     {channel_payload_bytes, channel_payload_values} =
-      ActuatorCmdDirect.Utils.get_payload_bytes_and_values(actuator_output_map, channel_names)
+      ActuatorCmdDirect.get_payload_bytes_and_values(actuator_output_map, channel_names)
 
     # Logger.debug("bytes/values: #{inspect(channel_payload_bytes)}/#{inspect(channel_payload_values)}")
     UbxInterpreter.construct_message_from_list(

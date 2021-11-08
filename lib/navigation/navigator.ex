@@ -2,6 +2,7 @@ defmodule Navigation.Navigator do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.ValueNames, as: SVN
   require ViaUtils.Shared.ControlTypes, as: SCT
   require Configuration.LoopIntervals, as: LoopIntervals
   require Comms.MessageHeaders, as: MessageHeaders
@@ -41,8 +42,7 @@ defmodule Navigation.Navigator do
     }
 
     ViaUtils.Comms.start_operator(__MODULE__)
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.load_mission(), self())
 
     ViaUtils.Process.start_loop(
@@ -62,17 +62,9 @@ defmodule Navigation.Navigator do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude(), attitude_rad}, state) do
-    {:noreply,
-     %{
-       state
-       | attitude_rad: attitude_rad,
-         attitude_watchdog: Watchdog.reset(state.attitude_watchdog)
-     }}
-  end
+  def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
+    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
 
-  @impl GenServer
-  def handle_cast({Groups.estimation_position_velocity(), position_rrm, velocity_mps}, state) do
     {:noreply,
      %{
        state

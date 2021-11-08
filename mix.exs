@@ -55,6 +55,7 @@ defmodule Via.MixProject do
 
       {:via_utils,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils", override: true},
+      {:via_telemetry, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-telemetry"},
       # ~> 0.1.1"},
       {:ubx_interpreter,
        path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/ubx-interpreter"},

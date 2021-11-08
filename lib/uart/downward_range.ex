@@ -3,6 +3,7 @@ defmodule Uart.DownwardRange do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.ValueNames, as: SVN
 
   def start_link(config) do
     Logger.debug("Start Uart.DownwardRange")
@@ -88,7 +89,7 @@ defmodule Uart.DownwardRange do
       else
         ViaUtils.Comms.cast_global_msg_to_group(
           __MODULE__,
-          {Groups.downward_range_distance_val(), range},
+          {Groups.downward_range_distance_val(), %{SVN.downward_range_distance_m() => range}},
           self()
         )
 

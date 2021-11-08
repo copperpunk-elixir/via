@@ -34,6 +34,7 @@ defmodule Estimation.Estimator do
       agl_kf_config: agl_kf_config,
       min_speed_for_course_mps: Keyword.fetch!(config, :min_speed_for_course_mps),
       attitude_rad: %{},
+      attrate_rps: %{},
       groundspeed_mps: 0,
       course_rad: 0,
       vertical_velocity_mps: 0.0,
@@ -148,9 +149,10 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {Groups.gps_itow_position_velocity_val(), _itow_s, position_rrm, velocity_mps},
+        {Groups.gps_itow_position_velocity_val(), values},
         state
       ) do
+    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
     %{ins_kf: ins_kf, gps_watchdog: gps_watchdog, is_value_current: is_value_current} = state
     # Logger.warn("rx gps")
     # start_time = :erlang.monotonic_time(:nanosecond)
@@ -177,13 +179,12 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast(
-        {Groups.gps_itow_relheading_val(), _itow_ms, rel_heading_rad},
-        state
-      ) do
+  def handle_cast({Groups.gps_itow_relheading_val(), values}, state) do
+    %{SVN.yaw_rad() => rel_heading_rad} = values
+    %{ins_kf: ins_kf} = state
     # Logger.error("EKF update with heading: #{ViaUtils.Format.eftb_deg(rel_heading_rad, 1)}")
     # start_time = :erlang.monotonic_time(:nanosecond)
-    ins_kf = apply(state.ins_kf.__struct__, :update_from_heading, [state.ins_kf, rel_heading_rad])
+    ins_kf = apply(ins_kf.__struct__, :update_from_heading, [ins_kf, rel_heading_rad])
     # end_time = :erlang.monotonic_time(:nanosecond)
     # Logger.debug("hdgdt: #{ViaUtils.Format.eftb((end_time - start_time) * 1.0e-6, 3)}ms")
 
@@ -192,9 +193,10 @@ defmodule Estimation.Estimator do
 
   @impl GenServer
   def handle_cast(
-        {Groups.downward_range_distance_val(), downward_range_distance_m},
+        {Groups.downward_range_distance_val(), values},
         state
       ) do
+    %{SVN.downward_range_distance_m() => downward_range_distance_m} = values
     %{ins_kf: ins_kf, agl_kf: agl_kf, is_value_current: is_value_current} = state
     %{SVN.roll_rad() => roll_rad, SVN.pitch_rad() => pitch_rad} = get_attitude(ins_kf.imu)
 
@@ -221,12 +223,13 @@ defmodule Estimation.Estimator do
 
     state =
       if is_value_current.imu do
-        attitude_rad = get_attitude(ins_kf.imu)
+        %{imu: imu} = ins_kf
+        attitude_rad = get_attitude(imu)
+        attrate_rps = get_attrate(imu)
         # Logger.warn("ES att: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}")
-
         ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_attitude(), attitude_rad},
+          {Groups.estimation_attitude_attrate_val(), Map.merge(attitude_rad, attrate_rps)},
           self()
         )
 
@@ -316,7 +319,8 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_velocity(), position, velocity},
+          {Groups.estimation_position_velocity_val(),
+           %{SVN.position_rrm() => position, SVN.velocity_mps() => velocity}},
           self()
         )
 
@@ -351,5 +355,15 @@ defmodule Estimation.Estimator do
   @spec get_attitude(struct()) :: map()
   def get_attitude(imu) do
     apply(imu.__struct__, :get_attitude, [imu])
+  end
+
+  @spec get_attrate(struct()) :: map()
+  def get_attrate(imu) do
+    apply(imu.__struct__, :get_attrate, [imu])
+  end
+
+  @spec get_attitude_attrate(struct()) :: map()
+  def get_attitude_attrate(imu) do
+    apply(imu.__struct__, :get_attitude_attrate, [imu])
   end
 end

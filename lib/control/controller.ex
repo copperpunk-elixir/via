@@ -66,10 +66,15 @@ defmodule Control.Controller do
     )
 
     ViaUtils.Comms.join_group(__MODULE__, Groups.remote_pilot_override_commands(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude(), self())
-    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_attrate_val(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val(), self())
 
-    ViaUtils.Process.start_loop(self(), LoopIntervals.controller_update_ms(), @publish_commands_loop)
+    ViaUtils.Process.start_loop(
+      self(),
+      LoopIntervals.controller_update_ms(),
+      @publish_commands_loop
+    )
+
     {:ok, state}
   end
 
@@ -80,7 +85,9 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_attitude(), attitude_rad}, state) do
+  def handle_cast({Groups.estimation_attitude_attrate_val(), values}, state) do
+    attitude_rad = Map.take(values, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
+
     {:noreply,
      %{
        state
@@ -90,7 +97,9 @@ defmodule Control.Controller do
   end
 
   @impl GenServer
-  def handle_cast({Groups.estimation_position_velocity(), position_rrm, velocity_mps}, state) do
+  def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
+    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
+
     {:noreply,
      %{
        state
@@ -252,7 +261,8 @@ defmodule Control.Controller do
 
         {pilot_control_level, commands} =
           if map_size(commands) == 0 do
-            {default_pilot_control_level, %{default_pilot_control_level => default_commands.current_pcl}}
+            {default_pilot_control_level,
+             %{default_pilot_control_level => default_commands.current_pcl}}
           else
             {pilot_control_level, commands}
           end
@@ -412,7 +422,7 @@ defmodule Control.Controller do
 
     ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
-      {Groups.current_pilot_control_level_and_commands(), pilot_control_level, commands},
+      {Groups.current_pcl_and_all_commands_val(), Map.put(commands, SVN.pilot_control_level, pilot_control_level)},
       self()
     )
 

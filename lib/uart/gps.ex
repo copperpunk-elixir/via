@@ -4,9 +4,9 @@ defmodule Uart.Gps do
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
   require ViaUtils.Shared.ValueNames, as: SVN
-  require ViaUtils.Ubx.ClassDefs
-  require ViaUtils.Ubx.Nav.Pvt, as: Pvt
-  require ViaUtils.Ubx.Nav.Relposned, as: Relposned
+  require ViaTelemetry.Ubx.ClassDefs
+  require ViaTelemetry.Ubx.Nav.Pvt, as: Pvt
+  require ViaTelemetry.Ubx.Nav.Relposned, as: Relposned
 
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
@@ -97,7 +97,7 @@ defmodule Uart.Gps do
     # Logger.debug("class/id: #{msg_class}/#{msg_id}")
 
     case msg_class do
-      ViaUtils.Ubx.ClassDefs.nav() ->
+      ViaTelemetry.Ubx.ClassDefs.nav() ->
         case msg_id do
           Pvt.id() ->
             values =
@@ -133,8 +133,12 @@ defmodule Uart.Gps do
             if fix_type > 1 and fix_type < 5 do
               ViaUtils.Comms.cast_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_position_velocity_val(), itow_ms * 0.001, position_rrm,
-                 velocity_mps},
+                {Groups.gps_itow_position_velocity_val(),
+                 %{
+                   SVN.itow_s() => itow_ms * 0.001,
+                   SVN.position_rrm() => position_rrm,
+                   SVN.velocity_mps() => velocity_mps
+                 }},
                 self()
               )
             end
@@ -172,7 +176,8 @@ defmodule Uart.Gps do
 
               ViaUtils.Comms.cast_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_relheading_val(), itow_ms * 0.001, rel_heading_rad},
+                {Groups.gps_itow_relheading_val(),
+                 %{SVN.itow_s() => itow_ms * 0.001, SVN.yaw_rad() => rel_heading_rad}},
                 self()
               )
             end

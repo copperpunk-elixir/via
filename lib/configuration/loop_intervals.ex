@@ -31,4 +31,7 @@ defmodule Configuration.LoopIntervals do
 
   # KEYBOARD
   defmacro keyboard_channels_publish_ms, do: 20
+
+  # TELEMETRY
+  defmacro telemetry_publish_ms, do: 100
 end
