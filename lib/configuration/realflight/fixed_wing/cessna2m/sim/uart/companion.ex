@@ -1,18 +1,18 @@
 defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.Companion do
-  require ViaUtils.Shared.ActuatorNames, as: Act
+  require ViaUtils.Shared.GoalNames, as: SGN
 
   def config() do
     [
       channel_names: %{
         bodyrate: %{
-          0 => Act.aileron(),
-          1 => Act.elevator(),
-          2 => Act.throttle(),
-          3 => Act.rudder()
+          0 => SGN.aileron_scaled(),
+          1 => SGN.elevator_scaled(),
+          2 => SGN.throttle_scaled(),
+          3 => SGN.rudder_scaled()
         },
         any_pcl: %{
-          4 => Act.flaps(),
-          5 => Act.gear()
+          4 => SGN.flaps_scaled(),
+          5 => SGN.gear_scaled()
         }
       },
       expected_imu_receive_interval_ms: 20,

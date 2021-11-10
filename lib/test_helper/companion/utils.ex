@@ -1,6 +1,6 @@
 defmodule TestHelper.Companion.Utils do
   require Logger
-  require ViaTelemetry.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
+  require ViaTelemetry.Ubx.Custom.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
 
   @spec display_bodyrate_thrust_cmd(list()) :: :ok
   def display_bodyrate_thrust_cmd(payload) do

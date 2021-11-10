@@ -53,6 +53,7 @@ defmodule Uart.Telemetry do
     # ViaUtils.Comms.join_group(__MODULE__, Groups.commands_for_any_pilot_control_level())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_attrate_val())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.current_pcl_and_all_commands_val())
 
     ViaUtils.Process.start_loop(
       self(),
@@ -156,8 +157,7 @@ defmodule Uart.Telemetry do
       state
     else
       # Logger.debug("payload: #{inspect(payload)}")
-      ubx = UbxInterpreter.clear(ubx)
-      %{state | ubx: ubx}
+      check_for_new_messages_and_process([], %{state | ubx: UbxInterpreter.clear(ubx)})
     end
   end
 end

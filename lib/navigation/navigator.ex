@@ -63,7 +63,10 @@ defmodule Navigation.Navigator do
 
   @impl GenServer
   def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
-    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
+    position_rrm =
+      Map.take(values, [SVN.latitude_rad(), SVN.longitude_rad(), SVN.altitude_m(), SVN.agl_m()])
+
+    velocity_mps = Map.take(values, [SVN.course_rad(), SVN.groundspeed_mps()])
 
     {:noreply,
      %{

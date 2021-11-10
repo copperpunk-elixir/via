@@ -1,7 +1,7 @@
 defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
   require ViaUtils.Shared.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
-  require ViaUtils.Shared.ActuatorNames, as: Act
+  require ViaUtils.Shared.GoalNames, as: SGN
   alias ViaInputEvent.KeypressAction, as: KA
   alias ViaInputEvent.KeyCollection, as: KC
 
@@ -78,12 +78,12 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Simulation do
            source_port: 49003,
            destination_port: 49000,
            channel_names: %{
-             0 => Act.aileron(),
-             1 => Act.elevator(),
-             2 => Act.throttle(),
-             3 => Act.rudder(),
-             4 => Act.flaps(),
-             5 => Act.gear()
+             0 => SGN.aileron_scaled(),
+             1 => SGN.elevator_scaled(),
+             2 => SGN.throttle_scaled(),
+             3 => SGN.rudder_scaled(),
+             4 => SGN.flaps_scaled(),
+             5 => SGN.gear_scaled()
            }
          ]
        ]}

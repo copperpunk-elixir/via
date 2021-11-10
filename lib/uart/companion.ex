@@ -2,11 +2,11 @@ defmodule Uart.Companion do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
-  require ViaTelemetry.Ubx.ClassDefs
-  require ViaTelemetry.Ubx.AccelGyro.DtAccelGyro, as: DtAccelGyro
-  require ViaTelemetry.Ubx.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
-  require ViaTelemetry.Ubx.VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
-  require ViaTelemetry.Ubx.VehicleCmds.BodyrateActuatorOutput, as: BodyrateActuatorOutput
+  require ViaTelemetry.Ubx.Custom.ClassDefs, as: ClassDefs
+  require ViaTelemetry.Ubx.Custom.AccelGyro.DtAccelGyro, as: DtAccelGyro
+  require ViaTelemetry.Ubx.Custom.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
+  require ViaTelemetry.Ubx.Custom.VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
+  require ViaTelemetry.Ubx.Custom.VehicleCmds.BodyrateActuatorOutput, as: BodyrateActuatorOutput
   require ViaUtils.Shared.ValueNames, as: SVN
   require ViaUtils.Shared.GoalNames, as: SGN
   require Configuration.LoopIntervals, as: LoopIntervals
@@ -136,7 +136,7 @@ defmodule Uart.Companion do
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
-        ViaTelemetry.Ubx.ClassDefs.vehicle_cmds(),
+        ClassDefs.vehicle_cmds(),
         BodyrateThrustCmd.id(),
         BodyrateThrustCmd.bytes(),
         BodyrateThrustCmd.multipliers(),
@@ -198,9 +198,8 @@ defmodule Uart.Companion do
 
   @impl GenServer
   def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
-    %{SVN.velocity_mps() => velocity_mps} = values
     # Logger.debug("Comp rx vel: #{ViaUtils.Format.eftb_map(velocity, 1)}")
-    %{SVN.airspeed_mps() => airspeed_mps} = velocity_mps
+    %{SVN.airspeed_mps() => airspeed_mps} = values
     {:noreply, %{state | airspeed_mps: airspeed_mps}}
   end
 
@@ -243,7 +242,7 @@ defmodule Uart.Companion do
 
       ubx_message =
         UbxInterpreter.construct_message_from_map(
-          ViaTelemetry.Ubx.ClassDefs.vehicle_cmds(),
+          ClassDefs.vehicle_cmds(),
           BodyrateActuatorOutput.id(),
           BodyrateActuatorOutput.bytes(),
           BodyrateActuatorOutput.multipliers(),
@@ -308,7 +307,7 @@ defmodule Uart.Companion do
       # Logger.debug("msg class/id: #{msg_class}/#{msg_id}")
       state =
         case msg_class do
-          ViaTelemetry.Ubx.ClassDefs.accel_gyro() ->
+          ClassDefs.accel_gyro() ->
             case msg_id do
               DtAccelGyro.id() ->
                 values =
@@ -335,7 +334,7 @@ defmodule Uart.Companion do
                 state
             end
 
-          ViaTelemetry.Ubx.ClassDefs.vehicle_cmds() ->
+          ClassDefs.vehicle_cmds() ->
             case msg_id do
               BodyrateThrustCmd.id() ->
                 TestHelper.Companion.Utils.display_bodyrate_thrust_cmd(payload)

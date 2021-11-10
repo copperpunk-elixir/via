@@ -24,15 +24,22 @@ defmodule Control.Controller do
   @impl GenServer
   def init(config) do
     state = %{
+      SVN.airspeed_mps() => nil,
+      SVN.altitude_m() => nil,
+      SVN.course_rad() => nil,
+      SVN.ground_altitude_m() => nil,
+      SVN.groundspeed_mps() => nil,
+      SVN.pitch_rad() => nil,
+      SVN.roll_rad() => nil,
+      SVN.vertical_velocity_mps() => nil,
+      SVN.yaw_rad() => nil,
       default_pilot_control_level: Keyword.fetch!(config, :default_pilot_control_level),
       default_commands: Keyword.fetch!(config, :default_commands),
       commands: %{},
       pilot_control_level: nil,
       remote_pilot_override_commands: %{},
       latch_values: %{},
-      position_rrm: %{},
-      velocity_mps: %{},
-      attitude_rad: %{},
+      # attitude_rad: %{},
       agl_ceiling_m: Keyword.fetch!(config, :agl_ceiling_m),
       commands_watchdog:
         Watchdog.new(
@@ -86,38 +93,45 @@ defmodule Control.Controller do
 
   @impl GenServer
   def handle_cast({Groups.estimation_attitude_attrate_val(), values}, state) do
-    attitude_rad = Map.take(values, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
+    # attitude_rad = Map.take(values, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
+    values_to_save = Map.take(values, [SVN.roll_rad(), SVN.pitch_rad(), SVN.yaw_rad()])
 
     {:noreply,
      %{
-       state
-       | attitude_rad: attitude_rad,
-         attitude_watchdog: Watchdog.reset(state.attitude_watchdog)
+       Map.merge(state, values_to_save)
+       | attitude_watchdog: Watchdog.reset(state.attitude_watchdog)
      }}
   end
 
   @impl GenServer
   def handle_cast({Groups.estimation_position_velocity_val(), values}, state) do
-    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
+    values_to_save =
+      Map.take(values, [
+        SVN.altitude_m(),
+        SVN.ground_altitude_m(),
+        SVN.groundspeed_mps(),
+        SVN.vertical_velocity_mps(),
+        SVN.course_rad(),
+        SVN.airspeed_mps()
+      ])
 
     {:noreply,
      %{
-       state
-       | position_rrm: position_rrm,
-         velocity_mps: velocity_mps,
-         position_velocity_watchdog: Watchdog.reset(state.position_velocity_watchdog)
+       Map.merge(state, values_to_save)
+       | position_velocity_watchdog: Watchdog.reset(state.position_velocity_watchdog)
      }}
   end
 
   @impl GenServer
   def handle_cast(
-        {Groups.commands_for_current_pilot_control_level(), pilot_control_level, commands},
+        {Groups.commands_for_current_pilot_control_level(), commands},
         state
       ) do
     # Logger.debug(
     #   "Ctrl cmds rx: #{pilot_control_level}/#{state.pilot_control_level}: #{ViaUtils.Format.eftb_map(commands.current_pcl, 3)}"
     # )
-    %{current_pcl: cmds_current_pcl, any_pcl: cmds_any_pcl} = commands
+    # %{current_pcl: cmds_current_pcl, any_pcl: cmds_any_pcl} = commands
+    %{SVN.pilot_control_level() => pilot_control_level} = commands
     # Logger.debug(
     #       "Ctrl cmds rx (all): #{ViaUtils.Format.eftb_map(commands.any_pcl, 3)}"
     #     )
@@ -126,30 +140,28 @@ defmodule Control.Controller do
         pilot_control_level != SCT.pilot_control_level_4() ->
           %{
             state
-            | commands: %{pilot_control_level => cmds_current_pcl, any_pcl: cmds_any_pcl},
+            | commands: commands,
               pilot_control_level: pilot_control_level
           }
 
         state.pilot_control_level != SCT.pilot_control_level_4() ->
-          %{position_rrm: position_rrm, velocity_mps: velocity_mps} = state
-
-          latch_values =
-            Map.take(position_rrm, [SVN.altitude_m()])
-            |> Map.merge(Map.take(velocity_mps, [SVN.course_rad()]))
-            |> Map.put(:command_time_prev_ms, :erlang.monotonic_time(:millisecond))
+          %{altitude_m: altitude_m, course_rad: course_rad} = state
 
           # Logger.debug("latch values: #{inspect(latch_values)}")
-          if map_size(latch_values) == 3 do
+          unless is_nil(altitude_m) or is_nil(course_rad) do
+            latch_values = %{
+              SVN.altitude_m() => altitude_m,
+              SVN.course_rad() => course_rad,
+              command_time_prev_ms: :erlang.monotonic_time(:millisecond)
+            }
+
             Logger.warn(
               "latch to alt/course: #{ViaUtils.Format.eftb(latch_values.altitude_m, 3)}/#{ViaUtils.Format.eftb_deg(latch_values.course_rad, 1)}"
             )
 
             %{
               state
-              | commands: %{
-                  pilot_control_level => cmds_current_pcl,
-                  any_pcl: cmds_any_pcl
-                },
+              | commands: commands,
                 latch_values: latch_values,
                 pilot_control_level: pilot_control_level
             }
@@ -159,12 +171,15 @@ defmodule Control.Controller do
             state
           end
 
-        map_size(state.position_rrm) > 0 ->
+        !is_nil(state.altitude_m) ->
           # pilot_control_level == SCT.pilot_control_level_4 and has since the last loop,
           # i.e., it did not just change
           # Therefore we know that the latch values are populated
-          %{latch_values: latch_values, position_rrm: position_rrm, agl_ceiling_m: agl_ceiling_m} =
-            state
+          %{
+            latch_values: latch_values,
+            ground_altitude_m: ground_altitude_m,
+            agl_ceiling_m: agl_ceiling_m
+          } = state
 
           %{
             :command_time_prev_ms => command_time_prev_ms,
@@ -178,13 +193,11 @@ defmodule Control.Controller do
           %{
             SGN.course_rate_rps() => cmd_course_rate_rps,
             SGN.altitude_rate_mps() => cmd_altitude_rate_mps
-          } = cmds_current_pcl
+          } = commands.current_pcl
 
           latch_course_rad =
             (course_rad + cmd_course_rate_rps * dt_s)
             |> ViaUtils.Math.constrain_angle_to_compass()
-
-          ground_altitude_m = Map.fetch!(position_rrm, SVN.ground_altitude_m())
 
           latch_altitude_m =
             (altitude_m + cmd_altitude_rate_mps * dt_s)
@@ -196,7 +209,7 @@ defmodule Control.Controller do
           %{
             state
             | pilot_control_level: pilot_control_level,
-              commands: %{pilot_control_level => commands.current_pcl, any_pcl: commands.any_pcl},
+              commands: commands,
               latch_values: %{
                 SVN.course_rad() => latch_course_rad,
                 SVN.altitude_m() => latch_altitude_m,
@@ -261,8 +274,7 @@ defmodule Control.Controller do
 
         {pilot_control_level, commands} =
           if map_size(commands) == 0 do
-            {default_pilot_control_level,
-             %{default_pilot_control_level => default_commands.current_pcl}}
+            {default_pilot_control_level, default_commands}
           else
             {pilot_control_level, commands}
           end
@@ -273,18 +285,21 @@ defmodule Control.Controller do
 
         send_commands_for_any_pcl(any_pcl_commands)
 
+        current_pcl_cmds = Map.get(commands, :current_pcl)
+        # state = %{state | commands: commands.current_pcl}
+
         case pilot_control_level do
           SCT.pilot_control_level_4() ->
-            process_pcl_4_commands(Map.put(state, :commands, commands))
+            process_pcl_4_commands(state, current_pcl_cmds)
 
           SCT.pilot_control_level_3() ->
-            process_pcl_3_commands(Map.put(state, :commands, commands))
+            process_pcl_3_commands(state, current_pcl_cmds)
 
           SCT.pilot_control_level_2() ->
-            process_pcl_2_commands(Map.put(state, :commands, commands))
+            process_pcl_2_commands(state, current_pcl_cmds)
 
           SCT.pilot_control_level_1() ->
-            process_pcl_1_commands(Map.put(state, :commands, commands))
+            process_pcl_1_commands(state, current_pcl_cmds)
 
           other ->
             Logger.error("Unknown pilot_control_level: #{inspect(other)}")
@@ -301,44 +316,44 @@ defmodule Control.Controller do
     {:noreply, Map.put(state, key, %{})}
   end
 
-  def process_pcl_4_commands(state) do
-    %{commands: commands, latch_values: latch_values} = state
-    pcl_4_commands = Map.get(commands, SCT.pilot_control_level_4(), %{})
+  def process_pcl_4_commands(state, commands) do
+    # pcl_4_commands = Map.take(commands, [SGN.[]]
+    %{latch_values: latch_values} = state
     # Logger.debug("pcl4 goals: #{ViaUtils.Format.eftb_map(pcl_4_commands, 3)}")
 
-    pcl_3_cmds =
-      Map.take(pcl_4_commands, [SGN.groundspeed_mps(), SGN.sideslip_rad()])
-      |> Map.merge(Map.take(latch_values, [SVN.altitude_m(), SVN.course_rad()]))
+    altitude_cmd_m = Map.get(latch_values, SVN.altitude_m())
+    course_cmd_rad = Map.get(latch_values, SVN.course_rad())
 
-    if map_size(pcl_3_cmds) >= 4 do
+    unless is_nil(altitude_cmd_m) or is_nil(course_cmd_rad) do
+      commands =
+        Map.merge(commands, %{
+          SGN.altitude_m() => altitude_cmd_m,
+          SGN.course_rad() => course_cmd_rad
+        })
+
       # Logger.debug("SCA cmds from rates: #{ViaUtils.Format.eftb_map(pcl_3_cmds, 3)}")
-      state = %{state | commands: Map.put(commands, SCT.pilot_control_level_3(), pcl_3_cmds)}
-      process_pcl_3_commands(state)
+      process_pcl_3_commands(state, commands)
     else
       state
     end
   end
 
-  def process_pcl_3_commands(state) do
+  def process_pcl_3_commands(state, commands) do
     %{
-      velocity_mps: velocity_mps,
-      position_rrm: position_rrm,
-      attitude_rad: attitude_rad,
-      controllers: controllers,
-      commands: commands
+      controllers: controllers
     } = state
 
-    pcl_3_commands = Map.get(commands, SCT.pilot_control_level_3(), %{})
+    pcl_3_commands = Map.take(commands, SGN.cmds_pcl_3())
 
     values =
-      Map.take(velocity_mps, [
+      Map.take(state, [
         SVN.groundspeed_mps(),
         SVN.vertical_velocity_mps(),
         SVN.course_rad(),
-        SVN.airspeed_mps()
+        SVN.airspeed_mps(),
+        SVN.altitude_m(),
+        SVN.yaw_rad()
       ])
-      |> Map.merge(Map.take(position_rrm, [SVN.altitude_m()]))
-      |> Map.merge(Map.take(attitude_rad, [SVN.yaw_rad()]))
       |> Map.put(SVN.dt_s(), LoopIntervals.controller_update_ms() * 1.0e-3)
 
     if map_size(values) == 7 do
@@ -355,35 +370,46 @@ defmodule Control.Controller do
           do: 0,
           else: Map.fetch!(pcl_2_cmds, SGN.thrust_scaled())
 
-      pcl_2_cmds = Map.put(pcl_2_cmds, SGN.thrust_scaled(), thrust_cmd_scaled)
+      commands =
+        Map.merge(commands, pcl_2_cmds)
+        |> Map.put(SGN.thrust_scaled(), thrust_cmd_scaled)
+
+      # pcl_2_cmds = Map.put(pcl_2_cmds, SGN.thrust_scaled(), thrust_cmd_scaled)
       # Logger.debug("SCA cmds from rates: #{inspect(state.goals_store)}")
       # Logger.debug("Calculate Attitude, then Bodyrates, then pass to companion")
       controllers = Map.put(controllers, SCT.pilot_control_level_3(), pcl_3_controller)
       # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_2_cmds, 3)}")
       state = %{
         state
-        | controllers: controllers,
-          commands: Map.put(commands, SCT.pilot_control_level_2(), pcl_2_cmds)
+        | controllers: controllers
       }
 
-      process_pcl_2_commands(state)
+      process_pcl_2_commands(state, commands)
     else
       state
     end
   end
 
-  def process_pcl_2_commands(state) do
-    %{commands: commands, attitude_rad: attitude_rad, controllers: controllers} = state
-    pcl_2_commands = Map.get(state.commands, SCT.pilot_control_level_2(), %{})
+  def process_pcl_2_commands(state, commands) do
+    %{
+      SVN.roll_rad() => roll_rad,
+      SVN.pitch_rad() => pitch_rad,
+      SVN.yaw_rad() => yaw_rad,
+      controllers: controllers
+    } = state
 
-    values =
-      attitude_rad
-      |> Map.merge(%{
+    # pcl_2_commands = Map.get(state.commands, SCT.pilot_control_level_2(), %{})
+    pcl_2_commands = Map.take(commands, SGN.cmds_pcl_2())
+
+    unless is_nil(roll_rad) do
+      values = %{
+        SVN.roll_rad() => roll_rad,
+        SVN.pitch_rad() => pitch_rad,
+        SVN.yaw_rad() => yaw_rad,
         SVN.airspeed_mps() => 0,
         SVN.dt_s() => LoopIntervals.controller_update_ms() * 1.0e-3
-      })
+      }
 
-    if map_size(values) > 2 do
       # Logger.debug(
       #   "attitude. Calculate bodyrates, then pass to companion: #{ViaUtils.Format.eftb_map(pcl_2_commands, 3)}"
       # )
@@ -394,25 +420,27 @@ defmodule Control.Controller do
         apply(controller.__struct__, :update, [controller, pcl_2_commands, values])
 
       controllers = Map.put(controllers, SCT.pilot_control_level_2(), pcl_2_controller)
+      commands = Map.merge(commands, pcl_1_cmds)
       # commands = Map.put()
       # Logger.debug("output: #{ViaUtils.Format.eftb_map(pcl_1_cmds, 3)}")
       state = %{
         state
-        | controllers: controllers,
-          commands: Map.put(commands, SCT.pilot_control_level_1(), pcl_1_cmds)
+        | controllers: controllers
       }
 
-      process_pcl_1_commands(state)
+      process_pcl_1_commands(state, commands)
     else
       state
     end
   end
 
-  def process_pcl_1_commands(state) do
+  def process_pcl_1_commands(state, commands) do
     # Logger.debug("bodyrates: send to companion: #{ViaUtils.Format.eftb_map(get_in(state, [:commands, 1, :current_pcl]), 3)}")
     # Logger.debug("proc pcl 1: #{inspect(state.commands)}")
-    %{commands: commands, pilot_control_level: pilot_control_level} = state
-    pcl_1_commands = Map.get(commands, SCT.pilot_control_level_1(), %{})
+    %{pilot_control_level: pilot_control_level} = state
+
+    pcl_1_commands = Map.take(commands, SGN.cmds_pcl_1())
+    # pcl_1_commands = Map.get(commands, SCT.pilot_control_level_1(), %{})
 
     ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
@@ -422,7 +450,8 @@ defmodule Control.Controller do
 
     ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
-      {Groups.current_pcl_and_all_commands_val(), Map.put(commands, SVN.pilot_control_level, pilot_control_level)},
+      {Groups.current_pcl_and_all_commands_val(),
+       Map.put(commands, SVN.pilot_control_level(), pilot_control_level)},
       self()
     )
 

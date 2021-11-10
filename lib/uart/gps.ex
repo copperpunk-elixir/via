@@ -4,9 +4,10 @@ defmodule Uart.Gps do
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
   require ViaUtils.Shared.ValueNames, as: SVN
-  require ViaTelemetry.Ubx.ClassDefs
-  require ViaTelemetry.Ubx.Nav.Pvt, as: Pvt
-  require ViaTelemetry.Ubx.Nav.Relposned, as: Relposned
+  require ViaTelemetry.Ubx.Custom.ClassDefs
+  require ViaTelemetry.Ubx.Standard.ClassDefs
+  require ViaTelemetry.Ubx.Standard.Nav.Pvt, as: Pvt
+  require ViaTelemetry.Ubx.Standard.Nav.Relposned, as: Relposned
 
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
@@ -97,7 +98,7 @@ defmodule Uart.Gps do
     # Logger.debug("class/id: #{msg_class}/#{msg_id}")
 
     case msg_class do
-      ViaTelemetry.Ubx.ClassDefs.nav() ->
+      ViaTelemetry.Ubx.Standard.ClassDefs.nav() ->
         case msg_id do
           Pvt.id() ->
             values =
@@ -119,13 +120,12 @@ defmodule Uart.Gps do
               Pvt.fixType() => fix_type
             } = values
 
-            position_rrm = ViaUtils.Location.new_degrees(lat_deg, lon_deg, height_mm * 0.001)
-
-            velocity_mps = %{
-              SVN.v_north_mps() => v_north_mmps * 0.001,
-              SVN.v_east_mps() => v_east_mmps * 0.001,
-              SVN.v_down_mps() => v_down_mmps * 0.001
-            }
+            msg_values =
+              ViaUtils.Location.new_degrees(lat_deg, lon_deg, height_mm * 0.001)
+              |> Map.put(SVN.v_north_mps(), v_north_mmps * 0.001)
+              |> Map.put(SVN.v_east_mps(), v_east_mmps * 0.001)
+              |> Map.put(SVN.v_down_mps(), v_down_mmps * 0.001)
+              |> Map.put(SVN.itow_s(), itow_ms * 0.001)
 
             # Logger.debug("NAVPVT itow/fix: #{itow_ms}/#{fix_type}")
             # Logger.debug("pos: #{ViaUtils.Location.to_string(position_rrm)}")
@@ -133,12 +133,7 @@ defmodule Uart.Gps do
             if fix_type > 1 and fix_type < 5 do
               ViaUtils.Comms.cast_global_msg_to_group(
                 __MODULE__,
-                {Groups.gps_itow_position_velocity_val(),
-                 %{
-                   SVN.itow_s() => itow_ms * 0.001,
-                   SVN.position_rrm() => position_rrm,
-                   SVN.velocity_mps() => velocity_mps
-                 }},
+                {Groups.gps_itow_position_velocity_val(), msg_values},
                 self()
               )
             end

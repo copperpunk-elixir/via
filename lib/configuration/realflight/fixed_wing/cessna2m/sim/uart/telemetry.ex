@@ -1,11 +1,12 @@
 defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.Telemetry do
-  alias ViaTelemetry.Ubx, as: UbxMsg
+  alias ViaTelemetry.Ubx.Custom, as: UbxMsg
 
   def config() do
     [
       telemetry_msgs: [
-        UbxMsg.VehicleState.Attitude,
-        UbxMsg.VehicleState.PositionVelocity
+        UbxMsg.VehicleState.AttitudeAndRates,
+        UbxMsg.VehicleState.PositionVelocity,
+        # UbxMsg.VehicleCmds.AttitudeThrottleCmd
       ]
     ]
   end

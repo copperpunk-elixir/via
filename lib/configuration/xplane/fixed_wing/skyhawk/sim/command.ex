@@ -2,7 +2,6 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Command do
   require ViaUtils.Shared.ControlTypes, as: CCT
   require ViaUtils.Shared.GoalNames, as: SGN
   require Comms.Sorters, as: Sorters
-  require ViaUtils.Shared.ActuatorNames, as: Act
 
   @spec config() :: list()
   def config() do
@@ -45,12 +44,12 @@ defmodule Configuration.Xplane.FixedWing.Skyhawk.Sim.Command do
           SGN.autopilot_control_mode() => {6, {-1.0, 0, 1.0, CCT.input_inverted(), 0}}
         },
         remote_pilot_override_channels: %{
-          Act.aileron() => 0,
-          Act.elevator() => 1,
-          Act.throttle() => 2,
-          Act.rudder() => 3,
-          Act.flaps() => 4,
-          Act.gear() => 9
+          SGN.aileron_scaled() => 0,
+          SGN.elevator_scaled() => 1,
+          SGN.throttle_scaled() => 2,
+          SGN.rudder_scaled() => 3,
+          SGN.flaps_scaled() => 4,
+          SGN.gear_scaled() => 9
         },
         goals_sorter_classification_and_time_validity_ms:
           remote_pilot_goals_sorter_classification_and_time_validity_ms

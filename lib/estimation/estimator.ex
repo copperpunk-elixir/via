@@ -148,11 +148,9 @@ defmodule Estimation.Estimator do
   end
 
   @impl GenServer
-  def handle_cast(
-        {Groups.gps_itow_position_velocity_val(), values},
-        state
-      ) do
-    %{SVN.position_rrm() => position_rrm, SVN.velocity_mps() => velocity_mps} = values
+  def handle_cast({Groups.gps_itow_position_velocity_val(), values}, state) do
+    position_rrm = Map.take(values, [SVN.latitude_rad(), SVN.longitude_rad(), SVN.altitude_m()])
+    velocity_mps = Map.take(values, [SVN.v_north_mps(), SVN.v_east_mps(), SVN.v_down_mps()])
     %{ins_kf: ins_kf, gps_watchdog: gps_watchdog, is_value_current: is_value_current} = state
     # Logger.warn("rx gps")
     # start_time = :erlang.monotonic_time(:nanosecond)
@@ -319,8 +317,7 @@ defmodule Estimation.Estimator do
 
         ViaUtils.Comms.cast_local_msg_to_group(
           __MODULE__,
-          {Groups.estimation_position_velocity_val(),
-           %{SVN.position_rrm() => position, SVN.velocity_mps() => velocity}},
+          {Groups.estimation_position_velocity_val(), Map.merge(position, velocity)},
           self()
         )
 
