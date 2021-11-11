@@ -1,4 +1,4 @@
-defmodule Uart.Companion.LoopbackBodyrateThrust do
+defmodule Uart.Companion.LoopbackBodyrateThrottle do
   use ExUnit.Case
   require Logger
 

@@ -1,5 +1,6 @@
 defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
   require ViaUtils.Shared.ControlTypes, as: CCT
+  require ViaUtils.Shared.GoalNames, as: SGN
 
   @spec config() :: list()
   def config() do
@@ -9,14 +10,14 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Control do
         default_pilot_control_level: CCT.pilot_control_level_2(),
         default_commands: %{
           current_pcl: %{
-            roll_rad: 0.26,
-            pitch_rad: 0.03,
-            deltayaw_rad: 0,
-            thrust_scaled: 0.0
+            SGN.roll_rad() => 0.26,
+            SGN.pitch_rad() => 0.03,
+            SGN.deltayaw_rad() => 0,
+            SGN.thrust_scaled() => 0.0
           },
           any_pcl: %{
-            flaps_scaled: 0.0,
-            gear_scaled: 1.0
+            SGN.flaps_scaled() => 0.0,
+            SGN.gear_scaled() => 1.0
           }
         },
         controllers: %{

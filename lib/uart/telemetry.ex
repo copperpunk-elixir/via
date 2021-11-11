@@ -30,27 +30,29 @@ defmodule Uart.Telemetry do
 
     Logger.debug("#{__MODULE__} values_placeholder: #{inspect(values_placeholder)}")
 
-    state = %{
-      uart_ref: nil,
-      ubx: UbxInterpreter.new(),
-      values: values_placeholder,
-      telemetry_msgs: telemetry_msgs
-    }
-
     uart_port = Keyword.fetch!(config, :uart_port)
     Logger.info("#{__MODULE__} uart port: #{inspect(uart_port)}")
 
-    if uart_port == "virtual" do
-      Logger.debug("#{__MODULE__} virtual UART port")
-      ViaUtils.Comms.join_group(__MODULE__, Groups.virtual_uart_gps())
-    else
-      port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
-      GenServer.cast(self(), {:open_uart_connection, uart_port, port_options})
-    end
+    ubx_write_function =
+      if uart_port == "virtual" do
+        Logger.debug("#{__MODULE__} virtual UART port")
+        ViaUtils.Comms.join_group(__MODULE__, Groups.virtual_uart_telemetry())
+        ViaUtils.Uart.virtual_ubx_write(Groups.virtual_uart_telemetry(), __MODULE__)
+      else
+        port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
+        GenServer.cast(self(), {:open_uart_connection, uart_port, port_options})
+        ViaUtils.Uart.real_ubx_write()
+      end
 
-    # ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands(), self())
-    # ViaUtils.Comms.join_group(__MODULE__, Groups.controller_direct_actuator_output(), self())
-    # ViaUtils.Comms.join_group(__MODULE__, Groups.commands_for_any_pilot_control_level())
+    state = %{
+      uart_ref: nil,
+      vehicle_id: Keyword.fetch!(config, :vehicle_id),
+      ubx: UbxInterpreter.new(),
+      values: values_placeholder,
+      telemetry_msgs: telemetry_msgs,
+      ubx_write_function: ubx_write_function
+    }
+
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_attitude_attrate_val())
     ViaUtils.Comms.join_group(__MODULE__, Groups.current_pcl_and_all_commands_val())
@@ -106,14 +108,22 @@ defmodule Uart.Telemetry do
 
   @impl GenServer
   def handle_info(@publish_telemetry_loop, state) do
-    %{values: values, telemetry_msgs: telemetry_msgs, uart_ref: uart_ref} = state
-
-    values = Map.put(values, SVN.time_since_boot_s(), :erlang.system_time(:millisecond))
+    %{
+      values: values,
+      telemetry_msgs: telemetry_msgs,
+      uart_ref: uart_ref,
+      ubx_write_function: ubx_write_function
+    } = state
 
     Enum.each(telemetry_msgs, fn msg_module ->
       # Logger.debug("msg type: #{msg_module}")
       keys = msg_module.get_keys()
-      msg_values = Map.take(values, keys)
+
+      msg_values =
+        ViaTelemetry.Ubx.Utils.add_time(values)
+        |> Map.take(keys)
+
+      # Logger.debug("mod/keys/vals: #{msg_module}/#{inspect(keys)}/#{inspect(msg_values)}")
 
       ubx_message =
         UbxInterpreter.construct_message_from_map(
@@ -125,25 +135,8 @@ defmodule Uart.Telemetry do
           msg_values
         )
 
-      if is_nil(uart_ref) do
-        ViaUtils.Comms.send_local_msg_to_group(
-          __MODULE__,
-          {:circuits_uart, 0, ubx_message},
-          self(),
-          Groups.virtual_telemetry()
-        )
-      else
-        Circuits.UART.write(uart_ref, ubx_message)
-      end
-
-      # Logger.debug("msg values: #{inspect(msg_values)}")
+      ubx_write_function.(ubx_message, uart_ref)
     end)
-
-    # unless is_nil(attitude_rad) or is_nil(attrate_rps) do
-    #   Logger.debug(
-    #     "Telem att/attrate: #{ViaUtils.Format.eftb_map_deg(attitude_rad, 1)}/#{ViaUtils.Format.eftb_map_deg(attrate_rps, 1)}"
-    #   )
-    # end
 
     {:noreply, state}
   end

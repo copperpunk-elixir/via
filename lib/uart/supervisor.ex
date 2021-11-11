@@ -18,7 +18,7 @@ defmodule Uart.Supervisor do
         acc ++ [{module, single_config}]
       end)
 
-    Logger.debug("kids: #{inspect(children)}")
+    # Logger.debug("kids: #{inspect(children)}")
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

@@ -2,6 +2,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.MessageSorter do
   require ViaUtils.Shared.ControlTypes, as: CCT
   require Comms.Sorters, as: Sorters
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.GoalNames, as: SGN
   require MessageSorter.Sorter, as: MSS
   require Comms.MessageHeaders
   require Configuration.LoopIntervals, as: LoopIntervals
@@ -51,14 +52,14 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.MessageSorter do
               CCT.pilot_control_level_2(),
               %{
                 current_pcl: %{
-                  roll_rad: 0.26,
-                  pitch_rad: 0.03,
-                  deltayaw_rad: 0,
-                  thrust_scaled: 0.0
+                  SGN.roll_rad() => 0.26,
+                  SGN.pitch_rad() => 0.03,
+                  SGN.deltayaw_rad() => 0,
+                  SGN.thrust_scaled() => 0.0
                 },
                 any_pcl: %{
-                  flaps_scaled: 0.0,
-                  gear_scaled: 1.0
+                  SGN.flaps_scaled() => 0.0,
+                  SGN.gear_scaled() => 1.0
                 }
               }
             },

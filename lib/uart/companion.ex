@@ -3,10 +3,12 @@ defmodule Uart.Companion do
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
   require ViaTelemetry.Ubx.Custom.ClassDefs, as: ClassDefs
-  require ViaTelemetry.Ubx.Custom.AccelGyro.DtAccelGyro, as: DtAccelGyro
-  require ViaTelemetry.Ubx.Custom.VehicleCmds.BodyrateThrustCmd, as: BodyrateThrustCmd
-  require ViaTelemetry.Ubx.Custom.VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
-  require ViaTelemetry.Ubx.Custom.VehicleCmds.BodyrateActuatorOutput, as: BodyrateActuatorOutput
+  alias ViaTelemetry.Ubx.Custom.VehicleCmds, as: VehicleCmds
+  alias ViaTelemetry.Ubx.Custom.Companion, as: Companion
+  require Companion.DtAccelGyro, as: DtAccelGyro
+  require Companion.BodyrateThrottleCmd, as: BodyrateThrottleCmd
+  require VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
+  require VehicleCmds.ControllerActuatorOutput, as: ControllerActuatorOutput
   require ViaUtils.Shared.ValueNames, as: SVN
   require ViaUtils.Shared.GoalNames, as: SGN
   require Configuration.LoopIntervals, as: LoopIntervals
@@ -33,6 +35,7 @@ defmodule Uart.Companion do
       Keyword.fetch!(config, :channel_names)
 
     state = %{
+      vehicle_id: Keyword.fetch!(config, :vehicle_id),
       uart_ref: nil,
       ubx: UbxInterpreter.new(),
       pid_controllers: %{
@@ -87,11 +90,11 @@ defmodule Uart.Companion do
           @bodyrate_actuator_loop
         )
 
-        virtual_ubx_write()
+        ViaUtils.Uart.virtual_ubx_write(Groups.virtual_uart_actuator_output(), __MODULE__)
       else
         port_options = Keyword.fetch!(config, :port_options) ++ [active: true]
         GenServer.cast(self(), {:open_uart_connection, uart_port, port_options})
-        real_ubx_write()
+        ViaUtils.Uart.real_ubx_write()
       end
 
     ViaUtils.Process.start_loop(
@@ -134,17 +137,17 @@ defmodule Uart.Companion do
   def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
     # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
 
+    %{uart_ref: uart_ref} = state
+
     ubx_message =
       UbxInterpreter.construct_message_from_map(
         ClassDefs.vehicle_cmds(),
-        BodyrateThrustCmd.id(),
-        BodyrateThrustCmd.bytes(),
-        BodyrateThrustCmd.multipliers(),
-        BodyrateThrustCmd.keys(),
+        BodyrateThrottleCmd.id(),
+        BodyrateThrottleCmd.bytes(),
+        BodyrateThrottleCmd.multipliers(),
+        BodyrateThrottleCmd.keys(),
         bodyrate_commands
       )
-
-    %{uart_ref: uart_ref} = state
 
     unless is_nil(uart_ref) do
       Circuits.UART.write(uart_ref, ubx_message)
@@ -167,21 +170,23 @@ defmodule Uart.Companion do
       is_value_current: is_value_current,
       channel_names_direct: channel_names_direct,
       uart_ref: uart_ref,
-      direct_actuator_output_watchdog: direct_actuator_output_watchdog
+      direct_actuator_output_watchdog: direct_actuator_output_watchdog,
+      ubx_write_function: ubx_write_function
     } = state
 
     ubx_message = create_actuator_message(direct_actuator_output, channel_names_direct)
+    ubx_write_function.(ubx_message, uart_ref)
 
-    if is_nil(uart_ref) do
-      ViaUtils.Comms.send_local_msg_to_group(
-        __MODULE__,
-        {:circuits_uart, 0, ubx_message},
-        self(),
-        Groups.virtual_uart_actuator_output()
-      )
-    else
-      Circuits.UART.write(uart_ref, ubx_message)
-    end
+    # if is_nil(uart_ref) do
+    #   ViaUtils.Comms.send_local_msg_to_group(
+    #     __MODULE__,
+    #     {:circuits_uart, 0, ubx_message},
+    #     self(),
+    #     Groups.virtual_uart_actuator_output()
+    #   )
+    # else
+    #   Circuits.UART.write(uart_ref, ubx_message)
+    # end
 
     # Logger.debug("ubx: #{ubx_message}")
 
@@ -233,23 +238,27 @@ defmodule Uart.Companion do
       is_value_current: is_value_current,
       bodyrate_actuator_output: bodyrate_actuator_output,
       uart_ref: uart_ref,
-      ubx_write_function: ubx_write_function
+      ubx_write_function: ubx_write_function,
+      # vehicle_id: vehicle_id
     } = state
 
     # Logger.warn("bodyrate act out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
     unless is_value_current.direct_actuator_output or Enum.empty?(bodyrate_actuator_output) do
       # Logger.warn("comp act out: #{ViaUtils.Format.eftb_map(actuator_output, 3)}")
+      values = ViaTelemetry.Ubx.Utils.add_time(bodyrate_actuator_output)
 
       ubx_message =
         UbxInterpreter.construct_message_from_map(
           ClassDefs.vehicle_cmds(),
-          BodyrateActuatorOutput.id(),
-          BodyrateActuatorOutput.bytes(),
-          BodyrateActuatorOutput.multipliers(),
-          BodyrateActuatorOutput.keys(),
-          bodyrate_actuator_output
+          ControllerActuatorOutput.id(),
+          ControllerActuatorOutput.bytes(),
+          ControllerActuatorOutput.multipliers(),
+          ControllerActuatorOutput.keys(),
+          values
         )
 
+      # Logger.debug("#{__MODULE__}: uart_ref: #{uart_ref}/#{inspect(values)}")
+      # Logger.warn("#{__MODULE__} msg: #{inspect(ubx_message)}")
       ubx_write_function.(ubx_message, uart_ref)
       # if is_nil(uart_ref) do
       #   ViaUtils.Comms.send_local_msg_to_group(
@@ -307,7 +316,7 @@ defmodule Uart.Companion do
       # Logger.debug("msg class/id: #{msg_class}/#{msg_id}")
       state =
         case msg_class do
-          ClassDefs.accel_gyro() ->
+          ClassDefs.companion() ->
             case msg_id do
               DtAccelGyro.id() ->
                 values =
@@ -336,7 +345,7 @@ defmodule Uart.Companion do
 
           ClassDefs.vehicle_cmds() ->
             case msg_id do
-              BodyrateThrustCmd.id() ->
+              BodyrateThrottleCmd.id() ->
                 TestHelper.Companion.Utils.display_bodyrate_thrust_cmd(payload)
             end
 
@@ -507,22 +516,22 @@ defmodule Uart.Companion do
     GenServer.cast(__MODULE__, {:send_message, message})
   end
 
-  @spec real_ubx_write() :: function()
-  def real_ubx_write() do
-    fn ubx_message, uart_ref ->
-      Circuits.UART.write(uart_ref, ubx_message)
-    end
-  end
+  # @spec real_ubx_write() :: function()
+  # def real_ubx_write() do
+  #   fn ubx_message, uart_ref ->
+  #     Circuits.UART.write(uart_ref, ubx_message)
+  #   end
+  # end
 
-  @spec virtual_ubx_write() :: function()
-  def virtual_ubx_write() do
-    fn ubx_message, _ ->
-      ViaUtils.Comms.send_local_msg_to_group(
-        __MODULE__,
-        {:circuits_uart, 0, ubx_message},
-        self(),
-        Groups.virtual_uart_actuator_output()
-      )
-    end
-  end
+  # @spec virtual_ubx_write(any()) :: function()
+  # def virtual_ubx_write(group) do
+  #   fn ubx_message, _ ->
+  #     ViaUtils.Comms.send_local_msg_to_group(
+  #       __MODULE__,
+  #       {:circuits_uart, 0, ubx_message},
+  #       self(),
+  #       group
+  #     )
+  #   end
+  # end
 end

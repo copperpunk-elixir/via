@@ -3,6 +3,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Uart.Companion do
 
   def config() do
     [
+      vehicle_id: Configuration.Utils.get_vehicle_id(__MODULE__),
       channel_names: %{
         bodyrate: %{
           0 => SGN.aileron_scaled(),

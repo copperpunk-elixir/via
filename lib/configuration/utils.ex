@@ -133,4 +133,15 @@ defmodule Configuration.Utils do
     |> Module.concat()
     |> Module.concat(MessageSorter)
   end
+
+  @spec get_vehicle_id(module()) :: integer()
+  def get_vehicle_id(node_module) do
+    vehicle_module =
+      Module.split(node_module)
+      |> Enum.take(4)
+      |> Kernel.++(["Vehicle"])
+      |> Module.concat()
+
+    apply(vehicle_module, :vehicle_id, [])
+  end
 end
