@@ -2,6 +2,7 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Simulation do
   require ViaUtils.Shared.Groups, as: Groups
   require Configuration.LoopIntervals, as: LoopIntervals
   require ViaUtils.Shared.GoalNames, as: SGN
+  require ViaUtils.Shared.ControlTypes, as: SCT
   alias ViaInputEvent.KeypressAction, as: KA
   alias ViaInputEvent.KeyCollection, as: KC
 
@@ -17,39 +18,42 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.Simulation do
        [
          expected_imu_receive_interval_ms: 20,
          controllers: [
-           rollrate_aileron: [
-             kp: 0.02,
-             ki: 0.0,
-             kd: 0,
-             ff_multiplier: 0.128,
-             output_min: -1.0,
-             output_neutral: 0,
-             output_max: 1.0,
-             integrator_range: 0.26,
-             integrator_airspeed_min_mps: 5.0
-           ],
-           pitchrate_elevator: [
-             kp: 0.5,
-             ki: 0.5,
-             kd: 0,
-             ff_multiplier: 0.318,
-             output_min: -1.0,
-             output_neutral: 0,
-             output_max: 1.0,
-             integrator_range: 2.0,
-             integrator_airspeed_min_mps: 5.0
-           ],
-           yawrate_rudder: [
-             kp: 0.03,
-             ki: 0.0,
-             kd: 0,
-             ff_multiplier: 0.318,
-             output_min: -1.0,
-             output_neutral: 0,
-             output_max: 1.0,
-             integrator_range: 0.26,
-             integrator_airspeed_min_mps: 5.0
-           ]
+           {SCT.rollrate_aileron_pid(),
+            [
+              {SCT.kp(), 0.02},
+              {SCT.ki(), 0.0},
+              {SCT.kd(), 0},
+              {SCT.feed_forward_multiplier(), 0.128},
+              {SCT.output_min(), -1.0},
+              {SCT.output_neutral(), 0},
+              {SCT.output_max(), 1.0},
+              {SCT.integrator_range(), 0.26},
+              {SCT.integrator_airspeed_min_mps(), 5.0}
+            ]},
+           {SCT.pitchrate_elevator_pid(),
+            [
+              {SCT.kp(), 0.5},
+              {SCT.ki(), 0.5},
+              {SCT.kd(), 0},
+              {SCT.feed_forward_multiplier(), 0.318},
+              {SCT.output_min(), -1.0},
+              {SCT.output_neutral(), 0},
+              {SCT.output_max(), 1.0},
+              {SCT.integrator_range(), 2.0},
+              {SCT.integrator_airspeed_min_mps(), 5.0}
+            ]},
+           {SCT.yawrate_rudder_pid(),
+            [
+              {SCT.kp(), 0.03},
+              {SCT.ki(), 0.0},
+              {SCT.kd(), 0},
+              {SCT.feed_forward_multiplier(), 0.318},
+              {SCT.output_min(), -1.0},
+              {SCT.output_neutral(), 0},
+              {SCT.output_max(), 1.0},
+              {SCT.integrator_range(), 0.26},
+              {SCT.integrator_airspeed_min_mps(), 5.0}
+            ]}
          ]
        ]}
     ]

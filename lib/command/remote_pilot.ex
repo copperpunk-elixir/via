@@ -2,6 +2,7 @@ defmodule Command.RemotePilot do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.GoalNames, as: SGN
   require Comms.MessageHeaders, as: MessageHeaders
   require ViaUtils.Shared.ControlTypes, as: ControlTypes
   require Configuration.LoopIntervals, as: LoopIntervals
@@ -116,8 +117,8 @@ defmodule Command.RemotePilot do
             state.goals_sorter_classification_and_time_validity_ms
 
           goals = %{
-            current_pcl: current_pcl_goals,
-            any_pcl: any_pcl_goals
+            SGN.current_pcl() => current_pcl_goals,
+            SGN.any_pcl() => any_pcl_goals
           }
 
           # Logger.debug("cvmap: #{ViaUtils.Format.eftb_map(channel_value_map, 3)}")

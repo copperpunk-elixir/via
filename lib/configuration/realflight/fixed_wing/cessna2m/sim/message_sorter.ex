@@ -51,13 +51,13 @@ defmodule Configuration.Realflight.FixedWing.Cessna2m.Sim.MessageSorter do
             default_value: {
               CCT.pilot_control_level_2(),
               %{
-                current_pcl: %{
+                SGN.current_pcl() => %{
                   SGN.roll_rad() => 0.26,
                   SGN.pitch_rad() => 0.03,
                   SGN.deltayaw_rad() => 0,
                   SGN.thrust_scaled() => 0.0
                 },
-                any_pcl: %{
+                SGN.any_pcl() => %{
                   SGN.flaps_scaled() => 0.0,
                   SGN.gear_scaled() => 1.0
                 }

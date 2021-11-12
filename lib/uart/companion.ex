@@ -2,6 +2,7 @@ defmodule Uart.Companion do
   use GenServer
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
+  require ViaUtils.Shared.ControlTypes, as: SCT
   require ViaTelemetry.Ubx.Custom.ClassDefs, as: ClassDefs
   alias ViaTelemetry.Ubx.Custom.VehicleCmds, as: VehicleCmds
   alias ViaTelemetry.Ubx.Custom.Companion, as: Companion
@@ -31,21 +32,24 @@ defmodule Uart.Companion do
   def init(config) do
     controller_config = Keyword.fetch!(config, :controllers)
 
-    %{bodyrate: bodyrate_channels, any_pcl: any_pcl_channels} =
-      Keyword.fetch!(config, :channel_names)
+    %{
+      SCT.pilot_control_level_1() => bodyrate_throttle_channels,
+      SGN.any_pcl() => any_pcl_channels
+    } = Keyword.fetch!(config, :channel_names)
 
     state = %{
-      vehicle_id: Keyword.fetch!(config, :vehicle_id),
+      vehicle_id: Keyword.fetch!(config, SVN.vehicle_id()),
       uart_ref: nil,
       ubx: UbxInterpreter.new(),
       pid_controllers: %{
         rollrate_aileron:
-          ViaControllers.Pid.new(Keyword.fetch!(controller_config, :rollrate_aileron)),
+          ViaControllers.Pid.new(Keyword.fetch!(controller_config, SCT.rollrate_aileron_pid())),
         pitchrate_elevator:
-          ViaControllers.Pid.new(Keyword.fetch!(controller_config, :pitchrate_elevator)),
-        yawrate_rudder: ViaControllers.Pid.new(Keyword.fetch!(controller_config, :yawrate_rudder))
+          ViaControllers.Pid.new(Keyword.fetch!(controller_config, SCT.pitchrate_elevator_pid())),
+        yawrate_rudder:
+          ViaControllers.Pid.new(Keyword.fetch!(controller_config, SCT.yawrate_rudder_pid()))
       },
-      bodyrate_commands: %{},
+      bodyrate_throttle_cmds: %{},
       any_pcl_actuator_output: %{},
       bodyrate_actuator_output: %{},
       direct_actuator_output: %{},
@@ -69,7 +73,7 @@ defmodule Uart.Companion do
           {@clear_is_value_current_callback, @direct_actuator_output},
           2 * LoopIntervals.remote_pilot_goals_publish_ms()
         ),
-      channel_names_direct: Map.merge(bodyrate_channels, any_pcl_channels),
+      channel_names_direct: Map.merge(bodyrate_throttle_channels, any_pcl_channels),
       channel_names_any_pcl: any_pcl_channels,
       ubx_write_function: nil
     }
@@ -103,7 +107,7 @@ defmodule Uart.Companion do
       @any_pcl_actuator_loop
     )
 
-    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_commands(), self())
+    ViaUtils.Comms.join_group(__MODULE__, Groups.controller_bodyrate_throttle_commands(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.controller_direct_actuator_output(), self())
     ViaUtils.Comms.join_group(__MODULE__, Groups.commands_for_any_pilot_control_level())
     ViaUtils.Comms.join_group(__MODULE__, Groups.estimation_position_velocity_val())
@@ -134,8 +138,11 @@ defmodule Uart.Companion do
   end
 
   @impl GenServer
-  def handle_cast({Groups.controller_bodyrate_commands(), bodyrate_commands}, state) do
-    # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+  def handle_cast(
+        {Groups.controller_bodyrate_throttle_commands(), bodyrate_throttle_cmds},
+        state
+      ) do
+    # Logger.debug("comp rx body commands: #{ViaUtils.Format.eftb_map(bodyrate_throttle_commands, 3)}")
 
     %{uart_ref: uart_ref} = state
 
@@ -146,14 +153,14 @@ defmodule Uart.Companion do
         BodyrateThrottleCmd.bytes(),
         BodyrateThrottleCmd.multipliers(),
         BodyrateThrottleCmd.keys(),
-        bodyrate_commands
+        bodyrate_throttle_cmds
       )
 
     unless is_nil(uart_ref) do
       Circuits.UART.write(uart_ref, ubx_message)
     end
 
-    {:noreply, %{state | bodyrate_commands: bodyrate_commands}}
+    {:noreply, %{state | bodyrate_throttle_cmds: bodyrate_throttle_cmds}}
   end
 
   @impl GenServer
@@ -238,7 +245,7 @@ defmodule Uart.Companion do
       is_value_current: is_value_current,
       bodyrate_actuator_output: bodyrate_actuator_output,
       uart_ref: uart_ref,
-      ubx_write_function: ubx_write_function,
+      ubx_write_function: ubx_write_function
       # vehicle_id: vehicle_id
     } = state
 
@@ -380,7 +387,7 @@ defmodule Uart.Companion do
       imu_watchdog: imu_watchdog,
       pid_controllers: pid_controllers,
       airspeed_mps: airspeed_mps,
-      bodyrate_commands: bodyrate_commands,
+      bodyrate_throttle_cmds: bodyrate_throttle_cmds,
       bodyrate_actuator_output: bodyrate_actuator_output_prev
     } = state
 
@@ -398,13 +405,13 @@ defmodule Uart.Companion do
           {reset_all_pid_integrators(pid_controllers), %{}}
 
         is_current_imu ->
-          # Logger.debug("br cmds: #{ViaUtils.Format.eftb_map(bodyrate_commands, 3)}")
+          # Logger.debug("br cmds: #{ViaUtils.Format.eftb_map(bodyrate_throttle_cmds, 3)}")
 
-          if !Enum.empty?(bodyrate_commands) do
+          if !Enum.empty?(bodyrate_throttle_cmds) do
             {pid_controllers, controller_output} =
               update_aileron_elevator_rudder_controllers(
                 pid_controllers,
-                bodyrate_commands,
+                bodyrate_throttle_cmds,
                 dt_accel_gyro_values,
                 airspeed_mps
               )
@@ -412,7 +419,7 @@ defmodule Uart.Companion do
             bodyrate_actuator_output =
               Map.merge(
                 controller_output,
-                Map.take(bodyrate_commands, [SGN.throttle_scaled()])
+                Map.take(bodyrate_throttle_cmds, [SGN.throttle_scaled()])
               )
 
             # Logger.debug("ctrl out: #{ViaUtils.Format.eftb_map(bodyrate_actuator_output, 3)}")
@@ -441,7 +448,7 @@ defmodule Uart.Companion do
   @spec update_aileron_elevator_rudder_controllers(map(), map(), map(), number()) :: tuple()
   def update_aileron_elevator_rudder_controllers(
         controllers,
-        bodyrate_commands,
+        bodyrate_throttle_cmds,
         dt_accel_gyro_vals,
         airspeed_mps
       ) do
@@ -455,7 +462,7 @@ defmodule Uart.Companion do
       SGN.rollrate_rps() => cmd_rollrate_rps,
       SGN.pitchrate_rps() => cmd_pitchrate_rps,
       SGN.yawrate_rps() => cmd_yawrate_rps
-    } = bodyrate_commands
+    } = bodyrate_throttle_cmds
 
     %{
       SVN.gyro_x_rps() => gx_rps,
@@ -482,7 +489,7 @@ defmodule Uart.Companion do
         dt_s
       )
 
-    # Logger.info("pr cmd/val/out: #{ViaUtils.Format.eftb(bodyrate_commands.pitchrate_rps,3)}/#{ViaUtils.Format.eftb(dt_accel_gyro_vals.gy_rps,3)}/#{ViaUtils.Format.eftb(elevator_output,3)}")
+    # Logger.info("pr cmd/val/out: #{ViaUtils.Format.eftb(bodyrate_throttle_cmds.pitchrate_rps,3)}/#{ViaUtils.Format.eftb(dt_accel_gyro_vals.gy_rps,3)}/#{ViaUtils.Format.eftb(elevator_output,3)}")
     {rudder_controller, rudder_output} =
       ViaControllers.Pid.update(
         ctrl_yr_rud,

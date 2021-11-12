@@ -284,11 +284,11 @@ defmodule Control.Controller do
 
         # Logger.debug("ctrl loop. pcl/cmds: #{inspect(pilot_control_level)}/#{inspect(commands)}")
 
-        any_pcl_commands = Map.get(commands, :any_pcl, %{})
+        any_pcl_commands = Map.get(commands, SGN.any_pcl(), %{})
 
         send_commands_for_any_pcl(any_pcl_commands)
 
-        current_pcl_cmds = Map.get(commands, :current_pcl)
+        current_pcl_cmds = Map.get(commands, SGN.current_pcl())
         # state = %{state | commands: commands.current_pcl}
 
         case pilot_control_level do
@@ -458,7 +458,7 @@ defmodule Control.Controller do
 
     ViaUtils.Comms.cast_local_msg_to_group(
       __MODULE__,
-      {Groups.controller_bodyrate_commands(), pcl_1_commands},
+      {Groups.controller_bodyrate_throttle_commands(), pcl_1_commands},
       self()
     )
 
