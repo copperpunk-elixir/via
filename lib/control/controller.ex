@@ -417,7 +417,7 @@ defmodule Control.Controller do
         SGN.rollrate_rps() => 0,
         SGN.pitchrate_rps() => 0,
         SGN.yawrate_rps() => 0,
-        SGN.throttle_scaled() => 0
+        SGN.throttle_scaled() => -1.0
       }
 
       Logger.warn("Att not avail. Force PCL1")

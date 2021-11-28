@@ -1,11 +1,11 @@
 defmodule Estimation.FakeDtAccelGyroTest do
   use ExUnit.Case
   require Logger
-  require ViaTelemetry.Ubx.ClassDefs
+  require ViaTelemetry.Ubx.MsgClasses
   require ViaTelemetry.Ubx.AccelGyro.DtAccelGyro
 
   test "Open Serial Port" do
-    msg_class = ViaTelemetry.Ubx.ClassDefs.accel_gyro()
+    msg_class = ViaTelemetry.Ubx.MsgClasses.accel_gyro()
     msg_id = ViaTelemetry.Ubx.AccelGyro.DtAccelGyro.id()
     byte_types = ViaTelemetry.Ubx.AccelGyro.DtAccelGyro.bytes()
     multipliers = ViaTelemetry.Ubx.AccelGyro.DtAccelGyro.multipliers()

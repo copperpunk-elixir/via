@@ -1,4 +1,4 @@
-defmodule Uart.Utils.Telemetry do
+defmodule Uart.Utils.TelemetryVehicle do
   require Logger
   @spec config(binary()) :: list()
   def config(uart_port) do

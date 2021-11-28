@@ -4,10 +4,9 @@ defmodule Uart.Gps do
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
   require ViaUtils.Shared.ValueNames, as: SVN
-  require ViaTelemetry.Ubx.Custom.ClassDefs
-  require ViaTelemetry.Ubx.Standard.ClassDefs
-  require ViaTelemetry.Ubx.Standard.Nav.Pvt, as: Pvt
-  require ViaTelemetry.Ubx.Standard.Nav.Relposned, as: Relposned
+  require ViaTelemetry.Ubx.MsgClasses
+  require ViaTelemetry.Ubx.StandardNav.Pvt, as: Pvt
+  require ViaTelemetry.Ubx.StandardNav.Relposned, as: Relposned
 
   def start_link(config) do
     Logger.debug("Start Uart.Gps with config: #{inspect(config)}")
@@ -98,7 +97,7 @@ defmodule Uart.Gps do
     # Logger.debug("class/id: #{msg_class}/#{msg_id}")
 
     case msg_class do
-      ViaTelemetry.Ubx.Standard.ClassDefs.nav() ->
+      ViaTelemetry.Ubx.MsgClasses.standard_nav() ->
         case msg_id do
           Pvt.id() ->
             values =

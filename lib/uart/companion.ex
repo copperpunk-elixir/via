@@ -3,9 +3,9 @@ defmodule Uart.Companion do
   require Logger
   require ViaUtils.Shared.Groups, as: Groups
   require ViaUtils.Shared.ControlTypes, as: SCT
-  require ViaTelemetry.Ubx.Custom.ClassDefs, as: ClassDefs
-  alias ViaTelemetry.Ubx.Custom.VehicleCmds, as: VehicleCmds
-  alias ViaTelemetry.Ubx.Custom.Companion, as: Companion
+  require ViaTelemetry.Ubx.MsgClasses, as: MsgClasses
+  alias ViaTelemetry.Ubx.VehicleCmds, as: VehicleCmds
+  alias ViaTelemetry.Ubx.Companion, as: Companion
   require Companion.DtAccelGyro, as: DtAccelGyro
   require Companion.BodyrateThrottleCmd, as: BodyrateThrottleCmd
   require VehicleCmds.ActuatorCmdDirect, as: ActuatorCmdDirect
@@ -148,7 +148,7 @@ defmodule Uart.Companion do
 
     ubx_message =
       UbxInterpreter.construct_message_from_map(
-        ClassDefs.vehicle_cmds(),
+        MsgClasses.vehicle_cmds(),
         BodyrateThrottleCmd.id(),
         BodyrateThrottleCmd.bytes(),
         BodyrateThrottleCmd.multipliers(),
@@ -256,7 +256,7 @@ defmodule Uart.Companion do
 
       ubx_message =
         UbxInterpreter.construct_message_from_map(
-          ClassDefs.vehicle_cmds(),
+          MsgClasses.vehicle_cmds(),
           ControllerActuatorOutput.id(),
           ControllerActuatorOutput.bytes(),
           ControllerActuatorOutput.multipliers(),
@@ -323,7 +323,7 @@ defmodule Uart.Companion do
       # Logger.debug("msg class/id: #{msg_class}/#{msg_id}")
       state =
         case msg_class do
-          ClassDefs.companion() ->
+          MsgClasses.companion() ->
             case msg_id do
               DtAccelGyro.id() ->
                 values =
@@ -350,7 +350,7 @@ defmodule Uart.Companion do
                 state
             end
 
-          ClassDefs.vehicle_cmds() ->
+          MsgClasses.vehicle_cmds() ->
             case msg_id do
               BodyrateThrottleCmd.id() ->
                 TestHelper.Companion.Utils.display_bodyrate_thrust_cmd(payload)
