@@ -15,7 +15,7 @@ defmodule Estimation.Estimator do
   @agl :agl
   @reset_estimation :reset_estimation
   def start_link(config) do
-    Logger.debug("Start Estimation.Estimator GenServer")
+    Logger.debug("Start #{__MODULE__} GenServer")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 

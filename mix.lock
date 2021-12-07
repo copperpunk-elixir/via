@@ -1,4 +1,5 @@
 %{
+  "bakeware": {:hex, :bakeware, "0.2.2", "7642998cf1eece8d4f5fc32578e16710d80f05a6f58d26d6c3c3fd92e3a68b19", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "143b12bfdb0c0098c5d55ba8f163bb0061878c55da3db05fcc2c08c3af3443f7"},
   "beam_notify": {:hex, :beam_notify, "0.2.1", "64f94f5b486b4cc96ef10a633188560cdd6ae2fccaf6fd746851cdc12b85d5f1", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "d1b3a8d280867c43c2c53e61556ca5ad87e0907ad25797d2c753bac5d8b3dc44"},
   "certifi": {:hex, :certifi, "2.6.1", "dbab8e5e155a0763eea978c913ca280a6b544bfa115633fa20249c3d396d9493", [:rebar3], [], "hexpm", "524c97b4991b3849dd5c17a631223896272c6b0af446778ba4675a1dff53bb7e"},
   "circuits_uart": {:hex, :circuits_uart, "1.4.3", "3753ed5b8792bab65f3e3c9c4ef00c51bcd5af7bb504bdfcba0648cb9b37e0de", [:mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "80e568af4144ebf060af19d9354a545f96fe1ac069d91ac852ee9f2cee8af581"},

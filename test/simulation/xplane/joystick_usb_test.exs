@@ -9,10 +9,10 @@ defmodule Simulation.Xplane.JoystickUsbTest do
   end
 
   test "Publish All Values", full_config do
-    config = Configuration.Xplane.FixedWing.Skyhawk.Sim.Command.config()
+    config = Configuration.FixedWing.Skyhawk.Sim.Command.config()
     Command.RemotePilot.start_link(config[:RemotePilot])
     Command.Commander.start_link(config[:Commander])
-    config = Configuration.Xplane.FixedWing.Skyhawk.Sim.Control.config()
+    config = Configuration.FixedWing.Skyhawk.Sim.Control.config()
     Control.Controller.start_link(config[:Controller])
 
     config = full_config[:Estimation][:Estimator]

@@ -26,9 +26,19 @@ defmodule Uart.Utils do
 
     generic_config_module = Module.concat(__MODULE__, uart_module)
     generic_config = apply(generic_config_module, :config, [uart_port])
+ Logger.debug("GCM: #{generic_config_module}")
+    Logger.debug("GC: #{inspect(generic_config)}")
 
     model_specific_module = Module.concat(model_root_module, uart_module)
-    model_specific_config = apply(model_specific_module, :config, [])
-    generic_config ++ model_specific_config
+
+    model_specific_config =
+      if Code.ensure_loaded?(model_specific_module) do
+        apply(model_specific_module, :config, [])
+      else
+        []
+      end
+    Logger.debug("MSM: #{model_specific_module}")
+    Logger.debug("msc: #{inspect(model_specific_config)}")
+    ViaUtils.Configuration.merge_configuration_files(generic_config, model_specific_config)
   end
 end

@@ -15,7 +15,7 @@ defmodule Via.Application do
         start_sim_target()
 
       Mix.env() != :test ->
-        Logger.debug("Non-sim environment. Start vehicle.")
+        Logger.debug("Non-test environment. Start vehicle.")
         node_type = System.get_env("node")
 
         if is_nil(node_type) or node_type == "Sim" do
@@ -57,32 +57,34 @@ defmodule Via.Application do
 
   @spec start_sim_target() :: atom()
   def start_sim_target() do
-    {simulator_type, model_type, input_type} =
-      Simulation.Utils.get_simulation_env("xplane", "skyhawk", "any")
+    Logger.debug("START SIM TARGET")
+
+    {model_type, input_type} =
+      Simulation.Utils.get_simulation_env("skyhawk", "any")
 
     vehicle_type = Simulation.Utils.get_vehicle_type(model_type)
 
     model_module =
-      Module.concat(["Configuration", simulator_type, vehicle_type, model_type, "Sim"])
+      Module.concat(["Configuration", vehicle_type, model_type, "Sim"])
 
     start_sim(input_type, model_module)
   end
 
   @spec start_sim_host() :: atom()
   def start_sim_host() do
-    simulator_type = get_simulation_type("xplane")
+    Logger.debug("START SIM HOST")
     model_type = get_model_type("skyhawk")
     input_type = get_input_type("any")
-
+    Logger.debug("model/input: #{model_type}/#{input_type}")
     vehicle_type = Simulation.Utils.get_vehicle_type(model_type)
 
     model_module =
-      Module.concat(["Configuration", simulator_type, vehicle_type, model_type, "Sim"])
+      Module.concat(["Configuration", vehicle_type, model_type, "Sim"])
 
     start_sim(input_type, model_module)
   end
 
-  @spec start_sim(binary(), atom()) :: atom()
+  @spec start_sim(binary(), module()) :: atom()
   def start_sim(input_type, model_module) when input_type == "rx" do
     usb_converter = get_usb_converter_name()
 
@@ -108,6 +110,7 @@ defmodule Via.Application do
       full_config[:Simulation]
       |> Kernel.++(apply(sim_config_module, input_type, []))
 
+    # Logger.info("Sim config: #{inspect(simulation_config)}")
     full_config = Keyword.put(full_config, :Simulation, simulation_config)
     start_with_config(full_config)
   end
@@ -146,7 +149,7 @@ defmodule Via.Application do
 
   @spec start_test(binary()) :: keyword()
   def start_test(node_type \\ "Sim") do
-    start_test("FixedWing", "XpSkyhawk", node_type)
+    start_test("FixedWing", "Skyhawk", node_type)
   end
 
   @spec prepare_environment() :: atom()
@@ -154,19 +157,19 @@ defmodule Via.Application do
     RingLogger.attach()
   end
 
-  @spec get_model_type(binary()) :: atom()
+  @spec get_model_type(binary()) :: binary()
   def get_model_type(default_input) do
     System.get_env("model", default_input)
     |> String.capitalize()
   end
 
-  @spec get_simulation_type(binary()) :: atom()
-  def get_simulation_type(default_input) do
-    System.get_env("simulation", default_input)
-    |> String.capitalize()
-  end
+  # @spec get_simulation_type(binary()) :: atom()
+  # def get_simulation_type(default_input) do
+  #   System.get_env("simulation", default_input)
+  #   |> String.capitalize()
+  # end
 
-  @spec get_input_type(binary()) :: atom()
+  @spec get_input_type(binary()) :: binary()
   def get_input_type(default_input) do
     System.get_env("input", default_input)
     |> String.downcase()

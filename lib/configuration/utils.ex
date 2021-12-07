@@ -1,5 +1,6 @@
 defmodule Configuration.Utils do
   require Logger
+  @default_node_type Sim
 
   @spec config(binary(), binary(), binary(), list()) :: keyword()
   def config(vehicle_type, model_type, node_type, modules \\ []) do
@@ -21,11 +22,41 @@ defmodule Configuration.Utils do
 
     Enum.reduce(modules, [], fn module, acc ->
       full_module_name = Module.concat(root_module_name, module)
-      single_config = apply(full_module_name, :config, [])
+
+      # single_config = apply(full_module_name, :config, [])
+      single_config = get_merged_config(full_module_name)
       # IO.puts("config for module #{inspect(module)}: #{inspect(single_config)}")
       # IO.puts("full config so far: #{inspect(acc)}")
       Keyword.put(acc, module, single_config)
     end)
+  end
+
+  @spec get_default_config(module()) :: list()
+  def get_default_config(full_module_name) do
+    default_config_module =
+      Module.split(full_module_name) |> List.replace_at(-2, @default_node_type) |> Module.concat()
+
+    apply(default_config_module, :config, [])
+
+    # default_config = config(default_config_module, modules)
+    # default_config
+  end
+
+  @spec get_merged_config(module()) :: list()
+  def get_merged_config(full_module_name) do
+    default_config = get_default_config(full_module_name)
+    Logger.info(inspect(full_module_name))
+    new_config =
+      if Code.ensure_loaded?(full_module_name) do
+        apply(full_module_name, :config, [])
+      else
+        []
+      end
+
+    Logger.debug("#{List.last(Module.split(full_module_name))} default_config: #{inspect(default_config)}")
+    Logger.warn("new_config: #{inspect(new_config)}")
+
+    ViaUtils.Configuration.merge_configuration_files(default_config, new_config)
   end
 
   @spec config_sim() :: keyword()
@@ -138,7 +169,7 @@ defmodule Configuration.Utils do
   def get_vehicle_id(node_module) do
     vehicle_module =
       Module.split(node_module)
-      |> Enum.take(4)
+      |> Enum.take(3)
       |> Kernel.++(["Vehicle"])
       |> Module.concat()
 
